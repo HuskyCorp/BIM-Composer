@@ -46,17 +46,77 @@ export class SelectionController {
         fileToOpen = this.activeMesh.userData.originFile;
       }
 
-      // NEW: Collect selected prim paths
-      const selectedPaths = Array.from(this.selectedMeshes)
-        .map((mesh) => mesh.userData.primPath)
-        .filter(Boolean);
+      // NEW: Collect selected items (Meshes AND their Parents)
+      const rawItems = [];
 
-      console.log(
-        "[SELECTION] Opening modal with",
-        selectedPaths.length,
-        "selected prims:",
-        selectedPaths
-      );
+      this.selectedMeshes.forEach((mesh) => {
+        // 1. Add the Mesh itself
+        if (mesh.userData.primPath) {
+          rawItems.push({
+            primPath: mesh.userData.primPath,
+            originFile: mesh.userData.originFile || store.getState().currentFile,
+            name: mesh.name,
+            type: "Mesh",
+          });
+        }
+
+        // 2. Add the Parent (Try Object-based first, then Path-based fallback)
+        let parentAdded = false;
+
+        // A) Try explicit Three.js parent object
+        if (
+          mesh.parent &&
+          mesh.parent.userData &&
+          mesh.parent.userData.primPath
+        ) {
+          rawItems.push({
+            primPath: mesh.parent.userData.primPath,
+            originFile:
+              mesh.parent.userData.originFile ||
+              mesh.userData.originFile ||
+              store.getState().currentFile,
+            name: mesh.parent.name || "Parent",
+            type: mesh.parent.type || "Group",
+          });
+          parentAdded = true;
+        }
+
+        // B) Path-based fallback (if metadata missing on parent object)
+        if (!parentAdded && mesh.userData.primPath) {
+             const pathParts = mesh.userData.primPath.split('/');
+             // Expected format: /Parent/Child -> parts ["", "Parent", "Child"]
+             // We want "Parent" -> /Parent
+             
+             if (pathParts.length > 2) {
+                 pathParts.pop(); // Remove Child
+                 const parentPath = pathParts.join('/');
+                 const parentName = pathParts[pathParts.length - 1]; // Last part is name
+                 
+                 // Avoid adding root as parent if path is just /Name
+                 if (parentPath && parentPath !== "") {
+                     rawItems.push({
+                        primPath: parentPath,
+                        originFile: mesh.userData.originFile || store.getState().currentFile,
+                        name: parentName,
+                        type: "Group" // Fallback type
+                     });
+                     console.log(`[SELECTION] Derived parent from path: ${parentPath}`);
+                 }
+             }
+        }
+      });
+
+      // Deduplicate items by primPath
+      const uniqueItemsMap = new Map();
+      rawItems.forEach((item) => {
+        if (!uniqueItemsMap.has(item.primPath)) {
+          uniqueItemsMap.set(item.primPath, item);
+        }
+      });
+
+      const selectedItems = Array.from(uniqueItemsMap.values());
+
+
 
       if (fileToOpen) {
         document.dispatchEvent(
@@ -64,7 +124,7 @@ export class SelectionController {
             detail: {
               fileName: fileToOpen,
               mode: mode,
-              preSelectedPaths: selectedPaths, // NEW: Pass selected paths
+              preSelectedItems: selectedItems, // NEW: Pass detailed items
             },
           })
         );

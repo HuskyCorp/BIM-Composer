@@ -140,7 +140,7 @@ export function initModal(updateView) {
 
   // ==================== Handle Open Modal Event ====================
   const handleOpenModal = errorHandler.wrap((e) => {
-    const { fileName, mode, preSelectedPaths } = e.detail || {};
+    const { fileName, mode, preSelectedItems } = e.detail || {};
 
     if (!fileName) {
       throw new ValidationError(
@@ -153,7 +153,7 @@ export function initModal(updateView) {
     currentModalFile = fileName;
     // Store mode in DOM to ensure single source of truth across potential multiple closures
     modal.dataset.mode = mode || "normal";
-    openPrimSelectionModal(fileName, preSelectedPaths);
+    openPrimSelectionModal(fileName, preSelectedItems);
   });
 
   document.addEventListener("openPrimModal", handleOpenModal);
@@ -167,7 +167,8 @@ export function initModal(updateView) {
 
   // ==================== Open Prim Selection Modal ====================
   const openPrimSelectionModal = errorHandler.wrapAsync(
-    async (fileName, preSelectedPaths) => {
+    async (fileName, preSelectedItems) => {
+
       if (!fileName) {
         throw new ValidationError(
           "File name is required to open modal",
@@ -203,16 +204,19 @@ export function initModal(updateView) {
       stagePrimsList.innerHTML = "";
 
       // Find layer status
+
       const layer = state.stage.layerStack.find((l) => l.filePath === fileName);
       const layerStatus = layer ? layer.status : "Published";
 
       // Build tree UI
+
       await buildTreeUI(
         originalHierarchy,
         availablePrimsList,
         fileName,
         layerStatus
       );
+
 
       // Show modal
       modal.style.display = "flex";
@@ -227,44 +231,136 @@ export function initModal(updateView) {
             : "Select Prims for Stage";
       }
 
-      // NEW: Handle pre-selected paths (multiple)
+      // NEW: Handle pre-selected items (multiple, potentially from different files)
       if (
-        preSelectedPaths &&
-        Array.isArray(preSelectedPaths) &&
-        preSelectedPaths.length > 0
+        preSelectedItems &&
+        Array.isArray(preSelectedItems) &&
+        preSelectedItems.length > 0
       ) {
         console.log(
-          `[Modal] Auto-staging ${preSelectedPaths.length} pre-selected items`
+          `[Modal] Auto-staging ${preSelectedItems.length} pre-selected items`
         );
 
-        const allLis = availablePrimsList.querySelectorAll("li");
-        let foundAny = false;
 
-        allLis.forEach((li) => {
-          if (preSelectedPaths.includes(li.dataset.primPath)) {
-            li.classList.add("selected");
-            foundAny = true;
+        const localItems = [];
+        const externalItems = [];
 
-            // Ensure parent chain is expanded/visible
-            let parent = li.parentElement;
-            while (parent && parent !== availablePrimsList) {
-              if (parent.tagName === "UL") {
-                parent.style.display = "block";
-                if (
-                  parent.parentElement &&
-                  parent.parentElement.classList.contains("collapsible")
-                ) {
-                  parent.parentElement.classList.remove("collapsed");
-                }
-              }
-              parent = parent.parentElement;
-            }
+        preSelectedItems.forEach((item) => {
+          if (item.originFile === fileName) {
+            localItems.push(item);
+          } else {
+            externalItems.push(item);
           }
         });
 
-        if (foundAny) {
-          moveSelected(availablePrimsList, stagePrimsList);
+        console.log(`[Modal] Local Items (${localItems.length}):`, localItems);
+        console.log(`[Modal] External Items (${externalItems.length}):`, externalItems);
+
+        // 1. Handle Local Items (select in available list)
+        if (localItems.length > 0) {
+          const allLis = availablePrimsList.querySelectorAll("li");
+          let foundAny = false;
+
+          allLis.forEach((li) => {
+            const match = localItems.find((i) => i.primPath === li.dataset.primPath);
+            if (match) {
+              li.classList.add("selected");
+              foundAny = true;
+
+              // Ensure parent chain is expanded/visible
+              let parent = li.parentElement;
+              while (parent && parent !== availablePrimsList) {
+                if (parent.tagName === "UL") {
+                  parent.style.display = "block";
+                  if (
+                    parent.parentElement &&
+                    parent.parentElement.classList.contains("collapsible")
+                  ) {
+                    parent.parentElement.classList.remove("collapsed");
+                  }
+                }
+                parent = parent.parentElement;
+              }
+            }
+          });
+
+          if (foundAny) {
+            moveSelected(availablePrimsList, stagePrimsList);
+          }
         }
+
+        // 2. Handle External Items (create synthetic elements in stage list)
+        if (externalItems.length > 0) {
+           // Sort by primPath length to ensure parents are processed before children
+           externalItems.sort((a, b) => a.primPath.length - b.primPath.length);
+
+           // Map to store created LIs by "OriginFile::PrimPath" for hierarchy lookup
+           const createdItemsMap = new Map();
+
+           externalItems.forEach((item) => {
+             console.log("DEBUG: Processing external item", item);
+             // Check if already staged to avoid duplicates
+             const existing = Array.from(stagePrimsList.querySelectorAll("li")).find(li => li.dataset.primPath === item.primPath && li.dataset.sourceFile === item.originFile);
+             if (existing) {
+                 console.log("DEBUG: Item already exists", item.primPath);
+                 return;
+             }
+
+             const li = document.createElement("li");
+             const primData = {
+                 path: item.primPath,
+                 name: item.name || item.primPath.split('/').pop(),
+                 type: item.type || "Mesh",
+                 properties: {}
+             };
+             li.dataset.prim = JSON.stringify(primData);
+             li.dataset.primPath = item.primPath;
+             li.dataset.sourceFile = item.originFile;
+
+             // Resolve Status from Layer Stack
+             const layerStack = store.getState().stage.layerStack;
+             const sourceLayer = layerStack.find(l => l.filePath === item.originFile);
+             const status = sourceLayer ? sourceLayer.status : "Published";
+             
+             const statusIndicator = `<span class="status-indicator ${status.toLowerCase()}" title="Status: ${status}">${status.charAt(0)}</span>`;
+             const icon = primData.type === "Xform" || primData.type === "Group" ? "📦" : "🧊";
+             const toggler = `<span class="outliner-toggler" style="visibility: visible;">v</span>`; // Visible by default, logic can hide if no children
+             const sourceLabel = `<span class="source-file-label" style="font-size: 0.8em; color: #888; margin-left: auto;">${item.originFile}</span>`;
+             
+             li.innerHTML = `<div class="outliner-row">${statusIndicator}${toggler}<span class="outliner-icon">${icon}</span><span class="outliner-text">${primData.name}</span>${sourceLabel}</div>`;
+             li.classList.add("outliner-item"); // Ensure consistent styling
+
+             // Key for map
+             const key = `${item.originFile}::${item.primPath}`;
+             createdItemsMap.set(key, li);
+
+             // Attempt to find parent in our map
+             // We need to derive the parent path string from the current path
+             const parts = item.primPath.split('/');
+             parts.pop();
+             const parentPath = parts.join('/');
+             const parentKey = `${item.originFile}::${parentPath}`;
+             
+             const parentLi = createdItemsMap.get(parentKey);
+
+             if (parentLi) {
+                 // Append to parent
+                 let childUl = parentLi.querySelector("ul");
+                 if (!childUl) {
+                     childUl = document.createElement("ul");
+                     // childUl.style.display = "block"; // Ensure visible
+                     parentLi.appendChild(childUl);
+                 }
+                 childUl.appendChild(li);
+                 console.log(`[Modal] Nested ${primData.name} under ${parentLi.dataset.primPath}`);
+             } else {
+                 // Append to root
+                 stagePrimsList.appendChild(li);
+                 console.log(`[Modal] Appended root external item: ${primData.name}`);
+             }
+          });
+        }
+        console.log(`[Modal] Final Stage List Child Count: ${stagePrimsList.children.length}`);
       }
 
       console.log(
@@ -365,6 +461,11 @@ export function initModal(updateView) {
         return; // Skip this node
       }
 
+      // Preserve sourceFile if present in dataset
+      if (node.dataset.sourceFile) {
+        primData.sourceFile = node.dataset.sourceFile;
+      }
+
       const childUl = node.querySelector(":scope > ul");
       primData.children = childUl ? buildHierarchyFromDom(childUl) : [];
       prims.push(primData);
@@ -392,14 +493,16 @@ export function initModal(updateView) {
     }
 
     // Extract paths with source file information
-    const extractPaths = (nodes) => {
-      let paths = [];
-      nodes.forEach((n) => {
-        paths.push({ path: n.path, sourceFile: currentModalFile });
-        if (n.children) paths = [...paths, ...extractPaths(n.children)];
-      });
-      return paths;
-    };
+      const extractPaths = (nodes) => {
+        let paths = [];
+        nodes.forEach((n) => {
+          // Use the sourceFile from the node if available (for external items), otherwise currentModalFile
+          const source = n.sourceFile || currentModalFile;
+          paths.push({ path: n.path, sourceFile: source });
+          if (n.children) paths = [...paths, ...extractPaths(n.children)];
+        });
+        return paths;
+      };
 
     const itemsToStage = extractPaths(newlyStagedHierarchy);
     const currentMode = modal.dataset.mode || "normal";

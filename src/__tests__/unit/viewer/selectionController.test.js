@@ -264,9 +264,9 @@ describe("SelectionController", () => {
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
-            preSelectedPaths: expect.arrayContaining([
-              "/Root/Mesh1",
-              "/Root/Mesh2",
+            preSelectedItems: expect.arrayContaining([
+              expect.objectContaining({ primPath: "/Root/Mesh1" }),
+              expect.objectContaining({ primPath: "/Root/Mesh2" }),
             ]),
           }),
         })
@@ -291,10 +291,98 @@ describe("SelectionController", () => {
       expect(dispatchEventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
-            preSelectedPaths: ["/Root/Mesh1"],
+            preSelectedItems: expect.arrayContaining([
+                expect.objectContaining({ primPath: "/Root/Mesh1" })
+            ]),
           }),
         })
       );
+    });
+
+    it("should include parent object when mesh has parent with primPath", () => {
+      mockCanvas.style.display = "block";
+      store.getState.mockReturnValue({ currentFile: "test.usda" });
+
+      const parent = new THREE.Group();
+      parent.name = "Slab";
+      parent.userData = { primPath: "/Slab", originFile: "test.usda" };
+      
+      const mesh = new THREE.Mesh();
+      mesh.name = "Mesh";
+      mesh.userData = { primPath: "/Slab/Mesh", originFile: "test.usda" };
+      parent.add(mesh); // Establish hierarchy
+
+      controller.selectedMeshes.add(mesh);
+
+      const dispatchEventSpy = vi.spyOn(document, "dispatchEvent");
+      sendToStageButton.click();
+
+      // Expect specific item structure
+      expect(dispatchEventSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+              detail: expect.objectContaining({
+                  preSelectedItems: expect.arrayContaining([
+                      expect.objectContaining({ primPath: "/Slab/Mesh", type: "Mesh" }),
+                      expect.objectContaining({ primPath: "/Slab", type: "Group" })
+                  ])
+              })
+          })
+      );
+    });
+
+    it("should derive parent from path when mesh parent lacks metadata", () => {
+      mockCanvas.style.display = "block";
+      store.getState.mockReturnValue({ currentFile: "test.usda" });
+
+      // Parent exists but has no userData
+      const parent = new THREE.Group();
+      parent.name = "SlabNode"; 
+      
+      const mesh = new THREE.Mesh();
+      mesh.userData = { primPath: "/Slab/Mesh", originFile: "test.usda" };
+      parent.add(mesh);
+
+      controller.selectedMeshes.add(mesh);
+
+      const dispatchEventSpy = vi.spyOn(document, "dispatchEvent");
+      sendToStageButton.click();
+
+      expect(dispatchEventSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+              detail: expect.objectContaining({
+                  preSelectedItems: expect.arrayContaining([
+                      expect.objectContaining({ primPath: "/Slab/Mesh" }),
+                      // Should derive parent "/Slab" from "/Slab/Mesh"
+                      expect.objectContaining({ primPath: "/Slab", name: "Slab" }) 
+                  ])
+              })
+          })
+      );
+    });
+
+    it("should deduplicate parents when multiple meshes share same parent", () => {
+      mockCanvas.style.display = "block";
+      store.getState.mockReturnValue({ currentFile: "test.usda" });
+
+      const mesh1 = new THREE.Mesh();
+      mesh1.userData = { primPath: "/Slab/Mesh1", originFile: "test.usda" };
+      
+      const mesh2 = new THREE.Mesh();
+      mesh2.userData = { primPath: "/Slab/Mesh2", originFile: "test.usda" };
+
+      controller.selectedMeshes.add(mesh1);
+      controller.selectedMeshes.add(mesh2);
+
+      const dispatchEventSpy = vi.spyOn(document, "dispatchEvent");
+      sendToStageButton.click();
+
+      const callArgs = dispatchEventSpy.mock.calls[0][0];
+      const items = callArgs.detail.preSelectedItems;
+      
+      // Should have Mesh1, Mesh2, and exactly one "/Slab" parent
+      const parents = items.filter(i => i.primPath === "/Slab");
+      expect(parents.length).toBe(1);
+      expect(items.length).toBe(3); // Mesh1 + Mesh2 + Parent
     });
 
     it("should open modal with 'normal' mode for sendToStage button", () => {

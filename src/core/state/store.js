@@ -117,6 +117,17 @@ export class Store {
   }
 
   /**
+   * Internal state update method (no warning)
+   * @param {Object} updates - State updates
+   * @private
+   */
+  internalSetState(updates) {
+    const prevState = this.state;
+    this.state = this._deepMerge(this.state, updates);
+    this.notifyListeners(prevState, this.state);
+  }
+
+  /**
    * Legacy setState method for backward compatibility
    * @deprecated Use dispatch() with actions instead
    * @param {Object} updates - State updates
@@ -125,9 +136,7 @@ export class Store {
     console.warn(
       "[Store] setState() is deprecated. Use dispatch() with actions instead."
     );
-    const prevState = this.state;
-    this.state = this._deepMerge(this.state, updates);
-    this.notifyListeners(prevState, this.state);
+    this.internalSetState(updates);
   }
 }
 

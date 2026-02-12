@@ -19,7 +19,8 @@ import { reducer } from "../reducer.js";
  */
 export function applyMiddleware(store, ...middlewares) {
   // Save original setState FIRST - before creating dispatch chain
-  const originalSetState = store.setState.bind(store);
+  // Use internalSetState if available to avoid deprecation warnings
+  const originalSetState = (store.internalSetState || store.setState).bind(store);
 
   // Chain middleware - use reducer to transform actions into state updates
   let dispatch = (updates) => {
