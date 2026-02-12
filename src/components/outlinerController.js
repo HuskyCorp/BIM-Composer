@@ -291,7 +291,9 @@ export const initOutlinerEvents = errorHandler.wrap(
       try {
         const fileCanvas = document.getElementById("webglCanvas");
         const activeScene =
-          fileCanvas.style.display !== "none" ? fileThreeScene : stageThreeScene;
+          fileCanvas.style.display !== "none"
+            ? fileThreeScene
+            : stageThreeScene;
         const toggler = e.target.closest(".outliner-toggler");
         const visibilityToggle = e.target.closest(".visibility-toggle");
         const editToggle = e.target.closest(".edit-prim-button"); // NEW: Capture Edit Click
@@ -359,7 +361,10 @@ export const initOutlinerEvents = errorHandler.wrap(
                 // Toggle visibility of all descendants
                 const newVisibility = !descendantMeshes[0].visible;
                 descendantMeshes.forEach((m) =>
-                  activeScene.selectionController.setVisibility(m, newVisibility)
+                  activeScene.selectionController.setVisibility(
+                    m,
+                    newVisibility
+                  )
                 );
               } else {
                 // Select all descendants as a group
@@ -393,7 +398,10 @@ export const initOutlinerEvents = errorHandler.wrap(
           if (mesh) {
             if (visibilityToggle) {
               e.stopPropagation();
-              activeScene.selectionController.setVisibility(mesh, !mesh.visible);
+              activeScene.selectionController.setVisibility(
+                mesh,
+                !mesh.visible
+              );
             } else {
               activeScene.selectionController.togglePrimSelection(
                 primPath,

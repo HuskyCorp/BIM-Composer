@@ -395,9 +395,7 @@ describe("Store", () => {
 
   describe("setState (deprecated)", () => {
     it("should update state using deep merge", () => {
-      const consoleSpy = vi
-        .spyOn(console, "warn")
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       store.setState({ sceneName: "Direct Update" });
 
@@ -408,9 +406,7 @@ describe("Store", () => {
     });
 
     it("should show deprecation warning", () => {
-      const consoleSpy = vi
-        .spyOn(console, "warn")
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       store.setState({ sceneName: "Test" });
 
@@ -422,9 +418,7 @@ describe("Store", () => {
     });
 
     it("should notify listeners after setState", () => {
-      const consoleSpy = vi
-        .spyOn(console, "warn")
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const listener = vi.fn();
 
       store.subscribe("test", listener);
@@ -436,9 +430,7 @@ describe("Store", () => {
     });
 
     it("should pass previous and next state to listeners", () => {
-      const consoleSpy = vi
-        .spyOn(console, "warn")
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const listener = vi.fn();
       const prevState = { ...store.state };
 

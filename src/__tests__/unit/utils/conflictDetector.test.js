@@ -50,9 +50,7 @@ describe("conflictDetector", () => {
       mockState = {
         currentUser: "User1",
         stage: {
-          layerStack: [
-            { filePath: "test.usda", owner: "User1" },
-          ],
+          layerStack: [{ filePath: "test.usda", owner: "User1" }],
         },
         loadedFiles: {},
       };
@@ -312,9 +310,13 @@ describe("conflictDetector", () => {
         // Second call: statement.usda hierarchy (has status property)
         // Third call: layer stack iteration
         USDA_PARSER.getPrimHierarchy
-          .mockReturnValueOnce([{ path: "/Root/TestPrim", properties: {}, children: [] }])
+          .mockReturnValueOnce([
+            { path: "/Root/TestPrim", properties: {}, children: [] },
+          ])
           .mockReturnValueOnce(statementHierarchy)
-          .mockReturnValueOnce([{ path: "/Root/TestPrim", properties: {}, children: [] }]);
+          .mockReturnValueOnce([
+            { path: "/Root/TestPrim", properties: {}, children: [] },
+          ]);
         store.getState.mockReturnValue(mockState);
 
         const result = detectConflict(mockPrim, "status", "Published");
@@ -341,15 +343,21 @@ describe("conflictDetector", () => {
         // Second call: statement.usda hierarchy (no status property)
         // Third call: layer stack iteration
         USDA_PARSER.getPrimHierarchy
-          .mockReturnValueOnce([{ path: "/Root/TestPrim", properties: {}, children: [] }])
+          .mockReturnValueOnce([
+            { path: "/Root/TestPrim", properties: {}, children: [] },
+          ])
           .mockReturnValueOnce(statementHierarchy)
-          .mockReturnValueOnce([{ path: "/Root/TestPrim", properties: {}, children: [] }]);
+          .mockReturnValueOnce([
+            { path: "/Root/TestPrim", properties: {}, children: [] },
+          ]);
         store.getState.mockReturnValue(mockState);
 
         const result = detectConflict(mockPrim, "status", "Shared");
 
         if (result) {
-          const stagedConflict = result.find((c) => c.type === "staged_override");
+          const stagedConflict = result.find(
+            (c) => c.type === "staged_override"
+          );
           expect(stagedConflict).toBeUndefined();
         }
       });
@@ -361,7 +369,9 @@ describe("conflictDetector", () => {
         const result = detectConflict(mockPrim, "status", "Shared");
 
         if (result) {
-          const stagedConflict = result.find((c) => c.type === "staged_override");
+          const stagedConflict = result.find(
+            (c) => c.type === "staged_override"
+          );
           expect(stagedConflict).toBeUndefined();
         }
       });
@@ -387,9 +397,13 @@ describe("conflictDetector", () => {
         // Second call: statement.usda hierarchy (has nested prim with status)
         // Third call: layer stack iteration
         USDA_PARSER.getPrimHierarchy
-          .mockReturnValueOnce([{ path: "/Root/TestPrim", properties: {}, children: [] }])
+          .mockReturnValueOnce([
+            { path: "/Root/TestPrim", properties: {}, children: [] },
+          ])
           .mockReturnValueOnce(statementHierarchy)
-          .mockReturnValueOnce([{ path: "/Root/TestPrim", properties: {}, children: [] }]);
+          .mockReturnValueOnce([
+            { path: "/Root/TestPrim", properties: {}, children: [] },
+          ]);
         store.getState.mockReturnValue(mockState);
 
         const result = detectConflict(mockPrim, "status", "Published");
@@ -661,9 +675,7 @@ describe("conflictDetector", () => {
         const stateForTest = {
           currentUser: "User1",
           stage: {
-            layerStack: [
-              { filePath: "test.usda", owner: "User1" },
-            ],
+            layerStack: [{ filePath: "test.usda", owner: "User1" }],
           },
           loadedFiles: {
             "test.usda": 'def "TestPrim" { }',
@@ -741,9 +753,7 @@ describe("conflictDetector", () => {
       mockState = {
         currentUser: "User1",
         stage: {
-          layerStack: [
-            { filePath: "test.usda", owner: "User1" },
-          ],
+          layerStack: [{ filePath: "test.usda", owner: "User1" }],
         },
       };
 

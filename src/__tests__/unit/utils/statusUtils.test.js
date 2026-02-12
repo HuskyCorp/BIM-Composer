@@ -63,9 +63,7 @@ describe("statusUtils", () => {
           properties: { status: "WIP" },
           _sourceFile: "layer1.usda",
         };
-        const layerStack = [
-          { filePath: "layer1.usda", status: "Published" },
-        ];
+        const layerStack = [{ filePath: "layer1.usda", status: "Published" }];
 
         expect(resolvePrimStatus(prim, layerStack)).toBe("WIP");
       });

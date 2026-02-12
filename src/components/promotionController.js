@@ -99,7 +99,9 @@ export function initPromotionController(updateView) {
 
       // Determine common status
       const firstStatus = initialSelection[0].status;
-      const consistent = initialSelection.every((l) => l.status === firstStatus);
+      const consistent = initialSelection.every(
+        (l) => l.status === firstStatus
+      );
 
       if (!consistent) {
         throw new ValidationError(

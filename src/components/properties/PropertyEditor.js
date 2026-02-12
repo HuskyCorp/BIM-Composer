@@ -150,7 +150,12 @@ function attachPsetPropertyListeners(
           );
         }
 
-        console.log("[PSET INPUT] Property changed:", propertyKey, "=", newValue);
+        console.log(
+          "[PSET INPUT] Property changed:",
+          propertyKey,
+          "=",
+          newValue
+        );
 
         // Construct the full attribute name
         const fullAttributeName = `custom string ${propertyKey}`;
@@ -352,7 +357,11 @@ function attachStatusChangeListener(
       const newStatus = e.target.value;
 
       if (!newStatus) {
-        throw new ValidationError("Status value is missing", "status", newStatus);
+        throw new ValidationError(
+          "Status value is missing",
+          "status",
+          newStatus
+        );
       }
 
       applyAttributeChange(
