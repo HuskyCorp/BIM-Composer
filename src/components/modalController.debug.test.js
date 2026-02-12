@@ -1,5 +1,4 @@
-
-import fs from 'fs';
+import fs from "fs";
 import { initModal } from "./modalController";
 import { store } from "../core/index.js";
 import * as USDA_PARSER from "../viewer/usda/usdaParser.js";
@@ -34,7 +33,7 @@ describe("modalController debug", () => {
   let stagePrimsList;
 
   beforeEach(() => {
-    vi.stubGlobal('requestAnimationFrame', (fn) => fn(0));
+    vi.stubGlobal("requestAnimationFrame", (fn) => fn(0));
     document.body.innerHTML = `
       <div id="prim-selection-modal" style="display: none;">
         <div class="modal-header"><h2></h2></div>
@@ -57,86 +56,127 @@ describe("modalController debug", () => {
 
   it("DEBUG: should nest external items based on hierarchy", async () => {
     try {
-        initModal(vi.fn());
-        const fileName = "main.usda";
-        
-        const preSelectedItems = [
-            { primPath: "/External/Wall/Mesh", originFile: "wall.usda", name: "Mesh", type: "Mesh" },
-            { primPath: "/External/Wall", originFile: "wall.usda", name: "Wall", type: "Group" }
-        ];
+      initModal(vi.fn());
+      const fileName = "main.usda";
 
-        store.getState.mockReturnValue({
-            loadedFiles: { [fileName]: " " },
-            stage: { layerStack: [] }
-        });
-        
-        USDA_PARSER.USDA_PARSER.getPrimHierarchy.mockReturnValue([]);
+      const preSelectedItems = [
+        {
+          primPath: "/External/Wall/Mesh",
+          originFile: "wall.usda",
+          name: "Mesh",
+          type: "Mesh",
+        },
+        {
+          primPath: "/External/Wall",
+          originFile: "wall.usda",
+          name: "Wall",
+          type: "Group",
+        },
+      ];
 
-        document.dispatchEvent(new CustomEvent("openPrimModal", {
-            detail: { fileName, mode: "normal", preSelectedItems }
-        }));
-        await new Promise(r => setTimeout(r, 100));
+      store.getState.mockReturnValue({
+        loadedFiles: { [fileName]: " " },
+        stage: { layerStack: [] },
+      });
 
-        fs.writeFileSync('debug_output.txt', "DEBUG HTML Nesting:\n" + stagePrimsList.innerHTML + "\n\n");
+      USDA_PARSER.USDA_PARSER.getPrimHierarchy.mockReturnValue([]);
 
-        const items = stagePrimsList.querySelectorAll("li");
-        let parentLi = null;
-        let childLi = null;
-        
-        items.forEach(li => {
-            if (li.dataset.primPath === "/External/Wall") parentLi = li;
-            if (li.dataset.primPath === "/External/Wall/Mesh") childLi = li;
-        });
+      document.dispatchEvent(
+        new CustomEvent("openPrimModal", {
+          detail: { fileName, mode: "normal", preSelectedItems },
+        })
+      );
+      await new Promise((r) => setTimeout(r, 100));
 
-        if (!parentLi) fs.appendFileSync('debug_output.txt', "Parent LI not found\n");
-        if (!childLi) fs.appendFileSync('debug_output.txt', "Child LI not found\n");
+      fs.writeFileSync(
+        "debug_output.txt",
+        "DEBUG HTML Nesting:\n" + stagePrimsList.innerHTML + "\n\n"
+      );
 
-        expect(parentLi).not.toBeNull();
-        expect(childLi).not.toBeNull();
-        expect(parentLi.contains(childLi)).toBe(true);
+      const items = stagePrimsList.querySelectorAll("li");
+      let parentLi = null;
+      let childLi = null;
+
+      items.forEach((li) => {
+        if (li.dataset.primPath === "/External/Wall") parentLi = li;
+        if (li.dataset.primPath === "/External/Wall/Mesh") childLi = li;
+      });
+
+      if (!parentLi)
+        fs.appendFileSync("debug_output.txt", "Parent LI not found\n");
+      if (!childLi)
+        fs.appendFileSync("debug_output.txt", "Child LI not found\n");
+
+      expect(parentLi).not.toBeNull();
+      expect(childLi).not.toBeNull();
+      expect(parentLi.contains(childLi)).toBe(true);
     } catch (e) {
-        fs.writeFileSync('debug_error.txt', "Nesting Test Error:\n" + e.toString() + "\nStack:\n" + e.stack + "\nHTML:\n" + (stagePrimsList ? stagePrimsList.innerHTML : "N/A"));
-        throw e;
+      fs.writeFileSync(
+        "debug_error.txt",
+        "Nesting Test Error:\n" +
+          e.toString() +
+          "\nStack:\n" +
+          e.stack +
+          "\nHTML:\n" +
+          (stagePrimsList ? stagePrimsList.innerHTML : "N/A")
+      );
+      throw e;
     }
   });
 
   it("DEBUG: should apply correct status color", async () => {
     try {
-        initModal(vi.fn());
-        const fileName = "main.usda";
-        
-        const preSelectedItems = [
-            { primPath: "/WIP/Object", originFile: "wip.usda", name: "Object", type: "Mesh" }
-        ];
+      initModal(vi.fn());
+      const fileName = "main.usda";
 
-        store.getState.mockReturnValue({
-            loadedFiles: { [fileName]: " " },
-            stage: { 
-                layerStack: [
-                    { filePath: "wip.usda", status: "WIP" }
-                ] 
-            }
-        });
-        
-        USDA_PARSER.USDA_PARSER.getPrimHierarchy.mockReturnValue([]);
+      const preSelectedItems = [
+        {
+          primPath: "/WIP/Object",
+          originFile: "wip.usda",
+          name: "Object",
+          type: "Mesh",
+        },
+      ];
 
-        document.dispatchEvent(new CustomEvent("openPrimModal", {
-            detail: { fileName, mode: "normal", preSelectedItems }
-        }));
-        await new Promise(r => setTimeout(r, 100));
+      store.getState.mockReturnValue({
+        loadedFiles: { [fileName]: " " },
+        stage: {
+          layerStack: [{ filePath: "wip.usda", status: "WIP" }],
+        },
+      });
 
-        fs.appendFileSync('debug_output.txt', "DEBUG HTML Status:\n" + stagePrimsList.innerHTML + "\n\n");
+      USDA_PARSER.USDA_PARSER.getPrimHierarchy.mockReturnValue([]);
 
-        const wipLi = Array.from(stagePrimsList.querySelectorAll("li")).find(li => li.dataset.sourceFile === "wip.usda");
-        if (!wipLi) {
-             fs.appendFileSync('debug_output.txt', "WIP LI not found\n");
-        } else {
-             fs.appendFileSync('debug_output.txt', "WIP LI HTML: " + wipLi.innerHTML + "\n");
-        }
-        expect(wipLi.innerHTML).toContain("wip");
+      document.dispatchEvent(
+        new CustomEvent("openPrimModal", {
+          detail: { fileName, mode: "normal", preSelectedItems },
+        })
+      );
+      await new Promise((r) => setTimeout(r, 100));
+
+      fs.appendFileSync(
+        "debug_output.txt",
+        "DEBUG HTML Status:\n" + stagePrimsList.innerHTML + "\n\n"
+      );
+
+      const wipLi = Array.from(stagePrimsList.querySelectorAll("li")).find(
+        (li) => li.dataset.sourceFile === "wip.usda"
+      );
+      if (!wipLi) {
+        fs.appendFileSync("debug_output.txt", "WIP LI not found\n");
+      } else {
+        fs.appendFileSync(
+          "debug_output.txt",
+          "WIP LI HTML: " + wipLi.innerHTML + "\n"
+        );
+      }
+      expect(wipLi.innerHTML).toContain("wip");
     } catch (e) {
-         fs.appendFileSync('debug_error.txt', "\nStatus Test Error:\n" + e.toString() + "\nStack:\n" + e.stack);
-         throw e;
+      fs.appendFileSync(
+        "debug_error.txt",
+        "\nStatus Test Error:\n" + e.toString() + "\nStack:\n" + e.stack
+      );
+      throw e;
     }
   });
 });

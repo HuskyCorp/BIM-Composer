@@ -168,7 +168,6 @@ export function initModal(updateView) {
   // ==================== Open Prim Selection Modal ====================
   const openPrimSelectionModal = errorHandler.wrapAsync(
     async (fileName, preSelectedItems) => {
-
       if (!fileName) {
         throw new ValidationError(
           "File name is required to open modal",
@@ -217,7 +216,6 @@ export function initModal(updateView) {
         layerStatus
       );
 
-
       // Show modal
       modal.style.display = "flex";
 
@@ -241,7 +239,6 @@ export function initModal(updateView) {
           `[Modal] Auto-staging ${preSelectedItems.length} pre-selected items`
         );
 
-
         const localItems = [];
         const externalItems = [];
 
@@ -254,7 +251,10 @@ export function initModal(updateView) {
         });
 
         console.log(`[Modal] Local Items (${localItems.length}):`, localItems);
-        console.log(`[Modal] External Items (${externalItems.length}):`, externalItems);
+        console.log(
+          `[Modal] External Items (${externalItems.length}):`,
+          externalItems
+        );
 
         // 1. Handle Local Items (select in available list)
         if (localItems.length > 0) {
@@ -262,7 +262,9 @@ export function initModal(updateView) {
           let foundAny = false;
 
           allLis.forEach((li) => {
-            const match = localItems.find((i) => i.primPath === li.dataset.primPath);
+            const match = localItems.find(
+              (i) => i.primPath === li.dataset.primPath
+            );
             if (match) {
               li.classList.add("selected");
               foundAny = true;
@@ -291,76 +293,93 @@ export function initModal(updateView) {
 
         // 2. Handle External Items (create synthetic elements in stage list)
         if (externalItems.length > 0) {
-           // Sort by primPath length to ensure parents are processed before children
-           externalItems.sort((a, b) => a.primPath.length - b.primPath.length);
+          // Sort by primPath length to ensure parents are processed before children
+          externalItems.sort((a, b) => a.primPath.length - b.primPath.length);
 
-           // Map to store created LIs by "OriginFile::PrimPath" for hierarchy lookup
-           const createdItemsMap = new Map();
+          // Map to store created LIs by "OriginFile::PrimPath" for hierarchy lookup
+          const createdItemsMap = new Map();
 
-           externalItems.forEach((item) => {
-             console.log("DEBUG: Processing external item", item);
-             // Check if already staged to avoid duplicates
-             const existing = Array.from(stagePrimsList.querySelectorAll("li")).find(li => li.dataset.primPath === item.primPath && li.dataset.sourceFile === item.originFile);
-             if (existing) {
-                 console.log("DEBUG: Item already exists", item.primPath);
-                 return;
-             }
+          externalItems.forEach((item) => {
+            console.log("DEBUG: Processing external item", item);
+            // Check if already staged to avoid duplicates
+            const existing = Array.from(
+              stagePrimsList.querySelectorAll("li")
+            ).find(
+              (li) =>
+                li.dataset.primPath === item.primPath &&
+                li.dataset.sourceFile === item.originFile
+            );
+            if (existing) {
+              console.log("DEBUG: Item already exists", item.primPath);
+              return;
+            }
 
-             const li = document.createElement("li");
-             const primData = {
-                 path: item.primPath,
-                 name: item.name || item.primPath.split('/').pop(),
-                 type: item.type || "Mesh",
-                 properties: {}
-             };
-             li.dataset.prim = JSON.stringify(primData);
-             li.dataset.primPath = item.primPath;
-             li.dataset.sourceFile = item.originFile;
+            const li = document.createElement("li");
+            const primData = {
+              path: item.primPath,
+              name: item.name || item.primPath.split("/").pop(),
+              type: item.type || "Mesh",
+              properties: {},
+            };
+            li.dataset.prim = JSON.stringify(primData);
+            li.dataset.primPath = item.primPath;
+            li.dataset.sourceFile = item.originFile;
 
-             // Resolve Status from Layer Stack
-             const layerStack = store.getState().stage.layerStack;
-             const sourceLayer = layerStack.find(l => l.filePath === item.originFile);
-             const status = sourceLayer ? sourceLayer.status : "Published";
-             
-             const statusIndicator = `<span class="status-indicator ${status.toLowerCase()}" title="Status: ${status}">${status.charAt(0)}</span>`;
-             const icon = primData.type === "Xform" || primData.type === "Group" ? "📦" : "🧊";
-             const toggler = `<span class="outliner-toggler" style="visibility: visible;">v</span>`; // Visible by default, logic can hide if no children
-             const sourceLabel = `<span class="source-file-label" style="font-size: 0.8em; color: #888; margin-left: auto;">${item.originFile}</span>`;
-             
-             li.innerHTML = `<div class="outliner-row">${statusIndicator}${toggler}<span class="outliner-icon">${icon}</span><span class="outliner-text">${primData.name}</span>${sourceLabel}</div>`;
-             li.classList.add("outliner-item"); // Ensure consistent styling
+            // Resolve Status from Layer Stack
+            const layerStack = store.getState().stage.layerStack;
+            const sourceLayer = layerStack.find(
+              (l) => l.filePath === item.originFile
+            );
+            const status = sourceLayer ? sourceLayer.status : "Published";
 
-             // Key for map
-             const key = `${item.originFile}::${item.primPath}`;
-             createdItemsMap.set(key, li);
+            const statusIndicator = `<span class="status-indicator ${status.toLowerCase()}" title="Status: ${status}">${status.charAt(0)}</span>`;
+            const icon =
+              primData.type === "Xform" || primData.type === "Group"
+                ? "📦"
+                : "🧊";
+            const toggler = `<span class="outliner-toggler" style="visibility: visible;">v</span>`; // Visible by default, logic can hide if no children
+            const sourceLabel = `<span class="source-file-label" style="font-size: 0.8em; color: #888; margin-left: auto;">${item.originFile}</span>`;
 
-             // Attempt to find parent in our map
-             // We need to derive the parent path string from the current path
-             const parts = item.primPath.split('/');
-             parts.pop();
-             const parentPath = parts.join('/');
-             const parentKey = `${item.originFile}::${parentPath}`;
-             
-             const parentLi = createdItemsMap.get(parentKey);
+            li.innerHTML = `<div class="outliner-row">${statusIndicator}${toggler}<span class="outliner-icon">${icon}</span><span class="outliner-text">${primData.name}</span>${sourceLabel}</div>`;
+            li.classList.add("outliner-item"); // Ensure consistent styling
 
-             if (parentLi) {
-                 // Append to parent
-                 let childUl = parentLi.querySelector("ul");
-                 if (!childUl) {
-                     childUl = document.createElement("ul");
-                     // childUl.style.display = "block"; // Ensure visible
-                     parentLi.appendChild(childUl);
-                 }
-                 childUl.appendChild(li);
-                 console.log(`[Modal] Nested ${primData.name} under ${parentLi.dataset.primPath}`);
-             } else {
-                 // Append to root
-                 stagePrimsList.appendChild(li);
-                 console.log(`[Modal] Appended root external item: ${primData.name}`);
-             }
+            // Key for map
+            const key = `${item.originFile}::${item.primPath}`;
+            createdItemsMap.set(key, li);
+
+            // Attempt to find parent in our map
+            // We need to derive the parent path string from the current path
+            const parts = item.primPath.split("/");
+            parts.pop();
+            const parentPath = parts.join("/");
+            const parentKey = `${item.originFile}::${parentPath}`;
+
+            const parentLi = createdItemsMap.get(parentKey);
+
+            if (parentLi) {
+              // Append to parent
+              let childUl = parentLi.querySelector("ul");
+              if (!childUl) {
+                childUl = document.createElement("ul");
+                // childUl.style.display = "block"; // Ensure visible
+                parentLi.appendChild(childUl);
+              }
+              childUl.appendChild(li);
+              console.log(
+                `[Modal] Nested ${primData.name} under ${parentLi.dataset.primPath}`
+              );
+            } else {
+              // Append to root
+              stagePrimsList.appendChild(li);
+              console.log(
+                `[Modal] Appended root external item: ${primData.name}`
+              );
+            }
           });
         }
-        console.log(`[Modal] Final Stage List Child Count: ${stagePrimsList.children.length}`);
+        console.log(
+          `[Modal] Final Stage List Child Count: ${stagePrimsList.children.length}`
+        );
       }
 
       console.log(
@@ -493,16 +512,16 @@ export function initModal(updateView) {
     }
 
     // Extract paths with source file information
-      const extractPaths = (nodes) => {
-        let paths = [];
-        nodes.forEach((n) => {
-          // Use the sourceFile from the node if available (for external items), otherwise currentModalFile
-          const source = n.sourceFile || currentModalFile;
-          paths.push({ path: n.path, sourceFile: source });
-          if (n.children) paths = [...paths, ...extractPaths(n.children)];
-        });
-        return paths;
-      };
+    const extractPaths = (nodes) => {
+      let paths = [];
+      nodes.forEach((n) => {
+        // Use the sourceFile from the node if available (for external items), otherwise currentModalFile
+        const source = n.sourceFile || currentModalFile;
+        paths.push({ path: n.path, sourceFile: source });
+        if (n.children) paths = [...paths, ...extractPaths(n.children)];
+      });
+      return paths;
+    };
 
     const itemsToStage = extractPaths(newlyStagedHierarchy);
     const currentMode = modal.dataset.mode || "normal";

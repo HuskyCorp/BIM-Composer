@@ -54,7 +54,8 @@ export class SelectionController {
         if (mesh.userData.primPath) {
           rawItems.push({
             primPath: mesh.userData.primPath,
-            originFile: mesh.userData.originFile || store.getState().currentFile,
+            originFile:
+              mesh.userData.originFile || store.getState().currentFile,
             name: mesh.name,
             type: "Mesh",
           });
@@ -83,26 +84,29 @@ export class SelectionController {
 
         // B) Path-based fallback (if metadata missing on parent object)
         if (!parentAdded && mesh.userData.primPath) {
-             const pathParts = mesh.userData.primPath.split('/');
-             // Expected format: /Parent/Child -> parts ["", "Parent", "Child"]
-             // We want "Parent" -> /Parent
-             
-             if (pathParts.length > 2) {
-                 pathParts.pop(); // Remove Child
-                 const parentPath = pathParts.join('/');
-                 const parentName = pathParts[pathParts.length - 1]; // Last part is name
-                 
-                 // Avoid adding root as parent if path is just /Name
-                 if (parentPath && parentPath !== "") {
-                     rawItems.push({
-                        primPath: parentPath,
-                        originFile: mesh.userData.originFile || store.getState().currentFile,
-                        name: parentName,
-                        type: "Group" // Fallback type
-                     });
-                     console.log(`[SELECTION] Derived parent from path: ${parentPath}`);
-                 }
-             }
+          const pathParts = mesh.userData.primPath.split("/");
+          // Expected format: /Parent/Child -> parts ["", "Parent", "Child"]
+          // We want "Parent" -> /Parent
+
+          if (pathParts.length > 2) {
+            pathParts.pop(); // Remove Child
+            const parentPath = pathParts.join("/");
+            const parentName = pathParts[pathParts.length - 1]; // Last part is name
+
+            // Avoid adding root as parent if path is just /Name
+            if (parentPath && parentPath !== "") {
+              rawItems.push({
+                primPath: parentPath,
+                originFile:
+                  mesh.userData.originFile || store.getState().currentFile,
+                name: parentName,
+                type: "Group", // Fallback type
+              });
+              console.log(
+                `[SELECTION] Derived parent from path: ${parentPath}`
+              );
+            }
+          }
         }
       });
 
@@ -115,8 +119,6 @@ export class SelectionController {
       });
 
       const selectedItems = Array.from(uniqueItemsMap.values());
-
-
 
       if (fileToOpen) {
         document.dispatchEvent(
