@@ -95,13 +95,17 @@ export class Store {
       if (
         source[key] &&
         typeof source[key] === "object" &&
-        !Array.isArray(source[key])
+        !Array.isArray(source[key]) &&
+        !(source[key] instanceof Map) &&
+        !(source[key] instanceof Set)
       ) {
         // Recursively merge nested objects
         if (
           result[key] &&
           typeof result[key] === "object" &&
-          !Array.isArray(result[key])
+          !Array.isArray(result[key]) &&
+          !(result[key] instanceof Map) &&
+          !(result[key] instanceof Set)
         ) {
           result[key] = this._deepMerge(result[key], source[key]);
         } else {

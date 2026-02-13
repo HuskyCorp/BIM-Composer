@@ -97,7 +97,11 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   historyThreeScene.animate();
 
-  const { updateView } = initViewControls(fileThreeScene, stageThreeScene);
+  const { updateView } = initViewControls(
+    fileThreeScene,
+    stageThreeScene,
+    historyThreeScene
+  );
 
   initUserController(updateView);
   initSidebar(fileThreeScene, stageThreeScene, updateView);

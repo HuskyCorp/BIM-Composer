@@ -53,6 +53,27 @@ export function renderStageView(threeScene, state) {
       const lookupPath = prim._sourcePath || prim.path;
       let geomData = geometryCache.get(lookupPath);
 
+      // Fallback: Check references
+      if (!geomData && prim.references && prim.references.includes("@")) {
+          // Parse reference: @file.usda@</PrimName>
+          const parts = prim.references.split("@<");
+          if (parts.length > 1) {
+              const primName = parts[1].replace(">", "").replace("/", ""); // Extract "PrimName"
+              geomData = geometryCache.get(`/${primName}`);
+              if (!geomData) {
+                  // Try with the slash?
+                  geomData = geometryCache.get(`/${parts[1].replace(">", "")}`);
+              }
+              if (!geomData) {
+                 console.warn(`[RENDER] Failed to resolve geometry for ${prim.path} via ref ${primName}. Ref: ${prim.references}`);
+                 // Debug: print cache keys
+                 // console.log("Cache keys:", Array.from(geometryCache.keys())); 
+              } else {
+                 console.log(`[RENDER] Resolved geometry for ${prim.path} from ref!`);
+              }
+          }
+      }
+
       // Handle Procedural Placeholders (Entity Mode)
       if (!geomData && prim.type === "Cube" && prim.customData?.isWireframe) {
         geomData = {

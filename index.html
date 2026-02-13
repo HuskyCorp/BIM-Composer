@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="css/modal.css" />
     <link rel="stylesheet" href="css/data-inspector.css" />
     <link rel="stylesheet" href="css/user-switch.css" />
+    <link rel="stylesheet" href="css/history-overlay.css" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   </head>
@@ -161,6 +162,18 @@
           <canvas id="stageCanvas" style="display: none"></canvas>
           <canvas id="historyCanvas" style="display: none"></canvas>
           <textarea id="usdaEditor"></textarea>
+          <div id="history-overlay" class="history-overlay">
+            <div class="history-header">
+               <span>Project Statement</span>
+               <button id="close-history-overlay" style="background:none;border:none;color:#aaa;cursor:pointer;">✕</button>
+            </div>
+            <ul id="history-list" class="history-list">
+              <!-- Items injected here -->
+            </ul>
+          </div>
+          <div id="history-info-box" class="history-info-box">
+             <!-- Details injected here -->
+          </div>
         </div>
         <div class="button-group">
           <div class="main-actions">

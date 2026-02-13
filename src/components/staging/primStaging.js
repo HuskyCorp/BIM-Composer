@@ -2,7 +2,7 @@
 import { store } from "../../core/index.js";
 import { actions } from "../../state/actions.js";
 import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
-import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
+import { composeLogPrim, composePrimsFromHierarchy } from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
 
 function logToStatement(details) {
@@ -50,6 +50,7 @@ function logToStatement(details) {
     sourceStatus: sourceStatus,
     targetStatus: sourceStatus, // For prim selection, target = source
     entityType: entityType, // NEW
+    serializedPrims: details.serializedPrims, // NEW: Include full prim definition
     parent: state.headCommitId, // Link to current HEAD
   };
 
@@ -114,19 +115,12 @@ export function stagePrims(primInput, options = {}) {
   ];
 
   // Log the action (using the first file as representative for the log entry header if multiple)
+  // Log action MOVED to end of function to include serialized prims
   const firstSource = primsToProcess[0].sourceFile;
   const sourceLayer = state.stage.layerStack.find(
     (layer) => layer.filePath === firstSource
   );
   const layerStatusAtEvent = sourceLayer ? sourceLayer.status : "WIP";
-
-  logToStatement({
-    primPath: primsToProcess[0].path, // Representative path
-    type: isEntity ? "Entity Placeholder" : "Prim Selection",
-    allStagedPaths: allStagedPathsComplete,
-    sourceStatus: layerStatusAtEvent,
-    entityType: isEntity ? "placeholder" : "Real Element", // NEW
-  });
 
   let allNewlyStagedPrims = [];
 
@@ -433,4 +427,18 @@ export function stagePrims(primInput, options = {}) {
 
   actions.setComposedPrims(mergedHierarchy);
   actions.setComposedHierarchy(mergedHierarchy); // Un-commented to ensure render tree update
+
+  // Generate serialized USDA for the log
+  // This ensures the history view can reconstruct the EXACT state of these prims (including Entity placeholders)
+  // without relying on the current live state.
+  const serializedPrims = composePrimsFromHierarchy(allNewlyStagedPrims, 2, layerStatusAtEvent);
+
+  logToStatement({
+    primPath: primsToProcess[0].path, // Representative path
+    type: isEntity ? "Entity Placeholder" : "Prim Selection",
+    allStagedPaths: allStagedPathsComplete,
+    sourceStatus: layerStatusAtEvent,
+    entityType: isEntity ? "placeholder" : "Real Element",
+    serializedPrims: serializedPrims,
+  });
 }

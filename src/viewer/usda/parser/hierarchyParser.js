@@ -110,8 +110,9 @@ export function parsePrimTree(usdaContent, pathPrefix = "") {
 
       // --- Payloads/References Parsing ---
       // 1. Check metadata for references
+      // FIX: Capture full reference including optional prim path suffix (e.g. @file.usda@</Prim>)
       const metadataRefMatch = metadata.match(
-        /(?:prepend\s+)?references\s*=\s*@([^@]+)@/
+        /(?:prepend\s+)?references\s*=\s*((?:@.*?@)(?:<.*?>)?)/
       );
       if (metadataRefMatch) {
         prim.references = metadataRefMatch[1];
@@ -119,7 +120,7 @@ export function parsePrimTree(usdaContent, pathPrefix = "") {
 
       // 2. Check inner content for payload/references (legacy/alternate)
       const payloadMatch = cleanContent.match(
-        /(?:prepend\s+)?(?:payload|references)\s*=\s*@([^@]+)@/
+        /(?:prepend\s+)?(?:payload|references)\s*=\s*((?:@.*?@)(?:<.*?>)?)/
       );
       if (payloadMatch) {
         // If not already found in metadata

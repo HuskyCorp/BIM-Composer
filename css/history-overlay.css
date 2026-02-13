@@ -1,0 +1,119 @@
+/* css/history-overlay.css */
+
+/* The main container for the history "Bank Statement" list */
+.history-overlay {
+    position: absolute;
+    top: 20px; /* Aligned with info box */
+    right: 20px;
+    width: 300px;
+    max-height: calc(100vh - 150px);
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid #444;
+    border-radius: 8px;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.history-header {
+    padding: 12px 16px;
+    background: #252525;
+    border-bottom: 1px solid #444;
+    font-weight: bold;
+    font-size: 14px;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.history-list {
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.history-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.history-item.active {
+    background: rgba(0, 122, 255, 0.2); /* Blue transparent */
+    border-left: 3px solid #007aff;
+}
+
+.history-item-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.history-item-title {
+    font-weight: 500;
+    color: #fff;
+    font-size: 13px;
+}
+
+.history-item-details {
+    font-size: 11px;
+    color: #888;
+}
+
+/* The prompt mentions "square box half blue transparent" */
+/* This could be the detailed info box overlay */
+.history-info-box {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 280px;
+    padding: 20px;
+    background: rgba(0, 60, 130, 0.6); /* Blueish transparent */
+    border: 1px solid rgba(100, 180, 255, 0.4);
+    border-radius: 12px;
+    color: #fff;
+    backdrop-filter: blur(8px);
+    display: none; /* Hidden by default */
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    pointer-events: none; /* Let clicks pass through if needed, but maybe we want to select text? */
+}
+
+.info-box-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 8px;
+}
+
+.info-box-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.info-box-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.info-box-value {
+    font-weight: 500;
+    color: #fff;
+}

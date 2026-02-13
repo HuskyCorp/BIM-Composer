@@ -11,6 +11,17 @@ export function initTimelineController(historyThreeScene) {
 
   // Clean out the old slider UI logic
   timelineControlsContainer.innerHTML = "";
+  
+  // NEW UI Elements
+  const historyOverlay = document.getElementById("history-overlay");
+  const historyList = document.getElementById("history-list");
+  const closeHistoryBtn = document.getElementById("close-history-overlay");
+  const historyInfoBox = document.getElementById("history-info-box");
+
+  closeHistoryBtn.addEventListener("click", () => {
+      store.dispatch(coreActions.toggleHistoryMode(false));
+      document.dispatchEvent(new CustomEvent("updateView"));
+  });
 
   // Create Graph UI Elements
   const graphContainer = document.createElement("div");
@@ -187,6 +198,72 @@ export function initTimelineController(historyThreeScene) {
     });
 
     console.log("[HISTORY] Graph rendered successfully");
+    renderStatementList(commits);
+  }
+
+  function renderStatementList(commits) {
+      historyList.innerHTML = "";
+      
+      commits.forEach(commit => {
+          const li = document.createElement("li");
+          li.className = "history-item";
+          li.dataset.id = commit.id;
+          
+          // Format date
+          const date = new Date(commit.timestamp);
+          const timeStr = date.toLocaleTimeString();
+          const dateStr = date.toLocaleDateString();
+
+          li.innerHTML = `
+            <div class="history-item-header">
+                <span>${dateStr} ${timeStr}</span>
+                <span>${commit.user || 'Unknown'}</span>
+            </div>
+            <div class="history-item-title">${commit.type}</div>
+            <div class="history-item-details">Ref: ${commit.id.substring(0, 8)}...</div>
+          `;
+          
+          li.addEventListener("click", () => {
+              // Highlight selection
+              document.querySelectorAll(".history-item").forEach(item => item.classList.remove("active"));
+              li.classList.add("active");
+              
+              // Update scene and info box
+              updateSceneFromHistory(commit.id);
+          });
+          
+          historyList.appendChild(li);
+      });
+  }
+
+  function updateInfoBox(commit) {
+      historyInfoBox.style.display = "block";
+      historyInfoBox.innerHTML = `
+        <div class="info-box-title">Statement Trace</div>
+        <div class="info-box-row">
+            <span class="info-box-label">Entry ID</span>
+            <span class="info-box-value">#${commit.entry}</span>
+        </div>
+        <div class="info-box-row">
+            <span class="info-box-label">Timestamp</span>
+            <span class="info-box-value">${new Date(commit.timestamp).toLocaleString()}</span>
+        </div>
+        <div class="info-box-row">
+            <span class="info-box-label">User</span>
+            <span class="info-box-value">${commit.user || 'System'}</span>
+        </div>
+        <div class="info-box-row">
+            <span class="info-box-label">Action</span>
+            <span class="info-box-value">${commit.type}</span>
+        </div>
+        <div class="info-box-row">
+            <span class="info-box-label">Staged Prims</span>
+            <span class="info-box-value">${commit.stagedPrims ? commit.stagedPrims.length : 0}</span>
+        </div>
+        <div style="margin-top: 10px; font-size: 11px; color: #aaa;">
+            Commit Hash: ${commit.id}
+        </div>
+      `;
   }
 
   function updateSceneFromHistory(commitId) {
@@ -211,6 +288,9 @@ export function initTimelineController(historyThreeScene) {
     );
 
     label.textContent = `Entry ${commit.entry} - ${commit.type} (${commit.stagedPrims?.length || 0} prims)`;
+    
+    // Update Info Box
+    updateInfoBox(commit);
 
     console.log("[HISTORY] Rendering stage view...");
     renderStageView(historyThreeScene, tempState);
@@ -247,43 +327,26 @@ export function initTimelineController(historyThreeScene) {
   function reconstructStateAt(targetCommitId) {
     console.log(`[HISTORY] Reconstructing state at commit: ${targetCommitId}`);
 
-    // Build path from target back to root
-    const commitPath = [];
+    // ISOLATION VIEW: Only show the objects attached to this specific entry.
+    // Instead of building the full state from root, we only process the target commit.
+    
     const history = store.getState().history;
-    let curr = history.commits.get(targetCommitId);
+    const curr = history.commits.get(targetCommitId);
 
     if (!curr) {
       console.error(`[HISTORY] Target commit not found: ${targetCommitId}`);
       return [];
     }
 
-    while (curr) {
-      commitPath.unshift(curr);
-      console.log(
-        `[HISTORY]   Added to path: ${curr.id} (Entry ${curr.entry})`
-      );
-
-      if (curr.parent) {
-        curr = history.commits.get(curr.parent);
-        if (!curr) {
-          console.warn(
-            `[HISTORY]   Parent commit not found, stopping traversal`
-          );
-          break;
-        }
-      } else {
-        console.log(`[HISTORY]   Reached root commit`);
-        curr = null;
-      }
-    }
-
-    console.log(`[HISTORY] Commit path length: ${commitPath.length}`);
+    const commitPath = [curr]; // Only the target commit
+    
+    console.log(`[HISTORY] Isolating commit: ${curr.id} (Entry ${curr.entry})`);
 
     const primsToReconstruct = new Map();
 
     commitPath.forEach((logEntry, index) => {
       console.log(
-        `[HISTORY] Processing commit ${index + 1}/${commitPath.length}: ${logEntry.id}`
+        `[HISTORY] Processing isolated commit: ${logEntry.id}`
       );
       
       // NEW LOGIC: Use serialized prims directly from the log
@@ -387,7 +450,12 @@ export function initTimelineController(historyThreeScene) {
       console.log("[HISTORY] Entering history mode");
       setupTimeline();
       historyToggleButton.classList.add("active");
-      timelineControlsContainer.style.visibility = "visible";
+      timelineControlsContainer.style.display = "flex";
+      // timelineControlsContainer.style.visibility = "visible";
+      
+      // Show/Reset Overlay
+      historyOverlay.style.display = "flex";
+      historyInfoBox.style.display = "none"; // Hide initially until selection
 
       if (state.history.commits.size > 0) {
         console.log("[HISTORY] Auto-selecting latest commit");
@@ -414,12 +482,17 @@ export function initTimelineController(historyThreeScene) {
     } else {
       console.log("[HISTORY] Exiting history mode");
       historyToggleButton.classList.remove("active");
-      timelineControlsContainer.style.visibility = "hidden";
+      timelineControlsContainer.style.display = "none";
+      // timelineControlsContainer.style.visibility = "hidden";
+      
+      // Hide Overlay
+      historyOverlay.style.display = "none";
+      historyInfoBox.style.display = "none";
       label.textContent = "Live";
     }
   });
 
   document.addEventListener("DOMContentLoaded", () => {
-    timelineControlsContainer.style.visibility = "hidden";
+    timelineControlsContainer.style.display = "none";
   });
 }

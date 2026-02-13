@@ -5,7 +5,11 @@ import { generateStageUsda } from "../viewer/usda/usdaComposer.js";
 import { renderFileView } from "../viewer/rendering/fileViewRenderer.js";
 import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
 
-export function initViewControls(fileThreeScene, stageThreeScene) {
+export function initViewControls(
+  fileThreeScene,
+  stageThreeScene,
+  historyThreeScene
+) {
   const view3dButton = document.getElementById("view3d");
   const viewCodeButton = document.getElementById("viewCode");
   const editor = document.getElementById("usdaEditor");
@@ -27,6 +31,7 @@ export function initViewControls(fileThreeScene, stageThreeScene) {
       stageCanvas.style.display = "none";
       editor.style.display = "none";
       historyCanvas.style.display = "block";
+      if (historyThreeScene) historyThreeScene.resize();
       console.log(
         "[VIEW] History canvas display:",
         historyCanvas.style.display
