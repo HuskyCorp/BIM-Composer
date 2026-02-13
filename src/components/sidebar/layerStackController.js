@@ -907,70 +907,51 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   }
 
   promoteLayerButton.addEventListener("click", () => {
-    // Collect all selected layers
-    const selectedLis = layerStackList.querySelectorAll("li.selected");
+    // 1. Check for Object Selection in 3D View
+    let objectsToPromote = [];
 
-    if (selectedLis.length === 0) {
-      alert("Please select one or more layers to promote.");
-      return;
-    }
-
-    // Check for single prim selection via SelectionController (if available via DOM or State)
-    // We don't have direct access to SelectionController instance here, but we can check state.currentPrimPath or similar if we tracked it.
-    // However, the cleanest way is to dispatch the event and let the controller handle it,
-    // OR access the selection from the DOM if available.
-
-    // Better approach: Check if we have an "active mesh" selected in the 3D view.
-    // Since we are in the controller, we might not have easy access to the 3D scene instance variable `stageThreeScene`
-    // unless we stored it in module scope during init.
-    // `initLayerStack` received `stageThreeScene`. Let's assume we can use a closure reference if we move this listener inside init,
-    // OR we can look at `state.currentPrimPath`?
-
-    // Let's rely on finding the "active" prim via the selection controller's side-effect:
-    // The selection controller dispatches "primSelected". We could listen to that and store it in state?
-    // OR better: use the `stageThreeScene` passed to `initLayerStack`!
-
-    // `promotelayerButton` is inside `initLayerStack`, so `stageThreeScene` is available in closure!
-
-    let objectToPromote = null;
     if (stageThreeScene && stageThreeScene.selectionController) {
-      const activeMesh = stageThreeScene.selectionController.activeMesh;
-      if (activeMesh && activeMesh.userData.primPath && activeMesh.visible) {
-        // Verify the object belongs to one of the selected layers?
-        // Or if an object is selected, does it override the layer selection?
-        // User said: "selecting an object... and pushing promote... the whole file is promoted, not only the object"
-        // This implies if an object IS selected, we promote IT.
-
-        // We need to find the layer this object belongs to.
-        const primPath = activeMesh.userData.primPath;
-        // Find prim in composed hierarchy to get _sourceFile
-        // Helper
-        const findPrim = (nodes) => {
-          for (const n of nodes) {
-            if (n.path === primPath) return n;
-            if (n.children) {
-              const found = findPrim(n.children);
-              if (found) return found;
-            }
+      const { selectedMeshes, activeMesh } = stageThreeScene.selectionController;
+      
+      const primPaths = new Set();
+      if (selectedMeshes && selectedMeshes.size > 0) {
+        selectedMeshes.forEach(m => {
+          if (m.userData.primPath && m.visible) {
+             primPaths.add(m.userData.primPath);
           }
-          return null;
-        };
-        const prim = findPrim(store.getState().stage.composedPrims || []);
+        });
+      } else if (activeMesh && activeMesh.userData.primPath && activeMesh.visible) {
+         primPaths.add(activeMesh.userData.primPath);
+      }
 
-        if (prim) {
-          objectToPromote = prim;
-        }
+      if (primPaths.size > 0) {
+          const findPrim = (nodes, path) => {
+            for (const n of nodes) {
+              if (n.path === path) return n;
+              if (n.children) {
+                const found = findPrim(n.children, path);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+          
+          const composedPrims = store.getState().stage.composedPrims || [];
+          primPaths.forEach(path => {
+              const prim = findPrim(composedPrims, path);
+              if (prim) {
+                  objectsToPromote.push(prim);
+              }
+          });
       }
     }
 
-    if (objectToPromote) {
-      // Dispatch event for SINGLE OBJECT promotion
+    if (objectsToPromote.length > 0) {
       document.dispatchEvent(
         new CustomEvent("openPromotionModal", {
           detail: {
             mode: "object",
-            prim: objectToPromote,
-            sourceFile: objectToPromote._sourceFile,
+            prims: objectsToPromote, // Plural
             direction: "promote",
           },
         })
@@ -978,7 +959,15 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
       return;
     }
 
-    // Default: Layer Promotion
+    // 2. Check for Layer Selection
+    const selectedLis = layerStackList.querySelectorAll("li.selected");
+    
+    if (selectedLis.length === 0) {
+      alert("Please select one or more layers or objects to promote.");
+      return;
+    }
+
+    // Layer Promotion Logic
     const selectedLayers = Array.from(selectedLis)
       .map((li) => {
         const layerId = li.dataset.layerId;
@@ -988,7 +977,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
     if (selectedLayers.length === 0) return;
 
-    // Permission Check: All selected layers must be owned by current user (or user is PM)
+    // Permission Check
     if (store.getState().currentUser !== "Project Manager") {
       const unauthorized = selectedLayers.filter(
         (l) => l.owner && l.owner !== store.getState().currentUser
@@ -1010,45 +999,51 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   });
 
   demoteLayerButton.addEventListener("click", () => {
-    // Collect all selected layers
-    const selectedLis = layerStackList.querySelectorAll("li.selected");
+    // 1. Check for Object Selection in 3D View
+    let objectsToDemote = [];
 
-    if (selectedLis.length === 0) {
-      alert("Please select one or more layers to demote.");
-      return;
-    }
-
-    let objectToDemote = null;
     if (stageThreeScene && stageThreeScene.selectionController) {
-      const activeMesh = stageThreeScene.selectionController.activeMesh;
-      if (activeMesh && activeMesh.userData.primPath && activeMesh.visible) {
-        const primPath = activeMesh.userData.primPath;
-        const findPrim = (nodes) => {
-          for (const n of nodes) {
-            if (n.path === primPath) return n;
-            if (n.children) {
-              const found = findPrim(n.children);
-              if (found) return found;
-            }
+      const { selectedMeshes, activeMesh } = stageThreeScene.selectionController;
+      
+      const primPaths = new Set();
+      if (selectedMeshes && selectedMeshes.size > 0) {
+        selectedMeshes.forEach(m => {
+          if (m.userData.primPath && m.visible) {
+             primPaths.add(m.userData.primPath);
           }
-          return null;
-        };
-        const prim = findPrim(store.getState().stage.composedPrims || []);
+        });
+      } else if (activeMesh && activeMesh.userData.primPath && activeMesh.visible) {
+         primPaths.add(activeMesh.userData.primPath);
+      }
 
-        if (prim) {
-          objectToDemote = prim;
-        }
+      if (primPaths.size > 0) {
+          const findPrim = (nodes, path) => {
+            for (const n of nodes) {
+              if (n.path === path) return n;
+              if (n.children) {
+                const found = findPrim(n.children, path);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+          
+          const composedPrims = store.getState().stage.composedPrims || [];
+          primPaths.forEach(path => {
+              const prim = findPrim(composedPrims, path);
+              if (prim) {
+                  objectsToDemote.push(prim);
+              }
+          });
       }
     }
 
-    if (objectToDemote) {
-      // Dispatch event for SINGLE OBJECT demotion
+    if (objectsToDemote.length > 0) {
       document.dispatchEvent(
         new CustomEvent("openPromotionModal", {
           detail: {
             mode: "object",
-            prim: objectToDemote,
-            sourceFile: objectToDemote._sourceFile,
+            prims: objectsToDemote, // Plural
             direction: "demote",
           },
         })
@@ -1056,7 +1051,15 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
       return;
     }
 
-    // Default: Layer Demotion
+    // 2. Check for Layer Selection
+    const selectedLis = layerStackList.querySelectorAll("li.selected");
+    
+    if (selectedLis.length === 0) {
+      alert("Please select one or more layers or objects to demote.");
+      return;
+    }
+
+    // Layer Demotion Logic
     const selectedLayers = Array.from(selectedLis)
       .map((li) => {
         const layerId = li.dataset.layerId;
@@ -1066,7 +1069,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
     if (selectedLayers.length === 0) return;
 
-    // Permission Check: All selected layers must be owned by current user (or user is PM)
+    // Permission Check
     if (store.getState().currentUser !== "Project Manager") {
       const unauthorized = selectedLayers.filter(
         (l) => l.owner && l.owner !== store.getState().currentUser

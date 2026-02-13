@@ -27,13 +27,13 @@ export function initPromotionController(updateView) {
   let currentTargetStatus = null;
   let currentSourceStatus = null;
   let promotionMode = "layer"; // "layer" or "object"
-  let objectToPromote = null;
+  let objectsToPromote = []; // Array of prims
 
   let promotionDirection = "promote"; // "promote" or "demote"
 
   document.addEventListener("openPromotionModal", (e) => {
     try {
-      const { initialSelection, mode, prim, direction = "promote" } = e.detail;
+      const { initialSelection, mode, prim, prims, direction = "promote" } = e.detail;
       promotionDirection = direction;
 
       const actionText = direction === "demote" ? "Demote" : "Promote";
@@ -45,7 +45,7 @@ export function initPromotionController(updateView) {
       if (modalTitle) {
         modalTitle.textContent =
           mode === "object"
-            ? `${actionText} Object`
+            ? `${actionText} Object(s)`
             : `Batch ${actionText} Layers`;
       }
 
@@ -56,26 +56,43 @@ export function initPromotionController(updateView) {
       promoteList.innerHTML = "";
       modal.style.display = "flex";
 
-      if (mode === "object" && prim) {
+      if (mode === "object" && (prim || (prims && prims.length > 0))) {
         promotionMode = "object";
-        objectToPromote = prim;
+        objectsToPromote = prims || [prim];
 
-        // Determine Status based on prim property or fallback to layer status
-        // We need to know what the CURRENT status is to determine the NEXT status.
-        // Assuming prim status property holds the truth for objects.
-        // If undefined, it inherits layer status.
+        // Determine Status based on first prim
+        const firstPrim = objectsToPromote[0];
 
-        // Lookup layer status for context
+        // Lookup layer status for context of first prim
         const state = store.getState();
         let layerStatus = "Published";
-        if (prim._sourceFile) {
+        if (firstPrim._sourceFile) {
           const layer = state.stage.layerStack.find(
-            (l) => l.filePath === prim._sourceFile
+            (l) => l.filePath === firstPrim._sourceFile
           );
           if (layer) layerStatus = layer.status;
         }
 
-        currentSourceStatus = prim.properties.status || layerStatus; // Default to layer status if not set
+        currentSourceStatus = firstPrim.properties.status || layerStatus;
+
+        // Validate all have same status?
+        const inconsistent = objectsToPromote.some(p => {
+             let pStatus = "Published"; // Default
+             if (p._sourceFile) {
+                const l = state.stage.layerStack.find(la => la.filePath === p._sourceFile);
+                if (l) pStatus = l.status;
+             }
+             const actualStatus = p.properties.status || pStatus;
+             return actualStatus !== currentSourceStatus;
+        });
+
+        if (inconsistent) {
+             throw new ValidationError(
+              `All selected objects must have the same status to batch ${actionText.toLowerCase()}.`,
+              "status",
+              "Mixed"
+            );
+        }
 
         if (promotionDirection === "promote") {
           if (currentSourceStatus === "WIP") currentTargetStatus = "Shared";
@@ -83,7 +100,7 @@ export function initPromotionController(updateView) {
             currentTargetStatus = "Published";
           else {
             throw new ValidationError(
-              `Object is already ${currentSourceStatus} and cannot be promoted further`,
+              `Objects are already ${currentSourceStatus} and cannot be promoted further`,
               "status",
               currentSourceStatus
             );
@@ -96,14 +113,15 @@ export function initPromotionController(updateView) {
             currentTargetStatus = "WIP";
           else {
             throw new ValidationError(
-              `Object is already ${currentSourceStatus} and cannot be demoted further`,
+              `Objects are already ${currentSourceStatus} and cannot be demoted further`,
               "status",
               currentSourceStatus
             );
           }
         }
 
-        targetStatusLabel.textContent = `${actionTextPresent} Object: ${prim.name} (${currentSourceStatus} ${actionArrow} ${currentTargetStatus})`;
+        const objCountText = objectsToPromote.length > 1 ? `${objectsToPromote.length} Objects` : `Object: ${firstPrim.name}`;
+        targetStatusLabel.textContent = `${actionTextPresent} ${objCountText} (${currentSourceStatus} ${actionArrow} ${currentTargetStatus})`;
 
         // Disable list interactions for object mode
         addBtn.disabled = true;
@@ -111,16 +129,18 @@ export function initPromotionController(updateView) {
         addAllBtn.disabled = true;
         removeAllBtn.disabled = true;
 
-        // Show the object in the "Promote" list
-        const li = document.createElement("li");
-        li.innerHTML = `<span class="outliner-icon">📦</span> ${prim.name} <span style="opacity:0.6">(${prim.path})</span>`;
-        promoteList.appendChild(li);
+        // Show the objects in the "Promote" list
+        objectsToPromote.forEach(p => {
+            const li = document.createElement("li");
+            li.innerHTML = `<span class="outliner-icon">📦</span> ${p.name} <span style="opacity:0.6">(${p.path})</span>`;
+            promoteList.appendChild(li);
+        });
 
         return;
       }
 
       promotionMode = "layer";
-      objectToPromote = null;
+      objectsToPromote = []; // Clear
 
       // Re-enable list interactions
       addBtn.disabled = false;
@@ -347,103 +367,57 @@ export function initPromotionController(updateView) {
         promotionDirection === "demote" ? "Demoting" : "Promoting";
       const actionArrow = promotionDirection === "demote" ? "→" : "→";
 
-      if (promotionMode === "object" && objectToPromote) {
-        if (!objectToPromote.name) {
-          throw new ValidationError(
-            "Object to promote is missing a name",
-            "object",
-            objectToPromote
-          );
-        }
-
+      if (promotionMode === "object" && objectsToPromote.length > 0) {
+        
         if (!currentTargetStatus) {
-          throw new ValidationError(
-            "Target status is not defined",
-            "targetStatus",
-            currentTargetStatus
-          );
+            throw new ValidationError(
+              "Target status is not defined",
+              "targetStatus",
+              currentTargetStatus
+            );
         }
 
         if (
           confirm(
-            `${actionText} object '${objectToPromote.name}' to ${currentTargetStatus}?`
+            `${actionText} ${objectsToPromote.length} object(s) to ${currentTargetStatus}?`
           )
         ) {
-          // Update Prim Property: "status"
-          // We need to update the Source File content essentially.
-          // Since we don't have a direct "updatePrimProperty" action that writes to file yet,
-          // we do it via existing mechanisms or assume we just update the runtime property and save later?
-          // The request says "promoting... the object". This implies persistence.
+           let successCount = 0;
+           objectsToPromote.forEach(obj => {
+              // ... per object logic ...
+              // Logic:
+              // 1. Validate info
+              // 2. Log
+              // 3. Update Status
+              
+              if (!obj.name || !obj._sourceFile || !obj.path) {
+                  console.warn("Skipping invalid object:", obj);
+                  return;
+              }
 
-          // Logic:
-          // 1. Update runtime prim property
-          // 2. Regenerate file content?
-          // OR: Use `actions.updateLoadedFile` if we have a way to modify the specific specific prim in the string.
+              // Log
+              try {
+                logPromotionToStatement({
+                  layerPath: obj._sourceFile,
+                  sourceStatus: currentSourceStatus,
+                  targetStatus: currentTargetStatus,
+                  objectPath: obj.path,
+                  type: promotionDirection === "demote" ? "Object Demotion" : "Object Promotion",
+                });
+              } catch (err) {
+                 console.warn("Log failed for", obj.name, err);
+              }
 
-          // Simplest robust way:
-          // 1. Get current file content
-          // 2. Parse, Find Prim, Update "custom string status = '...'"
-          // 3. Re-serialize / String replace?
-          // USDA Parser/Composer round trip is safest but heavy.
+              // Update Runtime
+              if (!obj.properties) obj.properties = {};
+              obj.properties.status = currentTargetStatus;
+              successCount++;
+           });
 
-          // Let's assume we update the property in memory and then auto-save/update current file.
-
-          const file = objectToPromote._sourceFile;
-          const path = objectToPromote.path;
-
-          if (!file) {
-            throw new ValidationError(
-              "Object is missing source file reference",
-              "_sourceFile",
-              objectToPromote
-            );
-          }
-
-          if (!path) {
-            throw new ValidationError(
-              "Object is missing path",
-              "path",
-              objectToPromote
-            );
-          }
-
-          // Log promotion to statement
-          try {
-            logPromotionToStatement({
-              layerPath: file,
-              sourceStatus: currentSourceStatus,
-              targetStatus: currentTargetStatus,
-              objectPath: path,
-              type:
-                promotionDirection === "demote"
-                  ? "Object Demotion"
-                  : "Object Promotion",
-            });
-          } catch (err) {
-            console.warn("Failed to log object promotion to statement:", err);
-            // Don't block promotion if logging fails
-          }
-
-          // Update Runtime Prims
-          if (!objectToPromote.properties) {
-            objectToPromote.properties = {};
-          }
-          objectToPromote.properties.status = currentTargetStatus;
-
-          // Force re-render
-          recomposeStage();
-          updateView();
-
-          console.log(
-            `✅ Successfully ${actionTextPresent.toLowerCase()} object '${
-              objectToPromote.name
-            }' (${currentSourceStatus} ${actionArrow} ${currentTargetStatus})`
-          );
-
-          // Note: File persistence for single objects requires USDA roundtrip
-          alert(
-            `${actionText} object '${objectToPromote.name}' to ${currentTargetStatus}. (Note: File persistence for single objects is WIP, but scene is updated).`
-          );
+           recomposeStage();
+           updateView();
+           
+           alert(`${actionText}d ${successCount} object(s) to ${currentTargetStatus}.`);
         }
         modal.style.display = "none";
         return;
@@ -504,7 +478,6 @@ export function initPromotionController(updateView) {
             syncPrimStatusFromLayer(updatedLayer);
             logPromotionToStatement({
               layerPath: layer.filePath,
-              sourceStatus: currentSourceStatus,
               sourceStatus: currentSourceStatus,
               targetStatus: currentTargetStatus,
               type: promotionDirection === "demote" ? "Demotion" : "Promotion",

@@ -29,7 +29,7 @@ vi.mock("../../../core/index.js", () => {
 });
 
 import { initPromotionController } from "../../../components/promotionController.js";
-import { store, ValidationError } from "../../../core/index.js";
+import { store, ValidationError, errorHandler } from "../../../core/index.js";
 import { actions } from "../../../state/actions.js";
 import {
   renderLayerStack,
@@ -1172,6 +1172,46 @@ describe("PromotionController", () => {
           targetStatus: "Shared",
         })
       );
+    });
+
+    it("should handle multi-object demotion", () => {
+       initPromotionController(mockUpdateView);
+       const prims = [
+          { name: "Obj1", path: "/Obj1", properties: { status: "Published" }, _sourceFile: "file1" },
+          { name: "Obj2", path: "/Obj2", properties: { status: "Published" }, _sourceFile: "file1" }
+       ];
+       document.dispatchEvent(
+          new CustomEvent("openPromotionModal", {
+             detail: {
+                mode: "object",
+                prims: prims,
+                direction: "demote"
+             }
+          })
+       );
+       expect(targetStatusLabel.textContent).toContain("2 Objects");
+       expect(targetStatusLabel.textContent).toContain("Published → Shared");
+       expect(promoteList.children.length).toBe(2);
+    });
+
+    it("should validate mixed status in multi-object demotion", () => {
+       initPromotionController(mockUpdateView);
+       const prims = [
+          { name: "Obj1", properties: { status: "Published" }, _sourceFile: "file1" },
+          { name: "Obj2", properties: { status: "WIP" }, _sourceFile: "file1" }
+       ];
+
+       document.dispatchEvent(
+          new CustomEvent("openPromotionModal", {
+             detail: {
+                mode: "object",
+                prims: prims,
+                direction: "demote"
+             }
+          })
+       );
+       
+       expect(errorHandler.handleError).toHaveBeenCalledWith(expect.any(ValidationError));
     });
   });
 });
