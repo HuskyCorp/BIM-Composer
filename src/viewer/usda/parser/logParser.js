@@ -95,6 +95,16 @@ export function parseStatementLog(statementContent) {
     const typeMatch = logBody.match(/custom string type = "([^"]+)"/);
     if (typeMatch) commit.type = typeMatch[1];
 
+    const timestampMatch = logBody.match(/custom string timestamp = "([^"]+)"/);
+    if (timestampMatch) {
+        commit.timestamp = timestampMatch[1];
+    } else {
+        commit.timestamp = new Date().toISOString();
+    }
+
+    const userMatch = logBody.match(/custom string user = "([^"]+)"/);
+    if (userMatch) commit.user = userMatch[1];
+
     // For nested prims, we need to extract the parts of logBody that look like prim definitions
     // i.e. def "Type" "Name" { or def Type "Name" {
     // We can use parsePrimTree on the logBody!
