@@ -136,10 +136,32 @@ function findPrimInHierarchy(hierarchy, path) {
  * @returns {Object} - { allowed: boolean, reason: string }
  */
 export function checkPermission(prim) {
-  // Project Manager can edit anything
   const state = store.getState();
+
+  // History Mode is Read-Only
+  if (state.isHistoryMode) {
+    return {
+      allowed: false,
+      reason: "History mode is read-only"
+    };
+  }
+
+  // Project Manager can edit anything
   if (state.currentUser === "Project Manager") {
     return { allowed: true, reason: "Project Manager has full permissions" };
+  }
+
+  // Field Engineer can edit anything
+  if (state.currentUser === "Field Engineer") {
+    return { allowed: true, reason: "Field Engineer has full permissions" };
+  }
+
+  // Field Person cannot edit
+  if (state.currentUser === "Field Person") {
+    return {
+      allowed: false,
+      reason: "Field Person role has read-only access"
+    };
   }
 
   // Check if prim has a source file

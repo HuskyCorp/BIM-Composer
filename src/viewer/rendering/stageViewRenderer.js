@@ -53,6 +53,14 @@ export function renderStageView(threeScene, state) {
       const lookupPath = prim._sourcePath || prim.path;
       let geomData = geometryCache.get(lookupPath);
 
+      // Debug logging for geometry lookup
+      if (!geomData) {
+        console.log(`[RENDER] Geometry lookup failed for prim: ${prim.path}`);
+        console.log(`[RENDER] Lookup path used: ${lookupPath}`);
+        console.log(`[RENDER] _sourcePath: ${prim._sourcePath}, path: ${prim.path}`);
+        console.log(`[RENDER] Available cache keys:`, Array.from(geometryCache.keys()));
+      }
+
       // Fallback: Check references
       if (!geomData && prim.references && prim.references.includes("@")) {
         // Parse reference: @file.usda@</PrimName>

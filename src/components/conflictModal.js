@@ -1,5 +1,6 @@
 // src/components/conflictModal.js
 import { store } from "../core/index.js";
+import { checkPermission } from "../utils/conflictDetector.js";
 
 let resolveCallback = null;
 
@@ -104,18 +105,28 @@ export function showConflictModal(conflictData, onResolve) {
   const currentUser = store.getState().currentUser;
   newOwnerEl.textContent = currentUser;
 
+  // Check if user has permission to make changes
+  const prim = conflictData.prim;
+  const permission = checkPermission(prim);
+
   // Show warning if user is trying to override another user's property
   if (conflict && conflict.owner !== currentUser) {
-    if (currentUser === "Project Manager") {
-      warningTextEl.textContent =
-        "You are about to override a property owned by another user. This action will be logged.";
-      warningEl.style.display = "block";
-    } else {
+    if (!permission.allowed) {
+      // User does not have permission
       warningTextEl.textContent =
         "You do not have permission to modify this property. Only the owner or Project Manager can make changes.";
       warningEl.style.display = "block";
       // Disable the "use new" option
       document.getElementById("conflict-use-new").disabled = true;
+    } else if (currentUser === "Project Manager" || currentUser === "Field Engineer") {
+      // User has elevated permissions, show warning
+      warningTextEl.textContent =
+        "You are about to override a property owned by another user. This action will be logged.";
+      warningEl.style.display = "block";
+    } else {
+      // User owns the layer, no warning needed
+      warningEl.style.display = "none";
+      document.getElementById("conflict-use-new").disabled = false;
     }
   } else {
     warningEl.style.display = "none";
@@ -123,11 +134,12 @@ export function showConflictModal(conflictData, onResolve) {
   }
 
   // Reset radio selection
-  // For Project Manager overriding another user's property, default to "use-new"
+  // For users with permission overriding another user's property, default to "use-new"
   if (
     conflict &&
     conflict.owner !== currentUser &&
-    currentUser === "Project Manager"
+    permission.allowed &&
+    (currentUser === "Project Manager" || currentUser === "Field Engineer")
   ) {
     document.getElementById("conflict-use-new").checked = true;
   } else {

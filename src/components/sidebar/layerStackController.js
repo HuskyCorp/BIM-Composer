@@ -334,6 +334,7 @@ export function recomposeStage() {
               resolvedPrim._sourceFile = fileName;
               resolvedPrim._sourcePath = targetPrim.path;
               resolvedPrim._sourceLayerStatus = layerStatus;
+              console.log(`[RECOMPOSE] Set _sourcePath for ${resolvedPrim.path} to ${targetPrim.path} from file ${fileName}`);
 
               // Recursively stamp source path on children
               const stampChildren = (children, source, status) => {
