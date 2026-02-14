@@ -52,8 +52,7 @@ function logToStatement(details) {
     stagedPrims: allStagedPaths,
     sourceStatus: sourceStatus,
     targetStatus: sourceStatus, // For prim selection, target = source
-    entityType: entityType, // NEW
-    serializedPrims: details.serializedPrims, // NEW: Include full prim definition
+    entityType: entityType,
     parent: state.headCommitId, // Link to current HEAD
   };
 
@@ -431,21 +430,11 @@ export function stagePrims(primInput, options = {}) {
   actions.setComposedPrims(mergedHierarchy);
   actions.setComposedHierarchy(mergedHierarchy); // Un-commented to ensure render tree update
 
-  // Generate serialized USDA for the log
-  // This ensures the history view can reconstruct the EXACT state of these prims (including Entity placeholders)
-  // without relying on the current live state.
-  const serializedPrims = composePrimsFromHierarchy(
-    allNewlyStagedPrims,
-    2,
-    layerStatusAtEvent
-  );
-
   logToStatement({
     primPath: primsToProcess[0].path, // Representative path
     type: isEntity ? "Entity Placeholder" : "Prim Selection",
     allStagedPaths: allStagedPathsComplete,
     sourceStatus: layerStatusAtEvent,
     entityType: isEntity ? "placeholder" : "Real Element",
-    serializedPrims: serializedPrims,
   });
 }

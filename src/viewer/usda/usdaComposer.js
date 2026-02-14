@@ -234,8 +234,8 @@ export function composeLogPrim(logEntry) {
         custom string type = "${logEntry.Type}"
         custom string user = "${logEntry.User}"
         custom string status = "${logEntry.Status}"${extraFields}${stagedPrimsField}${entityTypeField}
-        
-${logEntry.serializedPrims || ""}
+
+
     }
 `;
 }
