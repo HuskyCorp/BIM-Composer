@@ -4,6 +4,7 @@ import { actions } from "../state/actions.js";
 import { generateStageUsda } from "../viewer/usda/usdaComposer.js";
 import { renderFileView } from "../viewer/rendering/fileViewRenderer.js";
 import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
+import { validateUsdaSyntax } from "../utils/atomicFileHandler.js";
 
 export function initViewControls(
   fileThreeScene,
@@ -236,6 +237,26 @@ export function initViewControls(
     // 2. Generate the Root Stage Content with filtered prims
     const rootFileName = `${state.sceneName.replace(/\s+/g, "_")}.usda`;
     const stageContent = generateStageUsda(state.sceneName, filteredPrims);
+
+    // 2.5. Validate USD syntax before adding to zip
+    const validation = validateUsdaSyntax(stageContent);
+    if (!validation.valid) {
+      console.error("[SAVE] USD Validation Errors:", validation.errors);
+      const errorMsg = `USD Validation Failed:\n\n${validation.errors.join("\n")}\n\nThe file may not be compatible with usdchecker or other USD tools. Do you want to continue anyway?`;
+      if (!confirm(errorMsg)) {
+        return; // Cancel save
+      }
+    } else if (validation.warnings.length > 0) {
+      console.warn("[SAVE] USD Validation Warnings:", validation.warnings);
+      // Show warnings but allow save
+      const warningMsg = `USD Validation Warnings:\n\n${validation.warnings.join("\n")}\n\nThe file should work but may have minor issues. Continue with save?`;
+      if (!confirm(warningMsg)) {
+        return; // Cancel save
+      }
+    } else {
+      console.log("[SAVE] ✓ USD validation passed");
+    }
+
     zip.file(rootFileName, stageContent);
 
     // 3. Identify Dependencies via Reference Tracing
@@ -255,10 +276,39 @@ export function initViewControls(
       }
     }
 
-    // 4. Add Discovered Files to Zip
+    // 4. Add Discovered Files to Zip with validation
+    let totalWarnings = 0;
+    let totalErrors = 0;
+
     allowedFiles.forEach((fileName) => {
-      zip.file(fileName, state.loadedFiles[fileName]);
+      const fileContent = state.loadedFiles[fileName];
+      const fileValidation = validateUsdaSyntax(fileContent);
+
+      if (!fileValidation.valid) {
+        console.error(
+          `[SAVE] Validation errors in ${fileName}:`,
+          fileValidation.errors
+        );
+        totalErrors += fileValidation.errors.length;
+      }
+
+      if (fileValidation.warnings.length > 0) {
+        console.warn(
+          `[SAVE] Validation warnings in ${fileName}:`,
+          fileValidation.warnings
+        );
+        totalWarnings += fileValidation.warnings.length;
+      }
+
+      zip.file(fileName, fileContent);
     });
+
+    // Report validation summary
+    if (totalErrors > 0 || totalWarnings > 0) {
+      console.log(
+        `[SAVE] Validation Summary: ${totalErrors} errors, ${totalWarnings} warnings across ${allowedFiles.size} referenced files`
+      );
+    }
 
     // 5. Generate and Download USDZ
     const blob = await zip.generateAsync({ type: "blob" });

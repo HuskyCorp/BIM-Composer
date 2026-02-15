@@ -20,27 +20,28 @@ import { ifcParser, WebIFC } from "./ifcParser.js";
 // CATEGORY DEFINITIONS - Master Class List
 // ============================================================================
 
-const CATEGORY_1_PHYSICAL_SPATIAL = {
-  // Structural
-  IFCWALL: WebIFC.IFCWALL,
-  IFCSLAB: WebIFC.IFCSLAB,
-  IFCBEAM: WebIFC.IFCBEAM,
-  IFCWINDOW: WebIFC.IFCWINDOW,
-  IFCOPENINGELEMENT: WebIFC.IFCOPENINGELEMENT,
-  IFCCOVERING: WebIFC.IFCCOVERING,
-  IFCBUILDINGELEMENTPROXY: WebIFC.IFCBUILDINGELEMENTPROXY,
-  // MEP & Furnishing
-  IFCFURNITURE: WebIFC.IFCFURNITURE,
-  IFCSANITARYTERMINAL: WebIFC.IFCSANITARYTERMINAL,
-  IFCTANK: WebIFC.IFCTANK,
-  IFCAIRTERMINAL: WebIFC.IFCAIRTERMINAL,
-  // Spatial Hierarchy
-  IFCPROJECT: WebIFC.IFCPROJECT,
-  IFCSITE: WebIFC.IFCSITE,
-  IFCBUILDING: WebIFC.IFCBUILDING,
-  IFCBUILDINGSTOREY: WebIFC.IFCBUILDINGSTOREY,
-  IFCSPACE: WebIFC.IFCSPACE,
-};
+// Commented out - reserved for future use
+// const CATEGORY_1_PHYSICAL_SPATIAL = {
+//   // Structural
+//   IFCWALL: WebIFC.IFCWALL,
+//   IFCSLAB: WebIFC.IFCSLAB,
+//   IFCBEAM: WebIFC.IFCBEAM,
+//   IFCWINDOW: WebIFC.IFCWINDOW,
+//   IFCOPENINGELEMENT: WebIFC.IFCOPENINGELEMENT,
+//   IFCCOVERING: WebIFC.IFCCOVERING,
+//   IFCBUILDINGELEMENTPROXY: WebIFC.IFCBUILDINGELEMENTPROXY,
+//   // MEP & Furnishing
+//   IFCFURNITURE: WebIFC.IFCFURNITURE,
+//   IFCSANITARYTERMINAL: WebIFC.IFCSANITARYTERMINAL,
+//   IFCTANK: WebIFC.IFCTANK,
+//   IFCAIRTERMINAL: WebIFC.IFCAIRTERMINAL,
+//   // Spatial Hierarchy
+//   IFCPROJECT: WebIFC.IFCPROJECT,
+//   IFCSITE: WebIFC.IFCSITE,
+//   IFCBUILDING: WebIFC.IFCBUILDING,
+//   IFCBUILDINGSTOREY: WebIFC.IFCBUILDINGSTOREY,
+//   IFCSPACE: WebIFC.IFCSPACE,
+// };
 
 const CATEGORY_2_TYPE_DEFINITIONS = {
   IFCWALLTYPE: WebIFC.IFCWALLTYPE,
@@ -52,19 +53,20 @@ const CATEGORY_2_TYPE_DEFINITIONS = {
   IFCFURNITURETYPETYPE: WebIFC.IFCFURNITURETYPETYPE,
 };
 
-const CATEGORY_3_PROPERTIES_QUANTITIES = {
-  IFCPROPERTYSET: WebIFC.IFCPROPERTYSET,
-  IFCPROPERTYSINGLEVALUE: WebIFC.IFCPROPERTYSINGLEVALUE,
-  IFCPROPERTYENUMERATEDVALUE: WebIFC.IFCPROPERTYENUMERATEDVALUE,
-  IFCCOMPLEXPROPERTY: WebIFC.IFCCOMPLEXPROPERTY,
-  IFCELEMENTQUANTITY: WebIFC.IFCELEMENTQUANTITY,
-  IFCQUANTITYLENGTH: WebIFC.IFCQUANTITYLENGTH,
-  IFCQUANTITYAREA: WebIFC.IFCQUANTITYAREA,
-  IFCQUANTITYVOLUME: WebIFC.IFCQUANTITYVOLUME,
-  IFCPHYSICALCOMPLEXQUANTITY: WebIFC.IFCPHYSICALCOMPLEXQUANTITY,
-  IFCRELDEFINESBYPROPERTIES: WebIFC.IFCRELDEFINESBYPROPERTIES,
-  IFCRELDEFINESBYTYPE: WebIFC.IFCRELDEFINESBYTYPE,
-};
+// Commented out - reserved for future use
+// const CATEGORY_3_PROPERTIES_QUANTITIES = {
+//   IFCPROPERTYSET: WebIFC.IFCPROPERTYSET,
+//   IFCPROPERTYSINGLEVALUE: WebIFC.IFCPROPERTYSINGLEVALUE,
+//   IFCPROPERTYENUMERATEDVALUE: WebIFC.IFCPROPERTYENUMERATEDVALUE,
+//   IFCCOMPLEXPROPERTY: WebIFC.IFCCOMPLEXPROPERTY,
+//   IFCELEMENTQUANTITY: WebIFC.IFCELEMENTQUANTITY,
+//   IFCQUANTITYLENGTH: WebIFC.IFCQUANTITYLENGTH,
+//   IFCQUANTITYAREA: WebIFC.IFCQUANTITYAREA,
+//   IFCQUANTITYVOLUME: WebIFC.IFCQUANTITYVOLUME,
+//   IFCPHYSICALCOMPLEXQUANTITY: WebIFC.IFCPHYSICALCOMPLEXQUANTITY,
+//   IFCRELDEFINESBYPROPERTIES: WebIFC.IFCRELDEFINESBYPROPERTIES,
+//   IFCRELDEFINESBYTYPE: WebIFC.IFCRELDEFINESBYTYPE,
+// };
 
 const CATEGORY_4_MATERIALS_STYLING = {
   IFCMATERIAL: WebIFC.IFCMATERIAL,
@@ -138,39 +140,61 @@ export class IFCToUSDConverter {
   /**
    * Main conversion function
    * @param {File|ArrayBuffer} ifcFile - IFC file to convert
+   * @param {Function} progressCallback - Optional callback for progress updates (percentage, message)
    * @returns {string} - USD ASCII content
    */
-  async convert(ifcFile) {
+  async convert(ifcFile, progressCallback = null) {
     console.log("[IFCToUSDConverter] Starting conversion...");
 
+    const reportProgress = (percentage, message) => {
+      if (progressCallback) {
+        progressCallback(percentage, message);
+      }
+    };
+
     // Initialize parser and load IFC
+    reportProgress(15, "Initializing IFC parser...");
     await ifcParser.init();
     this.modelID = await ifcParser.loadIFC(ifcFile);
 
     // Phase 1: Gather all entity data
+    reportProgress(25, "Gathering entity data...");
     console.log("[IFCToUSDConverter] Phase 1: Gathering entity data...");
     await this.gatherAllEntities();
 
     // Phase 2: Process by category
+    reportProgress(35, "Processing global context...");
     console.log("[IFCToUSDConverter] Phase 2: Processing categories...");
     await this.processCategory6_GlobalContext();
+
+    reportProgress(45, "Processing type definitions...");
     await this.processCategory2_TypeDefinitions();
+
+    reportProgress(55, "Processing materials...");
     await this.processCategory4_Materials();
+
+    reportProgress(65, "Processing geometry...");
     await this.processCategory5_Geometry();
+
+    reportProgress(70, "Processing relationships...");
     await this.processCategoryRelationships();
 
     // Phase 3: Build spatial hierarchy (Category 1)
+    reportProgress(75, "Building spatial hierarchy...");
     console.log("[IFCToUSDConverter] Phase 3: Building spatial hierarchy...");
     const hierarchyUSD = await this.processCategory1_PhysicalSpatial();
 
     // Phase 4: Generate USD file
+    reportProgress(85, "Generating USD file...");
     console.log("[IFCToUSDConverter] Phase 4: Generating USD...");
     this.usdContent = this.generateUSDFile(hierarchyUSD);
 
     // Cleanup
+    reportProgress(95, "Finalizing...");
     ifcParser.closeModel(this.modelID);
 
     console.log("[IFCToUSDConverter] Conversion complete!");
+    reportProgress(100, "Conversion complete!");
     return this.usdContent;
   }
 
@@ -456,7 +480,7 @@ export class IFCToUSDConverter {
   /**
    * Get quantities for an entity
    */
-  async getQuantitiesForEntity(entityID) {
+  async getQuantitiesForEntity(_entityID) {
     const quantities = {};
 
     // This would be implemented similar to properties
@@ -477,7 +501,7 @@ export class IFCToUSDConverter {
           `Material_${materials[0].expressID}`;
         return this.sanitizeName(materialName);
       }
-    } catch (e) {
+    } catch (_e) {
       // No material
     }
     return null;
@@ -490,7 +514,7 @@ export class IFCToUSDConverter {
     try {
       const geometry = ifcParser.getGeometry(this.modelID, entityID);
       return geometry && geometry.GetVertexDataSize() > 0;
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   }

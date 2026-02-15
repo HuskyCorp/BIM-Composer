@@ -20,6 +20,7 @@ import { initDataInspector } from "./components/dataInspector.js";
 import { initPromotionController } from "./components/promotionController.js";
 import { initUserController } from "./components/userController.js";
 import { initConflictModal } from "./components/conflictModal.js";
+import { loadingIndicator } from "./components/loadingIndicator.js";
 
 function initSidebarResizing() {
   const sidebar = document.querySelector(".sidebar");
@@ -68,6 +69,10 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("✅ Core modules initialized");
   console.log("📦 State management with middleware active");
   console.log("🛡️ Global error handler active");
+
+  // ==================== Initialize Loading Indicator ====================
+  loadingIndicator.init();
+  console.log("⏳ Loading indicator initialized");
 
   // ==================== Initialize Three.js Scenes ====================
   const fileSceneContainer = document.getElementById("webglCanvas");

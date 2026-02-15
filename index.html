@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/timeline.css" />
     <link rel="stylesheet" href="css/modal.css" />
     <link rel="stylesheet" href="css/save-modal.css" />
+    <link rel="stylesheet" href="css/loading-modal.css" />
     <link rel="stylesheet" href="css/data-inspector.css" />
     <link rel="stylesheet" href="css/user-switch.css" />
     <link rel="stylesheet" href="css/history-overlay.css" />
@@ -375,6 +376,25 @@
         <div class="modal-footer">
           <button id="conflict-cancel-button">Cancel</button>
           <button id="conflict-apply-button" class="primary">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal-overlay loading-modal" style="display: none">
+      <div class="loading-modal-content">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+        </div>
+        <div class="loading-text">
+          <h3 id="loading-title">Loading...</h3>
+          <p id="loading-message">Please wait while we process your file</p>
+          <div class="loading-progress">
+            <div class="progress-bar">
+              <div id="progress-bar-fill" class="progress-bar-fill"></div>
+            </div>
+            <span id="progress-percentage">0%</span>
+          </div>
         </div>
       </div>
     </div>

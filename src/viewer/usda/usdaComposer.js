@@ -96,16 +96,25 @@ export function composePrimsFromHierarchy(prims, indent, layerStatus) {
         if (typeof propValue === "object" && propValue.r !== undefined) {
           // Color values
           usdPropertyLine = `color3f[] ${propName} = [(${propValue.r}, ${propValue.g}, ${propValue.b})]`;
-        } else if (typeof propValue === "number") {
-          // Numeric values
-          usdPropertyLine = `custom float ${propName} = ${propValue}`;
-        } else if (typeof propValue === "boolean") {
-          // Boolean values
-          usdPropertyLine = `custom bool ${propName} = ${propValue}`;
         } else {
-          // String values (default)
-          // For Pset properties, the name already includes the namespace (PsetName:PropertyName)
-          usdPropertyLine = `custom string ${propName} = "${propValue}"`;
+          // Ensure namespace for ALL custom properties to comply with USD spec
+          // Properties already with namespace (e.g., "Pset_Wall:FireRating") are kept as-is
+          // Properties without namespace get the "ifc:" prefix
+          const namespacedProp = propName.includes(":")
+            ? propName
+            : `ifc:${propName}`;
+
+          if (typeof propValue === "number") {
+            // Numeric values
+            usdPropertyLine = `custom float ${namespacedProp} = ${propValue}`;
+          } else if (typeof propValue === "boolean") {
+            // Boolean values
+            usdPropertyLine = `custom bool ${namespacedProp} = ${propValue}`;
+          } else {
+            // String values (default)
+            // For Pset properties, the name already includes the namespace (PsetName:PropertyName)
+            usdPropertyLine = `custom string ${namespacedProp} = "${propValue}"`;
+          }
         }
 
         propertiesString += `\n${indentStr}    ${usdPropertyLine}`;

@@ -12,6 +12,7 @@ import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
 import { explodeUsda } from "../../utils/atomicFileHandler.js";
 import { ifcToUsdConverter } from "../../viewer/ifc/ifcToUsdConverter.js";
+import { loadingIndicator } from "../loadingIndicator.js";
 
 const STATUS_ORDER = ["WIP", "Shared", "Published", "Archived"];
 
@@ -468,9 +469,21 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
     if (isIFC) {
       console.log(`🔄 Converting IFC file: ${file.name}`);
 
+      // Show loading indicator
+      loadingIndicator.show({
+        title: "Converting IFC File",
+        message: `Processing ${file.name}...`,
+        indeterminate: true,
+      });
+
       try {
-        // Convert IFC to USD
-        const usdContent = await ifcToUsdConverter.convert(file);
+        // Convert IFC to USD with progress reporting
+        const usdContent = await ifcToUsdConverter.convert(
+          file,
+          (percentage, message) => {
+            loadingIndicator.updateProgress(percentage, message);
+          }
+        );
 
         // Create USD filename
         const usdFileName = file.name.replace(/\.ifc$/i, ".usda");
@@ -489,6 +502,11 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         };
         store.dispatch(coreActions.addLayer(newLayer));
 
+        loadingIndicator.updateProgress(100, "Conversion complete!");
+
+        // Small delay to show completion before hiding
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         renderLayerStack();
         console.log(
           `✅ Successfully converted and loaded IFC file: ${file.name} → ${usdFileName}`
@@ -500,6 +518,8 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
           file.name,
           error
         );
+      } finally {
+        loadingIndicator.hide();
       }
 
       fileInput.value = ""; // Reset to allow re-importing
@@ -517,35 +537,69 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
       );
     };
 
-    reader.onload = errorHandler.wrap((e) => {
+    reader.onload = errorHandler.wrap(async (e) => {
       const fileContent = e.target.result;
 
       if (!fileContent || typeof fileContent !== "string") {
         throw new FileError("File content is empty or invalid", file.name);
       }
 
-      // TODO: Use layerService.createLayer() here in future refactor
-      const atomicFiles = explodeUsda(fileContent, file.name);
+      // Show loading indicator for USD processing
+      const fileCount = (fileContent.match(/def\s+\w+\s+"/g) || []).length;
+      const isLargeFile = fileContent.length > 500000 || fileCount > 50;
 
-      Object.entries(atomicFiles).forEach(([fileName, content]) => {
-        store.dispatch(coreActions.loadFile(fileName, content));
+      if (isLargeFile) {
+        loadingIndicator.show({
+          title: "Loading USD File",
+          message: `Processing ${file.name}...`,
+          indeterminate: false,
+        });
+      }
 
-        // Create layer with current user as owner
-        const newLayer = {
-          id: `layer-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          filePath: fileName,
-          status: "WIP",
-          visible: true,
-          owner: store.getState().currentUser,
-          groupName: Object.keys(atomicFiles).length > 1 ? file.name : null,
-        };
-        store.dispatch(coreActions.addLayer(newLayer));
-      });
+      try {
+        if (isLargeFile) {
+          loadingIndicator.updateProgress(30, "Parsing USD structure...");
+        }
 
-      renderLayerStack();
-      console.log(
-        `✅ Successfully loaded ${Object.keys(atomicFiles).length} file(s) from ${file.name}`
-      );
+        // TODO: Use layerService.createLayer() here in future refactor
+        const atomicFiles = explodeUsda(fileContent, file.name);
+
+        if (isLargeFile) {
+          loadingIndicator.updateProgress(
+            60,
+            `Processing ${Object.keys(atomicFiles).length} layer(s)...`
+          );
+        }
+
+        Object.entries(atomicFiles).forEach(([fileName, content]) => {
+          store.dispatch(coreActions.loadFile(fileName, content));
+
+          // Create layer with current user as owner
+          const newLayer = {
+            id: `layer-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            filePath: fileName,
+            status: "WIP",
+            visible: true,
+            owner: store.getState().currentUser,
+            groupName: Object.keys(atomicFiles).length > 1 ? file.name : null,
+          };
+          store.dispatch(coreActions.addLayer(newLayer));
+        });
+
+        if (isLargeFile) {
+          loadingIndicator.updateProgress(100, "Import complete!");
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        renderLayerStack();
+        console.log(
+          `✅ Successfully loaded ${Object.keys(atomicFiles).length} file(s) from ${file.name}`
+        );
+      } finally {
+        if (isLargeFile) {
+          loadingIndicator.hide();
+        }
+      }
     });
 
     reader.readAsText(file);
