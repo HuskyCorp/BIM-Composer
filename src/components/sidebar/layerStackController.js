@@ -85,7 +85,9 @@ export function renderLayerStack() {
   Object.keys(groups).forEach((groupName) => {
     // Create a single item for the entire group using the first layer as representative
     const firstLayer = groups[groupName][0];
-    const groupItem = createLayerItem(firstLayer, groupName);
+    const layerCount = groups[groupName].length;
+    const displayName = `${groupName} (${layerCount})`;
+    const groupItem = createLayerItem(firstLayer, displayName);
 
     // Mark this as a group item and store all layer IDs for batch operations
     groupItem.dataset.isGroup = "true";
@@ -763,11 +765,25 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
       );
     }
 
-    const filePaths = Array.from(selectedLayerItems).map(
-      (li) => li.dataset.filePath
-    );
-
     const state = store.getState();
+
+    // Collect file paths, expanding groups if selected
+    const filePaths = [];
+    Array.from(selectedLayerItems).forEach((li) => {
+      if (li.dataset.isGroup === "true") {
+        // This is a group - get all layer IDs and their file paths
+        const layerIds = li.dataset.layerIds.split(",");
+        layerIds.forEach((layerId) => {
+          const layer = state.stage.layerStack.find((l) => l.id === layerId);
+          if (layer) {
+            filePaths.push(layer.filePath);
+          }
+        });
+      } else {
+        // Single layer
+        filePaths.push(li.dataset.filePath);
+      }
+    });
 
     // Check ownership before allowing deletion
     if (state.currentUser !== "Project Manager") {
