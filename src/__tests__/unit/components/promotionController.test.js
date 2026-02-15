@@ -37,6 +37,7 @@ import {
   logPromotionToStatement,
   syncPrimStatusFromLayer,
 } from "../../../components/sidebar/layerStackController.js";
+import { updateParentStatus, updateChildrenStatus } from "../../../components/properties/AttributeUpdater.js";
 
 vi.mock("../../../state/actions.js", () => ({
   actions: {
@@ -49,6 +50,11 @@ vi.mock("../../../components/sidebar/layerStackController.js", () => ({
   recomposeStage: vi.fn(),
   logPromotionToStatement: vi.fn(),
   syncPrimStatusFromLayer: vi.fn(),
+}));
+
+vi.mock("../../../components/properties/AttributeUpdater.js", () => ({
+  updateParentStatus: vi.fn(),
+  updateChildrenStatus: vi.fn(),
 }));
 
 describe("PromotionController", () => {
@@ -862,6 +868,44 @@ describe("PromotionController", () => {
       expect(prim.properties.status).toBe("WIP");
       expect(recomposeStage).not.toHaveBeenCalled();
     });
+
+    it("should update parent status when promoting object", () => {
+      const prim = {
+        name: "Mesh_Test",
+        path: "/Root/Parent/Mesh_Test",
+        properties: { status: "WIP" },
+        _sourceFile: "test.usda",
+      };
+
+      document.dispatchEvent(
+        new CustomEvent("openPromotionModal", {
+          detail: { mode: "object", prim },
+        })
+      );
+
+      confirmButton.click();
+
+      expect(updateParentStatus).toHaveBeenCalledWith("/Root/Parent/Mesh_Test", "Shared");
+    });
+
+    it("should update children status when promoting object", () => {
+      const prim = {
+        name: "Parent_Test",
+        path: "/Root/Parent_Test",
+        properties: { status: "WIP" },
+        _sourceFile: "test.usda",
+      };
+
+      document.dispatchEvent(
+        new CustomEvent("openPromotionModal", {
+          detail: { mode: "object", prim },
+        })
+      );
+
+      confirmButton.click();
+
+      expect(updateChildrenStatus).toHaveBeenCalledWith("/Root/Parent_Test", "Shared");
+    });
   });
 
   describe("Layer promotion confirmation", () => {
@@ -1210,8 +1254,56 @@ describe("PromotionController", () => {
              }
           })
        );
-       
+
        expect(errorHandler.handleError).toHaveBeenCalledWith(expect.any(ValidationError));
+    });
+
+    it("should update parent status when demoting object", () => {
+      initPromotionController(mockUpdateView);
+      const prim = {
+        name: "Mesh_Test",
+        path: "/Root/Parent/Mesh_Test",
+        properties: { status: "Published" },
+        _sourceFile: "test.usda",
+      };
+
+      document.dispatchEvent(
+        new CustomEvent("openPromotionModal", {
+          detail: {
+            mode: "object",
+            prim: prim,
+            direction: "demote"
+          }
+        })
+      );
+
+      confirmButton.click();
+
+      expect(updateParentStatus).toHaveBeenCalledWith("/Root/Parent/Mesh_Test", "Shared");
+    });
+
+    it("should update children status when demoting object", () => {
+      initPromotionController(mockUpdateView);
+      const prim = {
+        name: "Parent_Test",
+        path: "/Root/Parent_Test",
+        properties: { status: "Published" },
+        _sourceFile: "test.usda",
+      };
+
+      document.dispatchEvent(
+        new CustomEvent("openPromotionModal", {
+          detail: {
+            mode: "object",
+            prim: prim,
+            direction: "demote"
+          }
+        })
+      );
+
+      confirmButton.click();
+
+      expect(updateChildrenStatus).toHaveBeenCalledWith("/Root/Parent_Test", "Shared");
     });
   });
 });

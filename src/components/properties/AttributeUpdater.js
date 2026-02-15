@@ -400,7 +400,7 @@ function updateInMemoryHierarchy(primPath, propertyName, propertyValue) {
  * @param {string} primPath - Path of the prim
  * @param {string} newStatus - New status value
  */
-function updateParentStatus(primPath, newStatus) {
+export function updateParentStatus(primPath, newStatus) {
   const parentPath = primPath.substring(0, primPath.lastIndexOf("/"));
   if (!parentPath || parentPath === "") return;
 
@@ -432,6 +432,49 @@ function updateParentStatus(primPath, newStatus) {
     JSON.stringify(store.getState().stage.composedPrims)
   );
   findAndUpdateParent(composedPrims, parentPath, newStatus);
+  actions.setComposedPrims(composedPrims);
+}
+
+/**
+ * Updates all children prims' status when a parent's status changes
+ * @param {string} primPath - Path of the parent prim
+ * @param {string} newStatus - New status value
+ */
+export function updateChildrenStatus(primPath, newStatus) {
+  const updateAllChildren = (prims, targetPath, propValue) => {
+    for (const p of prims) {
+      if (p.path === targetPath) {
+        // Found the target prim, update all its children recursively
+        const updateDescendants = (prim) => {
+          if (prim.children && prim.children.length > 0) {
+            for (const child of prim.children) {
+              if (!child.properties) child.properties = {};
+              child.properties.status = propValue;
+              updateDescendants(child);
+            }
+          }
+        };
+        updateDescendants(p);
+        console.log("[PROPERTY CHANGE] Updated children status");
+        return true;
+      }
+      if (p.children && updateAllChildren(p.children, targetPath, propValue)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const composedHierarchy = JSON.parse(
+    JSON.stringify(store.getState().composedHierarchy)
+  );
+  updateAllChildren(composedHierarchy, primPath, newStatus);
+  actions.setComposedHierarchy(composedHierarchy);
+
+  const composedPrims = JSON.parse(
+    JSON.stringify(store.getState().stage.composedPrims)
+  );
+  updateAllChildren(composedPrims, primPath, newStatus);
   actions.setComposedPrims(composedPrims);
 }
 

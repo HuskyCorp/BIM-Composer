@@ -7,6 +7,7 @@ import {
   logPromotionToStatement,
   syncPrimStatusFromLayer,
 } from "./sidebar/layerStackController.js";
+import { updateParentStatus, updateChildrenStatus } from "./properties/AttributeUpdater.js";
 
 export function initPromotionController(updateView) {
   const modal = document.getElementById("promotion-modal");
@@ -411,6 +412,13 @@ export function initPromotionController(updateView) {
               // Update Runtime
               if (!obj.properties) obj.properties = {};
               obj.properties.status = currentTargetStatus;
+
+              // Update parent status to match child
+              updateParentStatus(obj.path, currentTargetStatus);
+
+              // Update all children status to match parent
+              updateChildrenStatus(obj.path, currentTargetStatus);
+
               successCount++;
            });
 
