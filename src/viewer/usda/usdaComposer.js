@@ -197,6 +197,11 @@ export function composeLogPrim(logEntry) {
   const newName = logEntry["New Name"] || logEntry.primName || "";
   extraFields += `\n        custom string oldName = "${oldName}"\n        custom string newName = "${newName}"`;
 
+  // Include oldPath and newPath for rename operations (path translation registry)
+  if (logEntry.Type === "Rename" && logEntry.oldPath && logEntry.newPath) {
+    extraFields += `\n        custom string oldPath = "${logEntry.oldPath}"\n        custom string newPath = "${logEntry.newPath}"`;
+  }
+
   // ALWAYS include sourceStatus and targetStatus for ALL entries (user requirement)
   const sourceStatus = logEntry.sourceStatus || logEntry.SourceStatus || "null";
   const targetStatus = logEntry.targetStatus || logEntry.TargetStatus || "null";
@@ -215,12 +220,6 @@ export function composeLogPrim(logEntry) {
     stagedPrimsField = `\n        custom string[] stagedPrims = [${primPathsString}]`;
   }
 
-  // NEW: Add entity type field
-  let entityTypeField = "";
-  if (logEntry.entityType) {
-    entityTypeField = `\n        custom string entityType = "${logEntry.entityType}"`;
-  }
-
   return `
     def "Log_${logEntry.ID}"
     {
@@ -233,7 +232,7 @@ export function composeLogPrim(logEntry) {
         custom int fileSize = ${logEntry["File Size"]}
         custom string type = "${logEntry.Type}"
         custom string user = "${logEntry.User}"
-        custom string status = "${logEntry.Status}"${extraFields}${stagedPrimsField}${entityTypeField}
+        custom string status = "${logEntry.Status}"${extraFields}${stagedPrimsField}
 
 
     }

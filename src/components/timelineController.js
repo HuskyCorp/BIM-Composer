@@ -2,6 +2,7 @@
 import { store, errorHandler, actions as coreActions } from "../core/index.js";
 import { USDA_PARSER } from "../viewer/usda/usdaParser.js";
 import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
+import { buildPathTranslationRegistry, translatePrimPaths, translatePath } from "../viewer/usda/pathTranslationRegistry.js";
 
 export function initTimelineController(historyThreeScene) {
   const historyToggleButton = document.getElementById("history-toggle-button");
@@ -57,6 +58,9 @@ export function initTimelineController(historyThreeScene) {
     })
   );
 
+  // Path translation registry for handling renamed prims in history
+  let pathTranslationRegistry = null;
+
   function setupTimeline() {
     console.log("[HISTORY] Setting up timeline...");
 
@@ -104,6 +108,19 @@ export function initTimelineController(historyThreeScene) {
         "No history entries found. Add prims to the stage to create history."
       );
       return;
+    }
+
+    // Build path translation registry for rename tracking
+    console.log("[HISTORY] Building path translation registry...");
+    pathTranslationRegistry = buildPathTranslationRegistry(history.commits);
+    console.log("[HISTORY] Registry built with", pathTranslationRegistry.pathMap.size, "path mappings");
+
+    // Log registry contents for debugging
+    if (pathTranslationRegistry.pathMap.size > 0) {
+      console.log("[HISTORY] Path mappings:");
+      pathTranslationRegistry.pathMap.forEach((newPath, oldPath) => {
+        console.log(`[HISTORY]   ${oldPath} → ${newPath}`);
+      });
     }
 
     renderGraph();
@@ -314,7 +331,8 @@ export function initTimelineController(historyThreeScene) {
 
       if (primFromMasterList) {
         const clonedPrim = JSON.parse(JSON.stringify(primFromMasterList));
-        clonedPrim.children = [];
+        // Keep children (including mesh children) for geometry rendering
+        // clonedPrim.children = []; // DON'T clear children - we need them for rendering!
         prims.push(clonedPrim);
         console.log(`[HISTORY]     Found: ${currentPath}`);
       } else {
@@ -369,7 +387,13 @@ export function initTimelineController(historyThreeScene) {
           // Force status from log metadata if present, or trust the prim properties?
           // Trust serialized prim properties first.
 
-          primsToReconstruct.set(prim.path, prim);
+          // Translate historical paths to current paths using path translation registry
+          // This handles cases where prims were renamed after this log entry was created
+          const translatedPrim = pathTranslationRegistry
+            ? translatePrimPaths(prim, pathTranslationRegistry)
+            : prim;
+
+          primsToReconstruct.set(translatedPrim.path, translatedPrim);
         });
       } else if (logEntry.stagedPrims && logEntry.stagedPrims.length > 0) {
         // FALLBACK for legacy logs or incomplete data: Try to find in current state (Warning: this is "Live" state leaking into history)
@@ -377,7 +401,26 @@ export function initTimelineController(historyThreeScene) {
           `[HISTORY]   No serialized prims found, falling back to live state lookup (Legacy behavior)`
         );
         logEntry.stagedPrims.forEach((path) => {
-          const primAndAncestors = getPrimWithAncestors(path);
+          console.log(`[HISTORY]   Processing staged prim: ${path}`);
+
+          // Translate historical paths to current paths (handles renamed prims)
+          const translatedPath = pathTranslationRegistry
+            ? translatePath(path, pathTranslationRegistry)
+            : path;
+
+          if (translatedPath !== path) {
+            console.log(`[HISTORY]   ✓ Translated staged prim path: ${path} -> ${translatedPath}`);
+          } else {
+            console.log(`[HISTORY]   ✗ No translation found for: ${path}`);
+          }
+
+          const primAndAncestors = getPrimWithAncestors(translatedPath);
+          console.log(`[HISTORY]   Found ${primAndAncestors.length} prims (including ancestors) for ${translatedPath}`);
+
+          if (primAndAncestors.length === 0) {
+            console.warn(`[HISTORY]   ⚠️  Could not find prim at translated path: ${translatedPath}`);
+          }
+
           primAndAncestors.forEach((p) => {
             // Create a localized copy to avoid mutating the live state cache
             const pClone = JSON.parse(JSON.stringify(p));

@@ -17,6 +17,7 @@ import {
   recomposeStage,
 } from "../sidebar/layerStackController.js";
 import { sha256 } from "js-sha256";
+import { calculateNewPath } from "../../utils/primHelpers.js";
 
 /**
  * Applies a prim rename operation
@@ -155,9 +156,12 @@ function logRenameToStatement(prim, newName) {
 
   const entityType = prim.properties?.entityType || "Real Element";
 
-  const stagedPaths = state.stage.composedPrims
-    ? state.stage.composedPrims.map((p) => p.path)
-    : [];
+  // Calculate old and new paths for path translation registry
+  const oldPath = prim.path;
+  const newPath = calculateNewPath(oldPath, newName);
+
+  // For rename operations, only include the renamed prim, not all staged prims
+  const stagedPaths = [oldPath];
 
   const logEntry = {
     ID: newId,
@@ -170,6 +174,8 @@ function logRenameToStatement(prim, newName) {
     Type: "Rename",
     "Old Name": prim.name,
     "New Name": newName,
+    oldPath: oldPath,
+    newPath: newPath,
     User: state.currentUser,
     Status: "New",
     entityType: entityType,
@@ -179,6 +185,7 @@ function logRenameToStatement(prim, newName) {
 
   actions.setHeadCommitId(newId);
 
+  // Compose ONLY the log entry metadata (no USDA prim code)
   const logPrimString = composeLogPrim(logEntry);
   const newContent = USDA_PARSER.appendToUsdaFile(
     state.loadedFiles["statement.usda"],

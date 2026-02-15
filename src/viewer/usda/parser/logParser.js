@@ -183,6 +183,33 @@ export function parseStatementLog(statementContent) {
       } else {
         commit.stagedPrims = [];
       }
+
+      // Extract oldPath and newPath for rename operations (path translation registry)
+      if (commit.type === "Rename") {
+        const oldPathMatch = logBody.match(/custom string oldPath = "([^"]+)"/);
+        const newPathMatch = logBody.match(/custom string newPath = "([^"]+)"/);
+
+        if (oldPathMatch) commit.oldPath = oldPathMatch[1];
+        if (newPathMatch) commit.newPath = newPathMatch[1];
+
+        // Fallback for legacy entries: reconstruct paths from oldName/newName
+        if (!commit.oldPath || !commit.newPath) {
+          const oldNameMatch = logBody.match(/custom string oldName = "([^"]+)"/);
+          const newNameMatch = logBody.match(/custom string newName = "([^"]+)"/);
+          const refPathMatch = logBody.match(/custom string primPath = "([^"]+)"/);
+
+          if (oldNameMatch && commit["USD Reference Path"]) {
+            // The USD Reference Path is the old path
+            commit.oldPath = commit["USD Reference Path"];
+          }
+          if (newNameMatch && commit.oldPath) {
+            // Calculate new path from old path + new name
+            const parts = commit.oldPath.split("/");
+            parts[parts.length - 1] = newNameMatch[1];
+            commit.newPath = parts.join("/");
+          }
+        }
+      }
     } catch (e) {
       console.warn(`[LOG_PARSER] Error parsing body of log ${logId}:`, e);
     }
