@@ -33,17 +33,22 @@ USDA Composer follows these testing principles:
 ### 1. Test Behavior, Not Implementation
 
 **Good:**
+
 ```javascript
-it('should update prim status when promoted', () => {
-  const action = actions.updatePrim({ primPath: '/Wall', properties: { status: 'Shared' } });
+it("should update prim status when promoted", () => {
+  const action = actions.updatePrim({
+    primPath: "/Wall",
+    properties: { status: "Shared" },
+  });
   const newState = reducer(initialState, action);
-  expect(newState.prims[0].status).toBe('Shared');
+  expect(newState.prims[0].status).toBe("Shared");
 });
 ```
 
 **Bad:**
+
 ```javascript
-it('should call private _updateInternal method', () => {
+it("should call private _updateInternal method", () => {
   // Don't test private implementation details
 });
 ```
@@ -51,6 +56,7 @@ it('should call private _updateInternal method', () => {
 ### 2. Write Tests That Document Intent
 
 Tests serve as living documentation. Test names should clearly describe:
+
 - **What** is being tested
 - **Under what conditions**
 - **What the expected outcome is**
@@ -82,18 +88,18 @@ describe('Layer Promotion', () => {
 
 ### Test Frameworks
 
-| Tool | Purpose | Documentation |
-|------|---------|---------------|
-| **Vitest** | Unit/integration testing (Vite-native) | [vitest.dev](https://vitest.dev) |
-| **Playwright** | End-to-end browser testing | [playwright.dev](https://playwright.dev) |
-| **@testing-library/dom** | DOM testing utilities | [testing-library.com](https://testing-library.com) |
-| **jsdom** | DOM simulation for unit tests | [github.com/jsdom](https://github.com/jsdom/jsdom) |
+| Tool                     | Purpose                                | Documentation                                      |
+| ------------------------ | -------------------------------------- | -------------------------------------------------- |
+| **Vitest**               | Unit/integration testing (Vite-native) | [vitest.dev](https://vitest.dev)                   |
+| **Playwright**           | End-to-end browser testing             | [playwright.dev](https://playwright.dev)           |
+| **@testing-library/dom** | DOM testing utilities                  | [testing-library.com](https://testing-library.com) |
+| **jsdom**                | DOM simulation for unit tests          | [github.com/jsdom](https://github.com/jsdom/jsdom) |
 
 ### Test Configuration
 
 - **Vitest Config**: [vite.config.js](../../vite.config.js) (test section)
 - **Playwright Config**: [playwright.config.js](../../playwright.config.js)
-- **Test Setup**: [src/__tests__/setup.js](../../src/__tests__/setup.js)
+- **Test Setup**: [src/**tests**/setup.js](../../src/__tests__/setup.js)
 - **Coverage Config**: [vite.config.js](../../vite.config.js) (coverage section)
 
 ---
@@ -271,44 +277,47 @@ describe('Module Name', () => {
 
 ### Example: Testing a Utility Function
 
-**File**: [src/__tests__/unit/utils/validators.test.js](../../src/__tests__/unit/utils/validators.test.js)
+**File**: [src/**tests**/unit/utils/validators.test.js](../../src/__tests__/unit/utils/validators.test.js)
 
 ```javascript
-import { describe, it, expect } from 'vitest';
-import { validatePrimName, validateLayerStatus } from '../../utils/validators.js';
-import { LAYER_STATUS } from '../../constants.js';
+import { describe, it, expect } from "vitest";
+import {
+  validatePrimName,
+  validateLayerStatus,
+} from "../../utils/validators.js";
+import { LAYER_STATUS } from "../../constants.js";
 
-describe('validators', () => {
-  describe('validatePrimName', () => {
-    it('should accept valid prim names', () => {
-      expect(validatePrimName('Wall')).toBe(true);
-      expect(validatePrimName('Building_1')).toBe(true);
-      expect(validatePrimName('floor2')).toBe(true);
+describe("validators", () => {
+  describe("validatePrimName", () => {
+    it("should accept valid prim names", () => {
+      expect(validatePrimName("Wall")).toBe(true);
+      expect(validatePrimName("Building_1")).toBe(true);
+      expect(validatePrimName("floor2")).toBe(true);
     });
 
-    it('should reject names with spaces', () => {
-      expect(validatePrimName('My Wall')).toBe(false);
+    it("should reject names with spaces", () => {
+      expect(validatePrimName("My Wall")).toBe(false);
     });
 
-    it('should reject names with special characters', () => {
-      expect(validatePrimName('Wall@123')).toBe(false);
-      expect(validatePrimName('Wall-1')).toBe(false);
+    it("should reject names with special characters", () => {
+      expect(validatePrimName("Wall@123")).toBe(false);
+      expect(validatePrimName("Wall-1")).toBe(false);
     });
 
-    it('should reject empty names', () => {
-      expect(validatePrimName('')).toBe(false);
+    it("should reject empty names", () => {
+      expect(validatePrimName("")).toBe(false);
       expect(validatePrimName(null)).toBe(false);
     });
   });
 
-  describe('validateLayerStatus', () => {
-    it('should accept valid statuses', () => {
+  describe("validateLayerStatus", () => {
+    it("should accept valid statuses", () => {
       expect(validateLayerStatus(LAYER_STATUS.WIP)).toBe(true);
       expect(validateLayerStatus(LAYER_STATUS.PUBLISHED)).toBe(true);
     });
 
-    it('should reject invalid statuses', () => {
-      expect(validateLayerStatus('Invalid')).toBe(false);
+    it("should reject invalid statuses", () => {
+      expect(validateLayerStatus("Invalid")).toBe(false);
       expect(validateLayerStatus(null)).toBe(false);
     });
   });
@@ -317,64 +326,66 @@ describe('validators', () => {
 
 ### Example: Testing a Service
 
-**File**: [src/__tests__/unit/services/PrimService.test.js](../../src/__tests__/unit/services/PrimService.test.js)
+**File**: [src/**tests**/unit/services/PrimService.test.js](../../src/__tests__/unit/services/PrimService.test.js)
 
 ```javascript
-import { describe, it, expect, beforeEach } from 'vitest';
-import { primService } from '../../src/core/services/PrimService.js';
+import { describe, it, expect, beforeEach } from "vitest";
+import { primService } from "../../src/core/services/PrimService.js";
 
-describe('PrimService', () => {
+describe("PrimService", () => {
   let testHierarchy;
 
   beforeEach(() => {
     testHierarchy = [
       {
-        name: 'Building',
-        path: '/Building',
-        type: 'Xform',
+        name: "Building",
+        path: "/Building",
+        type: "Xform",
         children: [
-          { name: 'Wall', path: '/Building/Wall', type: 'Mesh', children: [] }
-        ]
-      }
+          { name: "Wall", path: "/Building/Wall", type: "Mesh", children: [] },
+        ],
+      },
     ];
   });
 
-  describe('findPrimByPath', () => {
-    it('should find prim at root level', () => {
-      const prim = primService.findPrimByPath(testHierarchy, '/Building');
+  describe("findPrimByPath", () => {
+    it("should find prim at root level", () => {
+      const prim = primService.findPrimByPath(testHierarchy, "/Building");
       expect(prim).toBeDefined();
-      expect(prim.name).toBe('Building');
+      expect(prim.name).toBe("Building");
     });
 
-    it('should find nested prim', () => {
-      const prim = primService.findPrimByPath(testHierarchy, '/Building/Wall');
+    it("should find nested prim", () => {
+      const prim = primService.findPrimByPath(testHierarchy, "/Building/Wall");
       expect(prim).toBeDefined();
-      expect(prim.name).toBe('Wall');
-      expect(prim.type).toBe('Mesh');
+      expect(prim.name).toBe("Wall");
+      expect(prim.type).toBe("Mesh");
     });
 
-    it('should return null for non-existent path', () => {
-      const prim = primService.findPrimByPath(testHierarchy, '/NotFound');
+    it("should return null for non-existent path", () => {
+      const prim = primService.findPrimByPath(testHierarchy, "/NotFound");
       expect(prim).toBeNull();
     });
   });
 
-  describe('updatePrimProperties', () => {
-    it('should update prim properties', () => {
+  describe("updatePrimProperties", () => {
+    it("should update prim properties", () => {
       const updated = primService.updatePrimProperties(
         testHierarchy,
-        '/Building/Wall',
-        { status: 'Shared', displayColor: '#0000ff' }
+        "/Building/Wall",
+        { status: "Shared", displayColor: "#0000ff" }
       );
 
-      const prim = primService.findPrimByPath(updated, '/Building/Wall');
-      expect(prim.properties.status).toBe('Shared');
-      expect(prim.properties.displayColor).toBe('#0000ff');
+      const prim = primService.findPrimByPath(updated, "/Building/Wall");
+      expect(prim.properties.status).toBe("Shared");
+      expect(prim.properties.displayColor).toBe("#0000ff");
     });
 
-    it('should not mutate original hierarchy', () => {
+    it("should not mutate original hierarchy", () => {
       const original = JSON.parse(JSON.stringify(testHierarchy));
-      primService.updatePrimProperties(testHierarchy, '/Building/Wall', { status: 'Shared' });
+      primService.updatePrimProperties(testHierarchy, "/Building/Wall", {
+        status: "Shared",
+      });
 
       expect(testHierarchy).toEqual(original);
     });
@@ -390,53 +401,59 @@ Integration tests verify interactions between modules.
 
 ### Example: Testing Store + Reducer
 
-**File**: [src/__tests__/integration/store-reducer.test.js](../../src/__tests__/integration/store-reducer.test.js)
+**File**: [src/**tests**/integration/store-reducer.test.js](../../src/__tests__/integration/store-reducer.test.js)
 
 ```javascript
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { store } from '../../src/core/state/store.js';
-import { actions } from '../../src/core/state/actions/index.js';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { store } from "../../src/core/state/store.js";
+import { actions } from "../../src/core/state/actions/index.js";
 
-describe('Store + Reducer Integration', () => {
+describe("Store + Reducer Integration", () => {
   beforeEach(() => {
     // Reset store to initial state
-    store.dispatch({ type: 'RESET' });
+    store.dispatch({ type: "RESET" });
   });
 
-  it('should update state when action is dispatched', () => {
+  it("should update state when action is dispatched", () => {
     const layer = {
-      name: 'test.usda',
-      content: '#usda 1.0',
-      status: 'WIP',
+      name: "test.usda",
+      content: "#usda 1.0",
+      status: "WIP",
       visible: true,
-      active: true
+      active: true,
     };
 
     store.dispatch(actions.addLayer(layer));
 
     const state = store.getState();
     expect(state.stage.layerStack).toHaveLength(1);
-    expect(state.stage.layerStack[0].name).toBe('test.usda');
+    expect(state.stage.layerStack[0].name).toBe("test.usda");
   });
 
-  it('should notify subscribers when state changes', () => {
+  it("should notify subscribers when state changes", () => {
     const callback = vi.fn();
-    store.subscribe(['stage.layerStack'], callback);
+    store.subscribe(["stage.layerStack"], callback);
 
-    store.dispatch(actions.addLayer({ name: 'test.usda', content: '', status: 'WIP' }));
+    store.dispatch(
+      actions.addLayer({ name: "test.usda", content: "", status: "WIP" })
+    );
 
     expect(callback).toHaveBeenCalled();
     expect(callback.mock.calls[0][0].stage.layerStack).toHaveLength(1);
   });
 
-  it('should handle multiple actions in sequence', () => {
-    store.dispatch(actions.addLayer({ name: 'layer1.usda', content: '', status: 'WIP' }));
-    store.dispatch(actions.addLayer({ name: 'layer2.usda', content: '', status: 'Shared' }));
-    store.dispatch(actions.removeLayer('layer1.usda'));
+  it("should handle multiple actions in sequence", () => {
+    store.dispatch(
+      actions.addLayer({ name: "layer1.usda", content: "", status: "WIP" })
+    );
+    store.dispatch(
+      actions.addLayer({ name: "layer2.usda", content: "", status: "Shared" })
+    );
+    store.dispatch(actions.removeLayer("layer1.usda"));
 
     const state = store.getState();
     expect(state.stage.layerStack).toHaveLength(1);
-    expect(state.stage.layerStack[0].name).toBe('layer2.usda');
+    expect(state.stage.layerStack[0].name).toBe("layer2.usda");
   });
 });
 ```
@@ -449,53 +466,55 @@ E2E tests use Playwright to test full user workflows in a real browser.
 
 ### Example: File Loading Workflow
 
-**File**: [src/__tests__/e2e/file-loading.spec.js](../../src/__tests__/e2e/file-loading.spec.js)
+**File**: [src/**tests**/e2e/file-loading.spec.js](../../src/__tests__/e2e/file-loading.spec.js)
 
 ```javascript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('File Loading', () => {
+test.describe("File Loading", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173');
+    await page.goto("http://localhost:5173");
   });
 
-  test('should load USDA file and display in layer stack', async ({ page }) => {
+  test("should load USDA file and display in layer stack", async ({ page }) => {
     // Upload file
     const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles('./test-data/sample.usda');
+    await fileInput.setInputFiles("./test-data/sample.usda");
 
     // Verify layer appears in stack
-    const layerItem = page.locator('.layer-item').first();
+    const layerItem = page.locator(".layer-item").first();
     await expect(layerItem).toBeVisible();
-    await expect(layerItem).toContainText('sample.usda');
+    await expect(layerItem).toContainText("sample.usda");
 
     // Verify status indicator
-    const statusBadge = layerItem.locator('.status-badge');
-    await expect(statusBadge).toHaveText('WIP');
+    const statusBadge = layerItem.locator(".status-badge");
+    await expect(statusBadge).toHaveText("WIP");
   });
 
-  test('should render geometry in 3D viewport', async ({ page }) => {
-    await page.locator('input[type="file"]').setInputFiles('./test-data/cube.usda');
+  test("should render geometry in 3D viewport", async ({ page }) => {
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles("./test-data/cube.usda");
 
     // Wait for rendering
     await page.waitForTimeout(1000);
 
     // Check canvas is present and rendered
-    const canvas = page.locator('#stageCanvas');
+    const canvas = page.locator("#stageCanvas");
     await expect(canvas).toBeVisible();
 
     // Verify outliner shows prim
-    const outlinerItem = page.locator('.outliner-item').first();
-    await expect(outlinerItem).toContainText('Cube');
+    const outlinerItem = page.locator(".outliner-item").first();
+    await expect(outlinerItem).toContainText("Cube");
   });
 
-  test('should handle multiple file uploads', async ({ page }) => {
+  test("should handle multiple file uploads", async ({ page }) => {
     const fileInput = page.locator('input[type="file"]');
 
-    await fileInput.setInputFiles('./test-data/base.usda');
-    await fileInput.setInputFiles('./test-data/override.usda');
+    await fileInput.setInputFiles("./test-data/base.usda");
+    await fileInput.setInputFiles("./test-data/override.usda");
 
-    const layerItems = page.locator('.layer-item');
+    const layerItems = page.locator(".layer-item");
     await expect(layerItems).toHaveCount(2);
   });
 });
@@ -504,27 +523,29 @@ test.describe('File Loading', () => {
 ### Example: Layer Promotion Workflow
 
 ```javascript
-test('should promote layer from WIP to Shared', async ({ page }) => {
-  await page.goto('http://localhost:5173');
+test("should promote layer from WIP to Shared", async ({ page }) => {
+  await page.goto("http://localhost:5173");
 
   // Load file
-  await page.locator('input[type="file"]').setInputFiles('./test-data/sample.usda');
+  await page
+    .locator('input[type="file"]')
+    .setInputFiles("./test-data/sample.usda");
 
   // Select layer
-  const layerItem = page.locator('.layer-item').first();
+  const layerItem = page.locator(".layer-item").first();
   await layerItem.click();
 
   // Click promote button
-  const promoteBtn = page.locator('#promoteLayerBtn');
+  const promoteBtn = page.locator("#promoteLayerBtn");
   await promoteBtn.click();
 
   // Confirm in modal
-  const confirmBtn = page.locator('#confirmPromoteBtn');
+  const confirmBtn = page.locator("#confirmPromoteBtn");
   await confirmBtn.click();
 
   // Verify status updated
-  const statusBadge = layerItem.locator('.status-badge');
-  await expect(statusBadge).toHaveText('Shared');
+  const statusBadge = layerItem.locator(".status-badge");
+  await expect(statusBadge).toHaveText("Shared");
   await expect(statusBadge).toHaveClass(/status-shared/);
 });
 ```
@@ -566,6 +587,7 @@ npm run test:coverage
 ```
 
 **Focus on:**
+
 - Error handling paths (`catch` blocks)
 - Edge cases (empty arrays, null values)
 - Conditional branches (`if`/`else`)
@@ -577,9 +599,10 @@ npm run test:coverage
 
 ### Global Mocks (setup.js)
 
-**File**: [src/__tests__/setup.js](../../src/__tests__/setup.js)
+**File**: [src/**tests**/setup.js](../../src/__tests__/setup.js)
 
 Pre-configured mocks for:
+
 - `ResizeObserver` and `IntersectionObserver` (browser APIs)
 - `HTMLCanvasElement.getContext` (WebGL context for Three.js)
 - Canvas 2D context
@@ -587,34 +610,36 @@ Pre-configured mocks for:
 ### Mocking Functions with `vi.fn()`
 
 ```javascript
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 const mockCallback = vi.fn();
 
 // Call the mock
-mockCallback('arg1', 'arg2');
+mockCallback("arg1", "arg2");
 
 // Assertions
 expect(mockCallback).toHaveBeenCalled();
-expect(mockCallback).toHaveBeenCalledWith('arg1', 'arg2');
+expect(mockCallback).toHaveBeenCalledWith("arg1", "arg2");
 expect(mockCallback).toHaveBeenCalledTimes(1);
 ```
 
 ### Mocking Modules with `vi.mock()`
 
 ```javascript
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, it, expect } from "vitest";
 
-vi.mock('../../src/viewer/usda/usdaParser.js', () => ({
+vi.mock("../../src/viewer/usda/usdaParser.js", () => ({
   USDA_PARSER: {
-    parseUsda: vi.fn(() => [{ name: 'MockPrim', path: '/MockPrim', type: 'Mesh' }])
-  }
+    parseUsda: vi.fn(() => [
+      { name: "MockPrim", path: "/MockPrim", type: "Mesh" },
+    ]),
+  },
 }));
 
-import { ThreeScene } from '../../src/viewer/ThreeScene.js';
+import { ThreeScene } from "../../src/viewer/ThreeScene.js";
 
-it('should use mocked parser', () => {
-  const scene = new ThreeScene(container, USDA_PARSER, 'stage');
+it("should use mocked parser", () => {
+  const scene = new ThreeScene(container, USDA_PARSER, "stage");
   // Parser will return mocked data
 });
 ```
@@ -622,17 +647,17 @@ it('should use mocked parser', () => {
 ### Mocking Timers
 
 ```javascript
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 vi.useFakeTimers();
 
 function delayedFunction() {
   setTimeout(() => {
-    console.log('Executed after 1000ms');
+    console.log("Executed after 1000ms");
   }, 1000);
 }
 
-it('should execute after timeout', () => {
+it("should execute after timeout", () => {
   delayedFunction();
 
   vi.advanceTimersByTime(1000);
@@ -656,13 +681,13 @@ expect.extend({
     const pass = /^\/[A-Za-z0-9_/]+$/.test(received);
     return {
       pass,
-      message: () => `Expected ${received} to be a valid prim path`
+      message: () => `Expected ${received} to be a valid prim path`,
     };
-  }
+  },
 });
 
 // Usage
-expect('/Building/Wall').toBeValidPrimPath();
+expect("/Building/Wall").toBeValidPrimPath();
 ```
 
 ### Test Helpers
@@ -674,23 +699,23 @@ Create reusable test utilities:
 ```javascript
 export function createMockLayer(overrides = {}) {
   return {
-    name: 'test.usda',
-    content: '#usda 1.0',
-    status: 'WIP',
+    name: "test.usda",
+    content: "#usda 1.0",
+    status: "WIP",
     visible: true,
     active: true,
-    ...overrides
+    ...overrides,
   };
 }
 
 export function createMockPrim(overrides = {}) {
   return {
-    name: 'Prim',
-    path: '/Prim',
-    type: 'Mesh',
+    name: "Prim",
+    path: "/Prim",
+    type: "Mesh",
     properties: {},
     children: [],
-    ...overrides
+    ...overrides,
   };
 }
 ```
@@ -698,10 +723,10 @@ export function createMockPrim(overrides = {}) {
 **Usage in tests:**
 
 ```javascript
-import { createMockLayer, createMockPrim } from '../helpers/testData.js';
+import { createMockLayer, createMockPrim } from "../helpers/testData.js";
 
-it('should add layer', () => {
-  const layer = createMockLayer({ name: 'custom.usda', status: 'Shared' });
+it("should add layer", () => {
+  const layer = createMockLayer({ name: "custom.usda", status: "Shared" });
   store.dispatch(actions.addLayer(layer));
   // ...
 });
@@ -714,16 +739,16 @@ it('should add layer', () => {
 ### Testing Actions
 
 ```javascript
-import { actions, ActionTypes } from '../../src/core/state/actions/index.js';
+import { actions, ActionTypes } from "../../src/core/state/actions/index.js";
 
-describe('Action Creators', () => {
-  it('should create ADD_LAYER action', () => {
-    const layer = { name: 'test.usda', content: '', status: 'WIP' };
+describe("Action Creators", () => {
+  it("should create ADD_LAYER action", () => {
+    const layer = { name: "test.usda", content: "", status: "WIP" };
     const action = actions.addLayer(layer);
 
     expect(action).toEqual({
       type: ActionTypes.ADD_LAYER,
-      payload: layer
+      payload: layer,
     });
   });
 });
@@ -732,13 +757,13 @@ describe('Action Creators', () => {
 ### Testing Reducer
 
 ```javascript
-import { reducer } from '../../src/core/state/reducer.js';
-import { actions } from '../../src/core/state/actions/index.js';
+import { reducer } from "../../src/core/state/reducer.js";
+import { actions } from "../../src/core/state/actions/index.js";
 
-describe('Reducer', () => {
-  it('should handle ADD_LAYER', () => {
+describe("Reducer", () => {
+  it("should handle ADD_LAYER", () => {
     const initialState = { stage: { layerStack: [] } };
-    const layer = { name: 'test.usda', content: '', status: 'WIP' };
+    const layer = { name: "test.usda", content: "", status: "WIP" };
 
     const newState = reducer(initialState, actions.addLayer(layer));
 
@@ -746,12 +771,15 @@ describe('Reducer', () => {
     expect(newState.stage.layerStack[0]).toEqual(layer);
   });
 
-  it('should not mutate original state', () => {
+  it("should not mutate original state", () => {
     const initialState = { stage: { layerStack: [] } };
     const frozenState = Object.freeze(initialState);
 
     expect(() => {
-      reducer(frozenState, actions.addLayer({ name: 'test.usda', content: '', status: 'WIP' }));
+      reducer(
+        frozenState,
+        actions.addLayer({ name: "test.usda", content: "", status: "WIP" })
+      );
     }).not.toThrow();
   });
 });
@@ -760,17 +788,17 @@ describe('Reducer', () => {
 ### Testing Subscriptions
 
 ```javascript
-import { store } from '../../src/core/state/store.js';
-import { actions } from '../../src/core/state/actions/index.js';
+import { store } from "../../src/core/state/store.js";
+import { actions } from "../../src/core/state/actions/index.js";
 
-it('should notify subscribers of state changes', () => {
+it("should notify subscribers of state changes", () => {
   const callback = vi.fn();
-  store.subscribe(['sceneName'], callback);
+  store.subscribe(["sceneName"], callback);
 
-  store.dispatch(actions.setSceneName('New Scene'));
+  store.dispatch(actions.setSceneName("New Scene"));
 
   expect(callback).toHaveBeenCalled();
-  expect(callback.mock.calls[0][0].sceneName).toBe('New Scene');
+  expect(callback.mock.calls[0][0].sceneName).toBe("New Scene");
 });
 ```
 
@@ -791,17 +819,17 @@ Our [setup.js](../../src/__tests__/setup.js) provides comprehensive WebGL mocks.
 ### Example: Testing ThreeScene
 
 ```javascript
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { ThreeScene } from '../../src/viewer/ThreeScene.js';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { ThreeScene } from "../../src/viewer/ThreeScene.js";
 
-describe('ThreeScene', () => {
+describe("ThreeScene", () => {
   let container;
   let threeScene;
 
   beforeEach(() => {
-    container = document.createElement('div');
-    container.style.width = '800px';
-    container.style.height = '600px';
+    container = document.createElement("div");
+    container.style.width = "800px";
+    container.style.height = "600px";
     document.body.appendChild(container);
   });
 
@@ -810,26 +838,26 @@ describe('ThreeScene', () => {
     document.body.removeChild(container);
   });
 
-  it('should initialize with container', () => {
-    threeScene = new ThreeScene(container, {}, 'stage');
+  it("should initialize with container", () => {
+    threeScene = new ThreeScene(container, {}, "stage");
 
     expect(threeScene.container).toBe(container);
-    expect(threeScene.viewType).toBe('stage');
+    expect(threeScene.viewType).toBe("stage");
   });
 
-  it('should create scene, camera, and renderer', () => {
-    threeScene = new ThreeScene(container, {}, 'stage');
+  it("should create scene, camera, and renderer", () => {
+    threeScene = new ThreeScene(container, {}, "stage");
 
     expect(threeScene.scene).toBeDefined();
     expect(threeScene.camera).toBeDefined();
     expect(threeScene.renderer).toBeDefined();
   });
 
-  it('should handle resize', () => {
-    threeScene = new ThreeScene(container, {}, 'stage');
+  it("should handle resize", () => {
+    threeScene = new ThreeScene(container, {}, "stage");
 
-    container.style.width = '1024px';
-    container.style.height = '768px';
+    container.style.width = "1024px";
+    container.style.height = "768px";
 
     threeScene.onResize();
 
@@ -865,9 +893,9 @@ FAIL  src/__tests__/unit/utils/validators.test.js
 ### 2. Use `console.log` for Debugging
 
 ```javascript
-it('should validate prim names', () => {
-  const result = validatePrimName('Building_1');
-  console.log('Result:', result); // Debug output
+it("should validate prim names", () => {
+  const result = validatePrimName("Building_1");
+  console.log("Result:", result); // Debug output
   expect(result).toBe(true);
 });
 ```
@@ -888,7 +916,7 @@ npm run test:ui
 ### 4. Use `it.only` to Isolate
 
 ```javascript
-it.only('should validate this specific case', () => {
+it.only("should validate this specific case", () => {
   // Only this test runs
 });
 ```
@@ -905,6 +933,7 @@ it.only('should validate this specific case', () => {
 ### GitHub Actions Configuration
 
 Tests run automatically on:
+
 - **Pull Requests**: All tests must pass before merging
 - **Push to main**: Ensures main branch stability
 - **Scheduled**: Nightly test runs
@@ -960,15 +989,15 @@ it('test promotion', () => { ... });
 ### 3. Arrange-Act-Assert Pattern
 
 ```javascript
-it('should update prim status', () => {
+it("should update prim status", () => {
   // Arrange
-  const prim = { path: '/Wall', properties: { status: 'WIP' } };
+  const prim = { path: "/Wall", properties: { status: "WIP" } };
 
   // Act
-  const updated = updatePrimStatus(prim, 'Shared');
+  const updated = updatePrimStatus(prim, "Shared");
 
   // Assert
-  expect(updated.properties.status).toBe('Shared');
+  expect(updated.properties.status).toBe("Shared");
 });
 ```
 
@@ -976,14 +1005,14 @@ it('should update prim status', () => {
 
 ```javascript
 // ❌ Bad - Testing private internals
-it('should call _internalHelper', () => {
-  const spy = vi.spyOn(service, '_internalHelper');
+it("should call _internalHelper", () => {
+  const spy = vi.spyOn(service, "_internalHelper");
   service.publicMethod();
   expect(spy).toHaveBeenCalled();
 });
 
 // ✅ Good - Testing observable behavior
-it('should return processed result', () => {
+it("should return processed result", () => {
   const result = service.publicMethod(input);
   expect(result).toEqual(expectedOutput);
 });
@@ -1007,11 +1036,11 @@ beforeEach(() => {
 
 ```javascript
 // ✅ Good - Mock external service
-vi.mock('../../src/external/api.js', () => ({
-  fetchData: vi.fn(() => Promise.resolve(mockData))
+vi.mock("../../src/external/api.js", () => ({
+  fetchData: vi.fn(() => Promise.resolve(mockData)),
 }));
 
-it('should handle API response', async () => {
+it("should handle API response", async () => {
   const result = await processData();
   expect(result).toEqual(expected);
 });
@@ -1020,13 +1049,13 @@ it('should handle API response', async () => {
 ### 7. Test Error Conditions
 
 ```javascript
-it('should throw ValidationError for invalid input', () => {
-  expect(() => validatePrimName('')).toThrow(ValidationError);
+it("should throw ValidationError for invalid input", () => {
+  expect(() => validatePrimName("")).toThrow(ValidationError);
   expect(() => validatePrimName(null)).toThrow(ValidationError);
 });
 
-it('should handle file not found', async () => {
-  await expect(loadFile('nonexistent.usda')).rejects.toThrow(FileError);
+it("should handle file not found", async () => {
+  await expect(loadFile("nonexistent.usda")).rejects.toThrow(FileError);
 });
 ```
 

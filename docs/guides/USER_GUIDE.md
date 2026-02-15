@@ -94,6 +94,7 @@ In USDA Composer, **layers** are individual `.usda` files that compose together:
 #### 1. Layer Stack Panel (Left Sidebar)
 
 Displays all loaded layers with:
+
 - **Layer name** and status indicator (color-coded)
 - **Visibility toggle** (eye icon): Show/hide layer in viewport
 - **Active toggle**: Include layer in composition
@@ -103,6 +104,7 @@ Displays all loaded layers with:
 #### 2. Hierarchy Panel (Left Sidebar)
 
 Tree view of all prims (scene objects) in your composed scene:
+
 - **Expandable tree**: Click arrows to expand/collapse
 - **Selection**: Click prims to select them in 3D viewport
 - **Icons**: Visual indicators for prim types (Xform, Mesh, Scope, etc.)
@@ -111,6 +113,7 @@ Tree view of all prims (scene objects) in your composed scene:
 #### 3. 3D Viewport (Center)
 
 Interactive Three.js scene visualization:
+
 - **Orbit**: Left-click and drag to rotate camera
 - **Pan**: Right-click and drag to pan camera
 - **Zoom**: Scroll wheel to zoom in/out
@@ -124,6 +127,7 @@ Interactive Three.js scene visualization:
 #### 4. Properties Panel (Right Sidebar)
 
 Shows properties of the selected prim:
+
 - **Type**: Prim type (Mesh, Xform, Scope, etc.)
 - **Path**: Full USD path
 - **Display Name**: User-friendly name
@@ -134,6 +138,7 @@ Shows properties of the selected prim:
 #### 5. Timeline (Bottom)
 
 Visual history of all commits and changes:
+
 - **Commit nodes**: Each node represents a commit
 - **Timeline slider**: Scrub through history
 - **Commit messages**: Hover to see details
@@ -172,6 +177,7 @@ Each layer has a status indicating its maturity:
 - **Archived**: Historical or deprecated, gray color
 
 Status affects:
+
 - Visibility in filters
 - Rendering color (when color-coding is enabled)
 - Permissions (who can edit)
@@ -254,6 +260,7 @@ USD uses two keywords for prims:
 - **`over` (override)**: Overrides an existing prim (modifies it)
 
 When you commit changes, USDA Composer automatically:
+
 - Uses `over` for prims that exist in lower layers (non-destructive override)
 - Uses `def` for completely new prims
 - Preserves the base layer unchanged
@@ -414,11 +421,13 @@ Pset (Property Set) attributes add metadata to prims:
 ### Why Rename?
 
 USD prims have paths like `/World/Building_1/Floor_2/Wall_35`, which are:
+
 - Hard to read
 - Not user-friendly
 - Difficult to remember
 
 **Display names** provide:
+
 - Human-readable labels: "Main Entrance Wall"
 - Non-destructive renaming (original path preserved)
 - Better organization and communication
@@ -483,6 +492,7 @@ USD prims have paths like `/World/Building_1/Floor_2/Wall_35`, which are:
 ### Collision Handling
 
 When staging:
+
 - **Real Elements > Placeholders**: Real elements always win
 - **Placeholder + Placeholder**: Second placeholder renames with suffix (`_1`, `_2`)
 - **Real Element + Placeholder**: Real element overwrites placeholder
@@ -497,6 +507,7 @@ When staging:
 **Conflicts** occur when multiple layers modify the same property on the same prim:
 
 Example:
+
 - **Base layer**: Wall color = white
 - **Layer A** (Architect): Wall color = beige
 - **Layer B** (Engineer): Wall color = red
@@ -506,6 +517,7 @@ Which color should win? USDA Composer detects this conflict and asks you to reso
 ### Conflict Detection
 
 Conflicts are automatically detected when:
+
 - **Promoting layers**: Multiple layers modify the same property
 - **Committing changes**: New changes conflict with existing layers
 - **Loading layers**: Incompatible property values
@@ -561,14 +573,14 @@ USDA Composer supports role-based collaboration:
 
 Different roles have different capabilities:
 
-| Action | Architect | Engineer | Project Manager | Field Person |
-|--------|-----------|----------|-----------------|--------------|
-| Load Files | ✅ | ✅ | ✅ | ✅ |
-| Edit Properties | ✅ | ✅ | ✅ | ❌ |
-| Promote to Shared | ✅ | ✅ | ✅ | ❌ |
-| Promote to Published | ❌ | ❌ | ✅ | ❌ |
-| Override Conflicts | Own Only | Own Only | ✅ All | ❌ |
-| Archive Layers | ❌ | ❌ | ✅ | ❌ |
+| Action               | Architect | Engineer | Project Manager | Field Person |
+| -------------------- | --------- | -------- | --------------- | ------------ |
+| Load Files           | ✅        | ✅       | ✅              | ✅           |
+| Edit Properties      | ✅        | ✅       | ✅              | ❌           |
+| Promote to Shared    | ✅        | ✅       | ✅              | ❌           |
+| Promote to Published | ❌        | ❌       | ✅              | ❌           |
+| Override Conflicts   | Own Only  | Own Only | ✅ All          | ❌           |
+| Archive Layers       | ❌        | ❌       | ✅              | ❌           |
 
 ### Collaboration Best Practices
 

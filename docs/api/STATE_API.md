@@ -91,10 +91,11 @@ src/core/state/
 ## Store API
 
 **Import:**
+
 ```javascript
-import { store } from './core/index.js';
+import { store } from "./core/index.js";
 // or
-import { store } from './core/state/store.js';
+import { store } from "./core/state/store.js";
 ```
 
 ### `store.getState()`
@@ -102,11 +103,13 @@ import { store } from './core/state/store.js';
 Returns the current state (read-only).
 
 **Signature:**
+
 ```javascript
 getState(): Object
 ```
 
 **Example:**
+
 ```javascript
 const currentState = store.getState();
 console.log(currentState.sceneName); // "My Project"
@@ -122,31 +125,36 @@ console.log(currentState.stage.layerStack); // [...]
 Dispatches an action to update state.
 
 **Signature:**
+
 ```javascript
 dispatch(action: Object): Object
 ```
 
 **Parameters:**
+
 - `action` (Object): Action object with `type` and `payload`
 
 **Returns:**
+
 - The dispatched action
 
 **Example:**
+
 ```javascript
-import { actions } from './core/index.js';
+import { actions } from "./core/index.js";
 
 // Dispatch an action
 store.dispatch(actions.setSceneName("New Project"));
 
 // Dispatch custom action
 store.dispatch({
-  type: 'CUSTOM_ACTION',
-  payload: { data: 'value' }
+  type: "CUSTOM_ACTION",
+  payload: { data: "value" },
 });
 ```
 
 **Flow:**
+
 1. Calls reducer with current state and action
 2. Merges reducer output with current state
 3. Notifies all subscribers with new state
@@ -159,22 +167,26 @@ store.dispatch({
 Subscribes to state changes.
 
 **Signature:**
+
 ```javascript
 subscribe(key: string, callback: Function): Function
 ```
 
 **Parameters:**
+
 - `key` (string): Subscription identifier (for organizing listeners)
 - `callback` (Function): `(prevState, nextState) => void`
 
 **Returns:**
+
 - Unsubscribe function
 
 **Example:**
+
 ```javascript
 // Subscribe to all state changes
-const unsubscribe = store.subscribe('myComponent', (prevState, nextState) => {
-  console.log('State changed:', prevState, nextState);
+const unsubscribe = store.subscribe("myComponent", (prevState, nextState) => {
+  console.log("State changed:", prevState, nextState);
   updateUI(nextState);
 });
 
@@ -207,10 +219,11 @@ store.dispatch(actions.setSceneName("New Scene"));
 Action creators are functions that return action objects. They provide type safety, centralized logic, and self-documentation.
 
 **Import:**
+
 ```javascript
-import { actions, ActionTypes } from './core/index.js';
+import { actions, ActionTypes } from "./core/index.js";
 // or
-import { actions, ActionTypes } from './core/state/actions/index.js';
+import { actions, ActionTypes } from "./core/state/actions/index.js";
 ```
 
 ### Scene Actions
@@ -220,16 +233,21 @@ import { actions, ActionTypes } from './core/state/actions/index.js';
 Sets the scene name.
 
 **Parameters:**
+
 - `name` (string): Scene name
 
 **Example:**
+
 ```javascript
 store.dispatch(actions.setSceneName("Building Project"));
 ```
 
 **State Update:**
+
 ```javascript
-{ sceneName: "Building Project" }
+{
+  sceneName: "Building Project";
+}
 ```
 
 ---
@@ -239,18 +257,23 @@ store.dispatch(actions.setSceneName("Building Project"));
 Sets the current user role.
 
 **Parameters:**
+
 - `user` (string): User role (Architect, Structural Engineer, Project Manager, Field Person)
 
 **Example:**
+
 ```javascript
-import { USER_ROLES } from './constants.js';
+import { USER_ROLES } from "./constants.js";
 
 store.dispatch(actions.setCurrentUser(USER_ROLES.ARCHITECT));
 ```
 
 **State Update:**
+
 ```javascript
-{ currentUser: "Architect" }
+{
+  currentUser: "Architect";
+}
 ```
 
 ---
@@ -262,6 +285,7 @@ store.dispatch(actions.setCurrentUser(USER_ROLES.ARCHITECT));
 Adds a new layer to the layer stack.
 
 **Parameters:**
+
 - `layer` (Object):
   - `id` (string): Unique layer ID (generated if not provided)
   - `name` (string): Layer filename
@@ -271,24 +295,26 @@ Adds a new layer to the layer stack.
   - `active` (boolean): Included in composition
 
 **Example:**
+
 ```javascript
 const layer = {
-  id: 'layer-1',
-  name: 'structural.usda',
-  content: '#usda 1.0\n...',
-  status: 'WIP',
+  id: "layer-1",
+  name: "structural.usda",
+  content: "#usda 1.0\n...",
+  status: "WIP",
   visible: true,
-  active: true
+  active: true,
 };
 
 store.dispatch(actions.addLayer(layer));
 ```
 
 **State Update:**
+
 ```javascript
 {
   stage: {
-    layerStack: [...existingLayers, layer]
+    layerStack: [...existingLayers, layer];
   }
 }
 ```
@@ -300,11 +326,13 @@ store.dispatch(actions.addLayer(layer));
 Removes a layer from the stack.
 
 **Parameters:**
+
 - `layerId` (string): Layer ID to remove
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.removeLayer('layer-1'));
+store.dispatch(actions.removeLayer("layer-1"));
 ```
 
 ---
@@ -314,15 +342,19 @@ store.dispatch(actions.removeLayer('layer-1'));
 Updates layer properties.
 
 **Parameters:**
+
 - `layerId` (string): Layer ID
 - `updates` (Object): Properties to update
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.updateLayer('layer-1', {
-  status: 'Shared',
-  visible: false
-}));
+store.dispatch(
+  actions.updateLayer("layer-1", {
+    status: "Shared",
+    visible: false,
+  })
+);
 ```
 
 ---
@@ -332,8 +364,9 @@ store.dispatch(actions.updateLayer('layer-1', {
 Toggles layer visibility in viewport.
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.toggleLayerVisibility('layer-1'));
+store.dispatch(actions.toggleLayerVisibility("layer-1"));
 ```
 
 ---
@@ -343,8 +376,9 @@ store.dispatch(actions.toggleLayerVisibility('layer-1'));
 Toggles layer active state (included in composition).
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.toggleLayerActive('layer-1'));
+store.dispatch(actions.toggleLayerActive("layer-1"));
 ```
 
 ---
@@ -354,9 +388,11 @@ store.dispatch(actions.toggleLayerActive('layer-1'));
 Reorders the entire layer stack.
 
 **Parameters:**
+
 - `layerStack` (Array): New layer order
 
 **Example:**
+
 ```javascript
 const reordered = [layers[2], layers[0], layers[1]];
 store.dispatch(actions.reorderLayers(reordered));
@@ -369,11 +405,13 @@ store.dispatch(actions.reorderLayers(reordered));
 Sets the active layer filter.
 
 **Parameters:**
+
 - `filter` (string): Filter value ('All', 'WIP', 'Shared', 'Published', 'Archived')
 
 **Example:**
+
 ```javascript
-import { LAYER_STATUS } from './constants.js';
+import { LAYER_STATUS } from "./constants.js";
 
 store.dispatch(actions.setLayerFilter(LAYER_STATUS.PUBLISHED));
 ```
@@ -385,11 +423,13 @@ store.dispatch(actions.setLayerFilter(LAYER_STATUS.PUBLISHED));
 Toggles status-based colorization in 3D viewport.
 
 **Example:**
+
 ```javascript
 store.dispatch(actions.toggleStatusColor());
 ```
 
 **Effect:**
+
 - Orange for WIP
 - Blue for Shared
 - Green for Published
@@ -404,9 +444,11 @@ store.dispatch(actions.toggleStatusColor());
 Sets the composed prim hierarchy.
 
 **Parameters:**
+
 - `hierarchy` (Array): Array of root prim objects
 
 **Example:**
+
 ```javascript
 const hierarchy = [
   {
@@ -422,6 +464,7 @@ store.dispatch(actions.setComposedHierarchy(hierarchy));
 ```
 
 **State Update:**
+
 ```javascript
 {
   composedHierarchy: hierarchy,
@@ -438,17 +481,21 @@ store.dispatch(actions.setComposedHierarchy(hierarchy));
 Updates prim properties in the hierarchy.
 
 **Parameters:**
+
 - `primPath` (string): Prim path (e.g., '/Building/Wall')
 - `updates` (Object): Property updates
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.updatePrim('/Building/Wall', {
-  properties: {
-    status: 'Shared',
-    displayColor: new THREE.Color(0x0000ff)
-  }
-}));
+store.dispatch(
+  actions.updatePrim("/Building/Wall", {
+    properties: {
+      status: "Shared",
+      displayColor: new THREE.Color(0x0000ff),
+    },
+  })
+);
 ```
 
 ---
@@ -458,20 +505,22 @@ store.dispatch(actions.updatePrim('/Building/Wall', {
 Adds a prim to the hierarchy.
 
 **Parameters:**
+
 - `parentPath` (string): Parent prim path (or null for root)
 - `prim` (Object): Prim object to add
 
 **Example:**
+
 ```javascript
 const newPrim = {
-  name: 'NewWall',
-  path: '/Building/NewWall',
-  type: 'Mesh',
+  name: "NewWall",
+  path: "/Building/NewWall",
+  type: "Mesh",
   properties: {},
-  children: []
+  children: [],
 };
 
-store.dispatch(actions.addPrim('/Building', newPrim));
+store.dispatch(actions.addPrim("/Building", newPrim));
 ```
 
 ---
@@ -481,8 +530,9 @@ store.dispatch(actions.addPrim('/Building', newPrim));
 Removes a prim from the hierarchy.
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.removePrim('/Building/OldWall'));
+store.dispatch(actions.removePrim("/Building/OldWall"));
 ```
 
 ---
@@ -494,12 +544,14 @@ store.dispatch(actions.removePrim('/Building/OldWall'));
 Loads file content into state.
 
 **Parameters:**
+
 - `filePath` (string): File path/name
 - `content` (string): File content
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.loadFile('scene.usda', '#usda 1.0\n...'));
+store.dispatch(actions.loadFile("scene.usda", "#usda 1.0\n..."));
 ```
 
 ---
@@ -509,8 +561,9 @@ store.dispatch(actions.loadFile('scene.usda', '#usda 1.0\n...'));
 Unloads file from state.
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.unloadFile('scene.usda'));
+store.dispatch(actions.unloadFile("scene.usda"));
 ```
 
 ---
@@ -520,8 +573,9 @@ store.dispatch(actions.unloadFile('scene.usda'));
 Updates file content.
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.updateFile('scene.usda', newContent));
+store.dispatch(actions.updateFile("scene.usda", newContent));
 ```
 
 ---
@@ -531,8 +585,9 @@ store.dispatch(actions.updateFile('scene.usda', newContent));
 Sets the currently selected file.
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.setCurrentFile('scene.usda'));
+store.dispatch(actions.setCurrentFile("scene.usda"));
 ```
 
 ---
@@ -544,6 +599,7 @@ store.dispatch(actions.setCurrentFile('scene.usda'));
 Adds a commit to history.
 
 **Parameters:**
+
 - `commit` (Object):
   - `id` (string): Commit ID
   - `timestamp` (string): ISO timestamp
@@ -553,14 +609,15 @@ Adds a commit to history.
   - `stagedPrims` (Array): List of affected prims
 
 **Example:**
+
 ```javascript
 const commit = {
-  id: 'commit-1',
+  id: "commit-1",
   timestamp: new Date().toISOString(),
-  user: 'Architect',
-  message: 'Add structural columns',
-  type: 'Prim Selection',
-  stagedPrims: ['/Building/Column1', '/Building/Column2']
+  user: "Architect",
+  message: "Add structural columns",
+  type: "Prim Selection",
+  stagedPrims: ["/Building/Column1", "/Building/Column2"],
 };
 
 store.dispatch(actions.addCommit(commit));
@@ -573,8 +630,9 @@ store.dispatch(actions.addCommit(commit));
 Sets the current HEAD commit (for timeline navigation).
 
 **Example:**
+
 ```javascript
-store.dispatch(actions.setHeadCommit('commit-5'));
+store.dispatch(actions.setHeadCommit("commit-5"));
 ```
 
 ---
@@ -584,9 +642,11 @@ store.dispatch(actions.setHeadCommit('commit-5'));
 Toggles history viewing mode.
 
 **Parameters:**
+
 - `enabled` (boolean): Enable/disable history mode
 
 **Example:**
+
 ```javascript
 store.dispatch(actions.toggleHistoryMode(true)); // Enter history mode
 store.dispatch(actions.toggleHistoryMode(false)); // Exit history mode
@@ -601,11 +661,13 @@ store.dispatch(actions.toggleHistoryMode(false)); // Exit history mode
 Sets the current view mode.
 
 **Parameters:**
+
 - `view` (string): View mode ('file', 'stage', 'history')
 
 **Example:**
+
 ```javascript
-import { VIEW_MODES } from './constants.js';
+import { VIEW_MODES } from "./constants.js";
 
 store.dispatch(actions.setCurrentView(VIEW_MODES.STAGE));
 ```
@@ -694,16 +756,19 @@ The reducer is a pure function that computes new state from actions.
 **File**: [src/core/state/reducer.js](../../src/core/state/reducer.js)
 
 **Signature:**
+
 ```javascript
 reducer(state: Object, action: Object): Object
 ```
 
 **Rules:**
+
 1. **Pure function**: No side effects
 2. **Immutable**: Never mutate state directly
 3. **Returns updates**: Returns only changed properties (deep merged by store)
 
 **Example Reducer Case:**
+
 ```javascript
 case "ADD_LAYER": {
   const currentStack = state.stage?.layerStack || [];
@@ -723,12 +788,13 @@ case "ADD_LAYER": {
 Middleware intercepts actions before they reach the reducer.
 
 **Import:**
+
 ```javascript
 import {
   applyMiddleware,
   createLoggerMiddleware,
-  createAsyncMiddleware
-} from './core/index.js';
+  createAsyncMiddleware,
+} from "./core/index.js";
 ```
 
 ### Applying Middleware
@@ -736,14 +802,19 @@ import {
 **File**: [src/main.js](../../src/main.js)
 
 ```javascript
-import { store, applyMiddleware, createLoggerMiddleware, createAsyncMiddleware } from './core/index.js';
+import {
+  store,
+  applyMiddleware,
+  createLoggerMiddleware,
+  createAsyncMiddleware,
+} from "./core/index.js";
 
 applyMiddleware(
   store,
   createAsyncMiddleware(),
   createLoggerMiddleware({
     collapsed: true,
-    enabled: import.meta.env.DEV // Only in development
+    enabled: import.meta.env.DEV, // Only in development
   })
 );
 ```
@@ -753,6 +824,7 @@ applyMiddleware(
 Logs actions and state changes to console (development only).
 
 **Output:**
+
 ```
 action SET_SCENE_NAME @ 14:32:15.234
   prev state: { sceneName: "Old" }
@@ -765,12 +837,13 @@ action SET_SCENE_NAME @ 14:32:15.234
 Handles async actions created with `createAsyncAction`.
 
 **Example:**
+
 ```javascript
-import { createAsyncAction } from './core/index.js';
+import { createAsyncAction } from "./core/index.js";
 
 const loadFileAsync = createAsyncAction(async (dispatch, getState) => {
-  const content = await fetch('/file.usda').then(r => r.text());
-  dispatch(actions.loadFile('file.usda', content));
+  const content = await fetch("/file.usda").then((r) => r.text());
+  dispatch(actions.loadFile("file.usda", content));
 });
 
 store.dispatch(loadFileAsync);
@@ -783,8 +856,8 @@ store.dispatch(loadFileAsync);
 ### Basic Subscription
 
 ```javascript
-store.subscribe('layerUpdates', (prevState, nextState) => {
-  console.log('State updated');
+store.subscribe("layerUpdates", (prevState, nextState) => {
+  console.log("State updated");
   updateUI(nextState);
 });
 ```
@@ -792,7 +865,7 @@ store.subscribe('layerUpdates', (prevState, nextState) => {
 ### Selective Updates (Manual Filtering)
 
 ```javascript
-store.subscribe('layerStack', (prevState, nextState) => {
+store.subscribe("layerStack", (prevState, nextState) => {
   // Only update if layer stack changed
   if (prevState.stage?.layerStack !== nextState.stage?.layerStack) {
     renderLayerStack(nextState.stage.layerStack);
@@ -804,15 +877,15 @@ store.subscribe('layerStack', (prevState, nextState) => {
 
 ```javascript
 // Separate concerns with different subscription keys
-store.subscribe('layerPanel', updateLayerPanel);
-store.subscribe('viewport', updateViewport);
-store.subscribe('properties', updatePropertiesPanel);
+store.subscribe("layerPanel", updateLayerPanel);
+store.subscribe("viewport", updateViewport);
+store.subscribe("properties", updatePropertiesPanel);
 ```
 
 ### Unsubscribing
 
 ```javascript
-const unsubscribe = store.subscribe('temp', callback);
+const unsubscribe = store.subscribe("temp", callback);
 
 // Later...
 unsubscribe();
@@ -831,7 +904,7 @@ const layers = store.getState().stage.layerStack;
 ### Find Layer by ID
 
 ```javascript
-const layer = store.getState().stage.layerStack.find(l => l.id === 'layer-1');
+const layer = store.getState().stage.layerStack.find((l) => l.id === "layer-1");
 ```
 
 ### Add and Activate Layer
@@ -839,11 +912,11 @@ const layer = store.getState().stage.layerStack.find(l => l.id === 'layer-1');
 ```javascript
 const layer = {
   id: generateId(),
-  name: 'new.usda',
-  content: '#usda 1.0',
-  status: 'WIP',
+  name: "new.usda",
+  content: "#usda 1.0",
+  status: "WIP",
   visible: true,
-  active: true
+  active: true,
 };
 
 store.dispatch(actions.addLayer(layer));
@@ -852,15 +925,17 @@ store.dispatch(actions.addLayer(layer));
 ### Toggle Layer Visibility
 
 ```javascript
-store.dispatch(actions.toggleLayerVisibility('layer-1'));
+store.dispatch(actions.toggleLayerVisibility("layer-1"));
 ```
 
 ### Update Prim Status
 
 ```javascript
-store.dispatch(actions.updatePrim('/Building/Wall', {
-  properties: { status: 'Shared' }
-}));
+store.dispatch(
+  actions.updatePrim("/Building/Wall", {
+    properties: { status: "Shared" },
+  })
+);
 ```
 
 ### Navigate to Historical Commit
@@ -870,7 +945,7 @@ store.dispatch(actions.updatePrim('/Building/Wall', {
 store.dispatch(actions.toggleHistoryMode(true));
 
 // Set commit to view
-store.dispatch(actions.setHeadCommit('commit-3'));
+store.dispatch(actions.setHeadCommit("commit-3"));
 
 // Exit history mode (return to present)
 store.dispatch(actions.toggleHistoryMode(false));
@@ -904,7 +979,7 @@ store.dispatch(actions.addLayer(newLayer));
 ### 3. Use Constants for Action Types
 
 ```javascript
-import { ActionTypes } from './core/index.js';
+import { ActionTypes } from "./core/index.js";
 
 if (action.type === ActionTypes.ADD_LAYER) {
   // ...
@@ -915,12 +990,12 @@ if (action.type === ActionTypes.ADD_LAYER) {
 
 ```javascript
 // ❌ Bad - Updates for every state change
-store.subscribe('myComponent', (prev, next) => {
+store.subscribe("myComponent", (prev, next) => {
   renderEverything(next); // Expensive!
 });
 
 // ✅ Good - Check what changed
-store.subscribe('myComponent', (prev, next) => {
+store.subscribe("myComponent", (prev, next) => {
   if (prev.stage?.layerStack !== next.stage?.layerStack) {
     renderLayerStack(next.stage.layerStack);
   }
@@ -946,7 +1021,7 @@ store.dispatch(actions.addLayer(layer3));
 button.onclick = () => {
   store.dispatch(actions.addLayer(layer));
   saveToLocalStorage(layer); // Side effect
-  sendAnalytics('layer_added'); // Side effect
+  sendAnalytics("layer_added"); // Side effect
 };
 
 // ✅ Good - Side effects in middleware
@@ -960,10 +1035,10 @@ button.onclick = () => {
 ### Example 1: Load and Display Layers
 
 ```javascript
-import { store, actions } from './core/index.js';
+import { store, actions } from "./core/index.js";
 
 // Subscribe to layer changes
-store.subscribe('layerPanel', (prevState, nextState) => {
+store.subscribe("layerPanel", (prevState, nextState) => {
   if (prevState.stage?.layerStack !== nextState.stage?.layerStack) {
     const layers = nextState.stage.layerStack;
     renderLayerStack(layers);
@@ -978,9 +1053,9 @@ async function loadFiles(files) {
       id: generateId(),
       name: file.name,
       content,
-      status: 'WIP',
+      status: "WIP",
       visible: true,
-      active: true
+      active: true,
     };
     store.dispatch(actions.addLayer(layer));
   }
@@ -992,18 +1067,18 @@ async function loadFiles(files) {
 ```javascript
 function promoteLayer(layerId) {
   const state = store.getState();
-  const layer = state.stage.layerStack.find(l => l.id === layerId);
+  const layer = state.stage.layerStack.find((l) => l.id === layerId);
 
   if (!layer) {
-    console.error('Layer not found');
+    console.error("Layer not found");
     return;
   }
 
   // Determine next status
   const statusProgression = {
-    'WIP': 'Shared',
-    'Shared': 'Published',
-    'Published': 'Archived'
+    WIP: "Shared",
+    Shared: "Published",
+    Published: "Archived",
   };
 
   const nextStatus = statusProgression[layer.status];
@@ -1023,8 +1098,8 @@ function filterLayersByStatus(status) {
 
   // Get filtered layers
   const state = store.getState();
-  const filtered = state.stage.layerStack.filter(layer =>
-    status === 'All' || layer.status === status
+  const filtered = state.stage.layerStack.filter(
+    (layer) => status === "All" || layer.status === status
   );
 
   renderLayerStack(filtered);
@@ -1077,8 +1152,8 @@ Logger middleware is enabled in development mode by default. Check console for a
 ### Track Action Flow
 
 ```javascript
-const unsubscribe = store.subscribe('debug', (prevState, nextState) => {
-  console.log('State changed:', { prevState, nextState });
+const unsubscribe = store.subscribe("debug", (prevState, nextState) => {
+  console.log("State changed:", { prevState, nextState });
   console.trace(); // Show stack trace
 });
 ```
@@ -1086,7 +1161,7 @@ const unsubscribe = store.subscribe('debug', (prevState, nextState) => {
 ### Test Actions
 
 ```javascript
-import { actions } from './core/index.js';
+import { actions } from "./core/index.js";
 
 // Dispatch test action
 store.dispatch(actions.setSceneName("Test"));

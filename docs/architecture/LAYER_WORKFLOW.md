@@ -76,12 +76,12 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
 
 ### Status Progression
 
-| Current Status | Promote To | Demote To |
-|----------------|------------|-----------|
-| WIP            | Shared     | WIP (no change) |
-| Shared         | Published  | WIP |
-| Published      | Archived   | Shared |
-| Archived       | Archived (no change) | Published |
+| Current Status | Promote To           | Demote To       |
+| -------------- | -------------------- | --------------- |
+| WIP            | Shared               | WIP (no change) |
+| Shared         | Published            | WIP             |
+| Published      | Archived             | Shared          |
+| Archived       | Archived (no change) | Published       |
 
 ---
 
@@ -92,6 +92,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
 **Purpose**: Active development layer
 
 **Characteristics:**
+
 - **Color**: Orange (0xffa500)
 - **Visibility**: Shown in 3D viewport
 - **Editable**: Fully editable by owner
@@ -102,6 +103,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
   - Private work not yet ready for team review
 
 **Permissions:**
+
 - **Owner**: Full edit rights
 - **Others**: Read-only (cannot edit)
 
@@ -114,6 +116,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
 **Purpose**: Ready for team review and collaboration
 
 **Characteristics:**
+
 - **Color**: Blue (0x007aff)
 - **Visibility**: Shown with blue tint when colorization enabled
 - **Editable**: Limited (owner + approved collaborators)
@@ -125,6 +128,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
   - Quality checking
 
 **Permissions:**
+
 - **Owner**: Can edit
 - **Project Manager**: Can override properties
 - **Others**: Read-only
@@ -138,6 +142,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
 **Purpose**: Approved, finalized, and authorized for use
 
 **Characteristics:**
+
 - **Color**: Green (0x28a745)
 - **Visibility**: Shown with green tint when colorization enabled
 - **Editable**: Immutable (should not be edited)
@@ -149,6 +154,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
   - Reference for downstream processes
 
 **Permissions:**
+
 - **All Users**: Read-only
 - **Project Manager**: Can demote if needed (reverses approval)
 
@@ -161,6 +167,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
 **Purpose**: Historical record, no longer active
 
 **Characteristics:**
+
 - **Color**: Gray (0x808080)
 - **Visibility**: Hidden by default, shown if toggled
 - **Editable**: Immutable (read-only)
@@ -172,6 +179,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
   - Deprecated layers
 
 **Permissions:**
+
 - **All Users**: Read-only
 - **Project Manager**: Can demote to Published if restoration needed
 
@@ -186,6 +194,7 @@ USD (Universal Scene Description) is increasingly used in architecture, construc
 Users can manually promote layers through the UI.
 
 **Steps:**
+
 1. **Select Layer(s)** in Layer Stack panel
 2. **Click "Promote"** button
 3. **Review Promotion Summary**:
@@ -196,10 +205,11 @@ Users can manually promote layers through the UI.
 5. **Layer Status Updates** with timestamp
 
 **Example:**
-```javascript
-import { layerService } from './core/services/index.js';
 
-const layer = { id: 'layer-1', status: 'WIP', filePath: 'scene.usda' };
+```javascript
+import { layerService } from "./core/services/index.js";
+
+const layer = { id: "layer-1", status: "WIP", filePath: "scene.usda" };
 const promoted = layerService.promoteLayer(layer);
 console.log(promoted.status); // "Shared"
 ```
@@ -207,6 +217,7 @@ console.log(promoted.status); // "Shared"
 ### Automatic Promotion (Future Enhancement)
 
 Potential triggers for automatic promotion:
+
 - **Time-based**: Auto-promote after N days in WIP
 - **Review-based**: Auto-promote after peer approval
 - **Test-based**: Auto-promote if validation tests pass
@@ -224,14 +235,16 @@ Demotion reverses a layer's status progression, used when:
 - **Re-Review**: Shared layer needs more work
 
 **Steps:**
+
 1. **Select Layer** in Layer Stack panel
 2. **Click "Demote"** button
 3. **Confirm Demotion** (warns about consequences)
 4. **Layer Status Reverts** to previous stage
 
 **Example:**
+
 ```javascript
-const sharedLayer = { id: 'layer-1', status: 'Shared', filePath: 'scene.usda' };
+const sharedLayer = { id: "layer-1", status: "Shared", filePath: "scene.usda" };
 const demoted = layerService.demoteLayer(sharedLayer);
 console.log(demoted.status); // "WIP"
 ```
@@ -249,10 +262,11 @@ Promote multiple layers simultaneously, often with merging.
 Promote multiple layers with the same current status.
 
 **Example:**
+
 ```javascript
 // Promote all WIP layers to Shared
-const wipLayers = layerStack.filter(l => l.status === 'WIP');
-const promoted = wipLayers.map(l => layerService.promoteLayer(l));
+const wipLayers = layerStack.filter((l) => l.status === "WIP");
+const promoted = wipLayers.map((l) => layerService.promoteLayer(l));
 ```
 
 ### Merge-and-Promote
@@ -262,6 +276,7 @@ Merge multiple layers and promote the result.
 **Use Case**: Combine multiple WIP layers into a single Shared layer.
 
 **Steps:**
+
 1. **Select Multiple Layers** (same status)
 2. **Click "Batch Promote"**
 3. **System Merges Layers** using USD composition rules
@@ -269,14 +284,15 @@ Merge multiple layers and promote the result.
 5. **Optionally Removes** source layers
 
 **Example:**
+
 ```javascript
 // Merge WIP layers into a single Shared layer
-import { usdaMerger } from './viewer/usda/usdaMerger.js';
+import { usdaMerger } from "./viewer/usda/usdaMerger.js";
 
-const wipLayers = layerStack.filter(l => l.status === 'WIP');
+const wipLayers = layerStack.filter((l) => l.status === "WIP");
 const mergedContent = usdaMerger.mergeLayers(wipLayers);
 
-const mergedLayer = layerService.createLayer('merged-shared.usda', 'Shared');
+const mergedLayer = layerService.createLayer("merged-shared.usda", "Shared");
 mergedLayer.content = mergedContent;
 ```
 
@@ -288,18 +304,19 @@ Different user roles have different promotion permissions.
 
 ### Permission Matrix
 
-| Role | Promote to Shared | Promote to Published | Promote to Archived | Demote Any | Override Conflicts |
-|------|-------------------|----------------------|---------------------|------------|-------------------|
-| **Architect** | ✅ Own Layers | ❌ | ❌ | ❌ | Own Properties |
-| **Structural Engineer** | ✅ Own Layers | ❌ | ❌ | ❌ | Own Properties |
-| **Project Manager** | ✅ All Layers | ✅ All Layers | ✅ All Layers | ✅ All | ✅ All Properties |
-| **Field Person** | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Role                    | Promote to Shared | Promote to Published | Promote to Archived | Demote Any | Override Conflicts |
+| ----------------------- | ----------------- | -------------------- | ------------------- | ---------- | ------------------ |
+| **Architect**           | ✅ Own Layers     | ❌                   | ❌                  | ❌         | Own Properties     |
+| **Structural Engineer** | ✅ Own Layers     | ❌                   | ❌                  | ❌         | Own Properties     |
+| **Project Manager**     | ✅ All Layers     | ✅ All Layers        | ✅ All Layers       | ✅ All     | ✅ All Properties  |
+| **Field Person**        | ❌                | ❌                   | ❌                  | ❌         | ❌                 |
 
 ### Permission Checks
 
 **Example Implementation:**
+
 ```javascript
-import { USER_ROLES } from './constants.js';
+import { USER_ROLES } from "./constants.js";
 
 function canPromote(user, layer, targetStatus) {
   const currentUser = store.getState().currentUser;
@@ -310,14 +327,15 @@ function canPromote(user, layer, targetStatus) {
   }
 
   // To Published requires Project Manager
-  if (targetStatus === 'Published') {
+  if (targetStatus === "Published") {
     return false;
   }
 
   // To Shared: owner or Project Manager
-  if (targetStatus === 'Shared') {
-    return layer.owner === currentUser ||
-           currentUser === USER_ROLES.PROJECT_MANAGER;
+  if (targetStatus === "Shared") {
+    return (
+      layer.owner === currentUser || currentUser === USER_ROLES.PROJECT_MANAGER
+    );
   }
 
   return false;
@@ -335,16 +353,17 @@ When **"Colorize by Status"** is enabled:
 ```javascript
 // src/utils/statusUtils.js
 export const STATUS_COLORS = {
-  WIP: 0xffa500,       // Orange
-  Shared: 0x007aff,    // Blue
+  WIP: 0xffa500, // Orange
+  Shared: 0x007aff, // Blue
   Published: 0x28a745, // Green
-  Archived: 0x808080   // Gray
+  Archived: 0x808080, // Gray
 };
 ```
 
 **Rendering Logic:**
+
 ```javascript
-import { resolvePrimStatus } from './utils/statusUtils.js';
+import { resolvePrimStatus } from "./utils/statusUtils.js";
 
 function renderPrim(prim, colorizeByStatus) {
   if (colorizeByStatus) {
@@ -363,19 +382,21 @@ function renderPrim(prim, colorizeByStatus) {
 Prims inherit status from their layer unless explicitly overridden.
 
 **Priority:**
+
 1. **Prim-level status** (`prim.properties.status`) - Highest priority
 2. **Layer status** (`prim._sourceLayerStatus`) - Fallback
 3. **Default** ("Published") - Final fallback
 
 **Example:**
+
 ```javascript
 // Prim from WIP layer with explicit status
 const prim = {
-  path: '/Wall',
-  _sourceLayerStatus: 'WIP',
+  path: "/Wall",
+  _sourceLayerStatus: "WIP",
   properties: {
-    status: 'Shared'  // Explicit override
-  }
+    status: "Shared", // Explicit override
+  },
 };
 
 const status = resolvePrimStatus(prim); // Returns: "Shared"
@@ -390,6 +411,7 @@ const status = resolvePrimStatus(prim); // Returns: "Shared"
 When promoting layers, conflicts occur if multiple layers modify the same property on the same prim.
 
 **Example Conflict:**
+
 - **Base Layer** (Published): Wall color = white
 - **Layer A** (WIP): Wall color = beige
 - **Layer B** (WIP): Wall color = red
@@ -399,14 +421,16 @@ Promoting both A and B to Shared creates a conflict: Which color wins?
 ### Conflict Resolution
 
 **Resolution Strategies:**
+
 1. **Manual Resolution**: User chooses which value to keep
 2. **Permission-Based**: Property owner's value wins
 3. **Timestamp-Based**: Most recent edit wins
 4. **Layer Order**: Higher layer in stack wins
 
 **Implementation:**
+
 ```javascript
-import { detectConflicts } from './utils/conflictDetector.js';
+import { detectConflicts } from "./utils/conflictDetector.js";
 
 function promoteLayers(layers, targetStatus) {
   // Detect conflicts
@@ -417,11 +441,11 @@ function promoteLayers(layers, targetStatus) {
     showConflictModal(conflicts, (resolved) => {
       // Apply resolution and promote
       applyResolutions(resolved);
-      layers.forEach(l => promoteLayer(l, targetStatus));
+      layers.forEach((l) => promoteLayer(l, targetStatus));
     });
   } else {
     // No conflicts, promote directly
-    layers.forEach(l => promoteLayer(l, targetStatus));
+    layers.forEach((l) => promoteLayer(l, targetStatus));
   }
 }
 ```
@@ -429,6 +453,7 @@ function promoteLayers(layers, targetStatus) {
 ### Avoiding Conflicts
 
 **Best Practices:**
+
 - **Coordinate**: Agree on ownership before editing
 - **Separate Concerns**: Work in different layers/prims
 - **Communicate**: Use Pset comments to indicate intent
@@ -441,6 +466,7 @@ function promoteLayers(layers, targetStatus) {
 ### File Location
 
 **Layer Workflow Code:**
+
 - Layer status management: [src/core/services/LayerService.js](../../src/core/services/LayerService.js)
 - Promotion controller: [src/components/promotionController.js](../../src/components/promotionController.js)
 - Status utilities: [src/utils/statusUtils.js](../../src/utils/statusUtils.js)
@@ -457,20 +483,21 @@ Layer status is stored in the Redux-style state:
       {
         id: "layer-1",
         name: "base.usda",
-        status: "Published",  // Layer status
+        status: "Published", // Layer status
         visible: true,
-        active: true
-      }
-    ]
+        active: true,
+      },
+    ];
   }
 }
 ```
 
 **Updating Status:**
-```javascript
-import { store, actions } from './core/index.js';
 
-store.dispatch(actions.updateLayer('layer-1', { status: 'Shared' }));
+```javascript
+import { store, actions } from "./core/index.js";
+
+store.dispatch(actions.updateLayer("layer-1", { status: "Shared" }));
 ```
 
 ### Filtering by Status
@@ -478,11 +505,11 @@ store.dispatch(actions.updateLayer('layer-1', { status: 'Shared' }));
 Users can filter visible layers by status:
 
 ```javascript
-import { layerService } from './core/services/index.js';
+import { layerService } from "./core/services/index.js";
 
-const wipLayers = layerService.filterLayersByStatus(layerStack, 'WIP');
-const sharedLayers = layerService.filterLayersByStatus(layerStack, 'Shared');
-const allLayers = layerService.filterLayersByStatus(layerStack, 'All');
+const wipLayers = layerService.filterLayersByStatus(layerStack, "WIP");
+const sharedLayers = layerService.filterLayersByStatus(layerStack, "Shared");
+const allLayers = layerService.filterLayersByStatus(layerStack, "All");
 ```
 
 ---
@@ -501,12 +528,14 @@ const allLayers = layerService.filterLayersByStatus(layerStack, 'All');
 Don't skip stages. Progress through: WIP → Shared → Published
 
 **Why?** Each stage serves a purpose:
+
 - Shared = Review gate
 - Published = Approval gate
 
 ### 3. Document Changes
 
 Add commit messages when promoting:
+
 ```
 "Promoted structural columns to Shared for team review"
 ```
@@ -514,6 +543,7 @@ Add commit messages when promoting:
 ### 4. Coordinate Promotions
 
 Before promoting to Published, ensure:
+
 - ✅ Peer review completed
 - ✅ No conflicts with other layers
 - ✅ Dependent work is aware
@@ -521,6 +551,7 @@ Before promoting to Published, ensure:
 ### 5. Use Demotion Sparingly
 
 Demoting Published layers can break downstream work. Prefer:
+
 - Creating a new WIP layer with changes
 - Keeping Published layer as reference
 
@@ -535,14 +566,14 @@ Enable "Colorize by Status" to visually identify layer maturity in 3D viewport.
 ### Example 1: Promote Layer from WIP to Shared
 
 ```javascript
-import { store, actions } from './core/index.js';
-import { layerService } from './core/services/index.js';
+import { store, actions } from "./core/index.js";
+import { layerService } from "./core/services/index.js";
 
 // Get layer
-const layer = layerService.getLayerById(layerStack, 'layer-1');
+const layer = layerService.getLayerById(layerStack, "layer-1");
 
 // Check current status
-console.log('Current status:', layer.status); // "WIP"
+console.log("Current status:", layer.status); // "WIP"
 
 // Promote
 const promoted = layerService.promoteLayer(layer);
@@ -550,37 +581,40 @@ const promoted = layerService.promoteLayer(layer);
 // Update state
 store.dispatch(actions.updateLayer(layer.id, { status: promoted.status }));
 
-console.log('New status:', promoted.status); // "Shared"
+console.log("New status:", promoted.status); // "Shared"
 ```
 
 ### Example 2: Batch Promote Multiple Layers
 
 ```javascript
 // Get all WIP layers
-const wipLayers = layerService.filterLayersByStatus(layerStack, 'WIP');
+const wipLayers = layerService.filterLayersByStatus(layerStack, "WIP");
 
 console.log(`Promoting ${wipLayers.length} layers`);
 
 // Promote each
-wipLayers.forEach(layer => {
+wipLayers.forEach((layer) => {
   const promoted = layerService.promoteLayer(layer);
   store.dispatch(actions.updateLayer(layer.id, { status: promoted.status }));
 });
 
-console.log('All layers promoted to Shared');
+console.log("All layers promoted to Shared");
 ```
 
 ### Example 3: Check Promotion Eligibility
 
 ```javascript
 // Get layers eligible for promotion to Published
-const publishable = layerService.getPromotableLayersFor(layerStack, 'Published');
+const publishable = layerService.getPromotableLayersFor(
+  layerStack,
+  "Published"
+);
 
 if (publishable.length === 0) {
-  console.log('No layers ready for publication');
+  console.log("No layers ready for publication");
 } else {
   console.log(`${publishable.length} layers can be promoted to Published`);
-  publishable.forEach(l => console.log('-', l.filePath));
+  publishable.forEach((l) => console.log("-", l.filePath));
 }
 ```
 
@@ -591,8 +625,11 @@ function attemptPromotion(layer, targetStatus) {
   const currentUser = store.getState().currentUser;
 
   // Check permissions
-  if (targetStatus === 'Published' && currentUser !== USER_ROLES.PROJECT_MANAGER) {
-    alert('Only Project Managers can promote to Published');
+  if (
+    targetStatus === "Published" &&
+    currentUser !== USER_ROLES.PROJECT_MANAGER
+  ) {
+    alert("Only Project Managers can promote to Published");
     return;
   }
 

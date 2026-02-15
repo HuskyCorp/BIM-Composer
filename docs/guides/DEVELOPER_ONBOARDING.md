@@ -261,12 +261,14 @@ USDA Composer follows a **layered architecture**:
 **Purpose**: Initializes the entire application
 
 **What it does:**
+
 - Applies middleware to the Redux store
 - Creates three Three.js scenes (file view, stage view, history view)
 - Initializes all UI controllers
 - Sets up event listeners
 
 **Key initialization order:**
+
 ```javascript
 1. Apply middleware (logger, async)
 2. Create ThreeScene instances
@@ -283,6 +285,7 @@ USDA Composer follows a **layered architecture**:
 **Purpose**: Centralized constants used throughout the app
 
 **Contents:**
+
 - `USER_ROLES`: Architect, Structural Engineer, Project Manager, Field Person
 - `LAYER_STATUS`: WIP, Shared, Published, Archived
 - `PRIM_TYPES`: Xform, Cube, Sphere, Mesh
@@ -307,6 +310,7 @@ if (layer.status === "WIP") { ... }
 **Purpose**: Redux-style centralized state store
 
 **API:**
+
 - `store.getState()`: Get current state
 - `store.dispatch(action)`: Dispatch an action to update state
 - `store.subscribe(keys, callback)`: Subscribe to specific state changes
@@ -341,7 +345,7 @@ if (layer.status === "WIP") { ... }
 **Usage pattern:**
 
 ```javascript
-import { actions } from '../core/index.js';
+import { actions } from "../core/index.js";
 
 // Dispatch an action
 store.dispatch(actions.addLayer({ name, content, status }));
@@ -349,6 +353,7 @@ store.dispatch(actions.updatePrim({ primPath, properties }));
 ```
 
 **Common actions:**
+
 - Scene: `setSceneName`, `setCurrentUser`
 - Layers: `addLayer`, `removeLayer`, `reorderLayers`, `toggleLayerVisibility`
 - Prims: `addPrim`, `updatePrim`, `removePrim`, `setComposedHierarchy`
@@ -361,6 +366,7 @@ store.dispatch(actions.updatePrim({ primPath, properties }));
 **Purpose**: Manages Three.js scene, camera, renderer, and selection
 
 **Key responsibilities:**
+
 - Creates and configures Three.js scene
 - Handles camera orbit controls
 - Manages rendering loop
@@ -371,9 +377,9 @@ store.dispatch(actions.updatePrim({ primPath, properties }));
 
 ```javascript
 const threeScene = new ThreeScene(
-  containerElement,  // DOM element for canvas
-  parser,            // USDA parser instance
-  viewType           // "file", "stage", or "history"
+  containerElement, // DOM element for canvas
+  parser, // USDA parser instance
+  viewType // "file", "stage", or "history"
 );
 threeScene.animate(); // Start rendering loop
 ```
@@ -387,13 +393,14 @@ threeScene.animate(); // Start rendering loop
 **Main function:**
 
 ```javascript
-import { USDA_PARSER } from './viewer/usda/usdaParser.js';
+import { USDA_PARSER } from "./viewer/usda/usdaParser.js";
 
 const prims = USDA_PARSER.parseUsda(usdaContent);
 // Returns: array of prim objects with hierarchy
 ```
 
 **How it works:**
+
 - Regex-based parsing of `def` and `over` keywords
 - Brace counting to identify prim boundaries
 - Property extraction (colors, status, custom attributes)
@@ -408,7 +415,10 @@ const prims = USDA_PARSER.parseUsda(usdaContent);
 **Main functions:**
 
 ```javascript
-import { composePrimsFromHierarchy, composeHierarchyToUsda } from './viewer/usda/usdaComposer.js';
+import {
+  composePrimsFromHierarchy,
+  composeHierarchyToUsda,
+} from "./viewer/usda/usdaComposer.js";
 
 // Generate USDA syntax for prims
 const usdaText = composePrimsFromHierarchy(prims);
@@ -424,6 +434,7 @@ const fullFile = composeHierarchyToUsda(prims, filename);
 **Purpose**: Manages the staging area with collision detection
 
 **Key functions:**
+
 - `stagePrims()`: Add prims to staging area
 - `commitChanges()`: Write staged prims to layer and log to statement.usda
 - Collision handling: Real Elements > Placeholders
@@ -446,7 +457,7 @@ Action → Reducer → New State → Notify Listeners → UI Updates
 **1. Import actions and store:**
 
 ```javascript
-import { store, actions } from './core/index.js';
+import { store, actions } from "./core/index.js";
 ```
 
 **2. Dispatch an action:**
@@ -456,19 +467,23 @@ import { store, actions } from './core/index.js';
 store.dispatch(actions.setSceneName("New Project"));
 
 // Add a layer
-store.dispatch(actions.addLayer({
-  name: "structural.usda",
-  content: usdaContent,
-  status: "WIP",
-  visible: true,
-  active: true
-}));
+store.dispatch(
+  actions.addLayer({
+    name: "structural.usda",
+    content: usdaContent,
+    status: "WIP",
+    visible: true,
+    active: true,
+  })
+);
 
 // Update prim properties
-store.dispatch(actions.updatePrim({
-  primPath: "/World/Building",
-  properties: { status: "Shared", displayColor: new THREE.Color(0x0000ff) }
-}));
+store.dispatch(
+  actions.updatePrim({
+    primPath: "/World/Building",
+    properties: { status: "Shared", displayColor: new THREE.Color(0x0000ff) },
+  })
+);
 ```
 
 ### How to Subscribe to State Changes
@@ -476,7 +491,7 @@ store.dispatch(actions.updatePrim({
 **Subscribe to specific keys:**
 
 ```javascript
-store.subscribe(['stage.layerStack'], (state) => {
+store.subscribe(["stage.layerStack"], (state) => {
   const layers = state.stage.layerStack;
   console.log("Layer stack updated:", layers);
   // Update UI accordingly
@@ -484,6 +499,7 @@ store.subscribe(['stage.layerStack'], (state) => {
 ```
 
 **Subscription keys** use dot notation:
+
 - `'sceneName'`: Top-level key
 - `'stage.layerStack'`: Nested key
 - `['stage.layerStack', 'currentUser']`: Multiple keys
@@ -520,15 +536,15 @@ Let's walk through adding a feature step-by-step.
 ```javascript
 export const ActionTypes = {
   // ... existing actions
-  DUPLICATE_PRIM: "DUPLICATE_PRIM"
+  DUPLICATE_PRIM: "DUPLICATE_PRIM",
 };
 
 export const actions = {
   // ... existing actions
   duplicatePrim: (primPath) => ({
     type: ActionTypes.DUPLICATE_PRIM,
-    payload: { primPath }
-  })
+    payload: { primPath },
+  }),
 };
 ```
 
@@ -564,9 +580,9 @@ case ActionTypes.DUPLICATE_PRIM: {
 
 ```javascript
 function initDuplicateButton() {
-  const duplicateBtn = document.getElementById('duplicatePrimBtn');
+  const duplicateBtn = document.getElementById("duplicatePrimBtn");
 
-  duplicateBtn.addEventListener('click', () => {
+  duplicateBtn.addEventListener("click", () => {
     const selectedPrimPath = store.getState().selectedPrimPath;
     if (!selectedPrimPath) {
       alert("Please select a prim first");
@@ -588,19 +604,21 @@ The view updates automatically via state subscriptions in rendering components.
 
 #### Step 5: Write Tests
 
-**File**: [src/__tests__/unit/core/state/reducer.test.js](../../src/__tests__/unit/core/state/reducer.test.js)
+**File**: [src/**tests**/unit/core/state/reducer.test.js](../../src/__tests__/unit/core/state/reducer.test.js)
 
 ```javascript
-describe('DUPLICATE_PRIM action', () => {
-  it('should duplicate a prim', () => {
+describe("DUPLICATE_PRIM action", () => {
+  it("should duplicate a prim", () => {
     const initialState = {
       stage: {
-        composedPrims: [{
-          name: "Wall",
-          path: "/Building/Wall",
-          type: "Mesh"
-        }]
-      }
+        composedPrims: [
+          {
+            name: "Wall",
+            path: "/Building/Wall",
+            type: "Mesh",
+          },
+        ],
+      },
     };
 
     const action = actions.duplicatePrim("/Building/Wall");
@@ -656,7 +674,7 @@ import ThreeScene from './ThreeScene.js';
 **Use custom error classes** from [src/core/errors/errors.js](../../src/core/errors/errors.js):
 
 ```javascript
-import { ParseError, ValidationError } from './core/errors/errors.js';
+import { ParseError, ValidationError } from "./core/errors/errors.js";
 
 function parseUsda(content) {
   if (!content) {
@@ -770,15 +788,15 @@ See [docs/guides/TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing
 **Quick example:**
 
 ```javascript
-import { describe, it, expect } from 'vitest';
-import { actions } from '../../src/core/state/actions/index.js';
+import { describe, it, expect } from "vitest";
+import { actions } from "../../src/core/state/actions/index.js";
 
-describe('Action Creators', () => {
-  it('should create ADD_LAYER action', () => {
-    const layer = { name: 'test.usda', content: '...', status: 'WIP' };
+describe("Action Creators", () => {
+  it("should create ADD_LAYER action", () => {
+    const layer = { name: "test.usda", content: "...", status: "WIP" };
     const action = actions.addLayer(layer);
 
-    expect(action.type).toBe('ADD_LAYER');
+    expect(action.type).toBe("ADD_LAYER");
     expect(action.payload).toEqual(layer);
   });
 });
@@ -815,6 +833,7 @@ We use **Conventional Commits**:
 **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 **Examples:**
+
 - `feat(staging): add placeholder collision detection`
 - `fix(parser): handle nested braces in property values`
 - `docs(api): add JSDoc for ThreeScene class`
@@ -829,22 +848,26 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for full guidelines.
 To deepen your understanding, read these docs in order:
 
 ### Essential (Read First)
+
 1. ✅ **This document** (DEVELOPER_ONBOARDING.md)
 2. [ARCHITECTURE.md](../../ARCHITECTURE.md) - Detailed system architecture
 3. [TESTING_GUIDE.md](./TESTING_GUIDE.md) - Testing standards and patterns
 4. [STATE_API.md](../api/STATE_API.md) - State management API reference
 
 ### Important (Read Soon)
+
 5. [SERVICES_API.md](../api/SERVICES_API.md) - LayerService and PrimService API
 6. [PARSER_API.md](../api/PARSER_API.md) - USDA parsing and composition
 7. [LAYER_WORKFLOW.md](../architecture/LAYER_WORKFLOW.md) - ISO 19650 workflow details
 
 ### Advanced (Read When Needed)
+
 8. [VIEWER_API.md](../api/VIEWER_API.md) - Three.js viewer internals
 9. [DESIGN_DECISIONS.md](../architecture/DESIGN_DECISIONS.md) - Architectural rationale
 10. [TYPESCRIPT_MIGRATION.md](../architecture/TYPESCRIPT_MIGRATION.md) - TS migration guide
 
 ### External Resources
+
 - [USD Documentation](https://graphics.pixar.com/usd/docs/index.html) - Official USD docs
 - [Three.js Documentation](https://threejs.org/docs/) - Three.js API reference
 - [Vite Guide](https://vitejs.dev/guide/) - Vite build tool documentation

@@ -56,6 +56,7 @@ By the end of this tutorial, you'll be able to:
 If you don't have USDA files, create these simple examples:
 
 **base.usda** (Base layer with a cube):
+
 ```usd
 #usda 1.0
 
@@ -69,6 +70,7 @@ def Xform "World" {
 ```
 
 **colors.usda** (Override layer adding color):
+
 ```usd
 #usda 1.0
 
@@ -104,6 +106,7 @@ The app should automatically open at `http://localhost:5173`. If not, manually o
 ### Verify It's Working
 
 You should see:
+
 - **Left sidebar**: Layer Stack and Hierarchy panels
 - **Center**: 3D viewport (currently empty)
 - **Right sidebar**: Properties panel
@@ -123,6 +126,7 @@ You should see:
 ### Verify the File Loaded
 
 You should see:
+
 - ✅ **Layer Stack**: `base.usda` appears with status badge "Published"
 - ✅ **3D Viewport**: A white cube appears in the center
 - ✅ **Hierarchy Panel**: `World` > `MyCube` shown in tree view
@@ -143,6 +147,7 @@ Hierarchy Panel:
 ### Troubleshooting
 
 **If cube doesn't appear:**
+
 - Check browser console (F12) for errors
 - Try adjusting camera: click and drag to orbit, scroll to zoom
 - Verify file contains valid USD syntax
@@ -154,6 +159,7 @@ Hierarchy Panel:
 ### Navigate the 3D Viewport
 
 **Controls:**
+
 - **Left-click + Drag**: Orbit camera around scene
 - **Right-click + Drag**: Pan camera
 - **Scroll Wheel**: Zoom in/out
@@ -189,6 +195,7 @@ With `MyCube` selected:
 ### See Layer Composition
 
 **Layer Stack Panel** should now show:
+
 ```
 ┌─────────────────────────┐
 │ colors.usda [WIP]       │ 👁️ ✓  (Top layer)
@@ -203,6 +210,7 @@ With `MyCube` selected:
 ### Toggle Layer Visibility
 
 Try toggling the **eye icon** next to `colors.usda`:
+
 - **Eye open** (👁️): Layer visible, cube is red
 - **Eye closed** (👁️ with slash): Layer hidden, cube returns to white (from base layer)
 
@@ -235,6 +243,7 @@ Try toggling the **eye icon** next to `colors.usda`:
 ### Verify Staging
 
 The staging modal should now show:
+
 ```
 Staged Prims (1):
 - /World/MyCube
@@ -261,6 +270,7 @@ Staged Prims (1):
 ### What Just Happened?
 
 Your commit:
+
 - ✅ Created an entry in `statement.usda` (audit log)
 - ✅ Recorded the staged prim (`/World/MyCube`)
 - ✅ Saved your commit message
@@ -314,6 +324,7 @@ Current status of `colors.usda`: **WIP** (Work in Progress)
 ### Confirm Promotion
 
 A modal may appear asking:
+
 ```
 Promote colors.usda from WIP to Shared?
 
@@ -327,6 +338,7 @@ This will mark the layer as ready for team review.
 ### Verify Promotion
 
 The layer status should update:
+
 ```
 ┌─────────────────────────┐
 │ colors.usda [Shared]    │ 👁️ ✓  <- Status changed!
@@ -358,6 +370,7 @@ The layer status should update:
 ### Choose Export Options
 
 A modal may appear with options:
+
 - **Status Filter**: Which layers to include
   - Select "All" to include both layers
 - **Format**: USDA (text) or USDZ (binary package)
@@ -372,6 +385,7 @@ A modal may appear with options:
 ### Verify Export
 
 The exported file should contain:
+
 - Both `base.usda` and `colors.usda` merged together
 - The cube with red color (from override layer)
 - All properties combined
@@ -383,6 +397,7 @@ The exported file should contain:
 ### Congratulations! 🎉
 
 You've successfully:
+
 - ✅ Loaded multiple USDA layers
 - ✅ Navigated the interface
 - ✅ Staged and committed changes
@@ -393,16 +408,19 @@ You've successfully:
 ### Continue Learning
 
 **Beginner:**
+
 - Try loading more complex USDA files
 - Experiment with different layer orders (drag to reorder)
 - Add custom properties to prims
 
 **Intermediate:**
+
 - Learn about **Entity Staging** (placeholders)
 - Practice **Conflict Resolution**
 - Explore **Multi-User Collaboration** (switch user roles)
 
 **Advanced:**
+
 - Read the [USER_GUIDE.md](../guides/USER_GUIDE.md) for comprehensive features
 - Study the [LAYER_WORKFLOW.md](../architecture/LAYER_WORKFLOW.md) for ISO 19650 details
 - Build custom integrations with the [STATE_API.md](../api/STATE_API.md)
@@ -436,6 +454,7 @@ Add metadata and Pset properties to prims.
 ### Issue: File won't load
 
 **Solutions:**
+
 - Verify file is valid USDA (starts with `#usda 1.0`)
 - Check browser console (F12) for errors
 - Try a simpler file first
@@ -444,6 +463,7 @@ Add metadata and Pset properties to prims.
 ### Issue: Cube doesn't appear
 
 **Solutions:**
+
 - Adjust camera position (drag and zoom)
 - Check if layer is visible (eye icon)
 - Verify layer is active (checkmark)
@@ -452,6 +472,7 @@ Add metadata and Pset properties to prims.
 ### Issue: Can't stage prims
 
 **Solutions:**
+
 - Ensure a prim is selected
 - Check if staging modal is open
 - Verify you have permission to edit the layer
@@ -462,14 +483,14 @@ Add metadata and Pset properties to prims.
 
 ### What You Learned
 
-| Concept | What It Is | Why It Matters |
-|---------|------------|----------------|
-| **Layers** | Individual USDA files in a stack | Enables non-destructive editing |
-| **Composition** | Merging layers bottom-to-top | Upper layers override lower layers |
-| **Staging** | Collecting changes before commit | Allows review before permanent save |
-| **Commits** | Snapshots in project history | Creates audit trail and enables time travel |
-| **Promotion** | Moving layers through maturity stages | ISO 19650 workflow for collaboration |
-| **Export** | Flattening layers into one file | Creates deliverable or shareable asset |
+| Concept         | What It Is                            | Why It Matters                              |
+| --------------- | ------------------------------------- | ------------------------------------------- |
+| **Layers**      | Individual USDA files in a stack      | Enables non-destructive editing             |
+| **Composition** | Merging layers bottom-to-top          | Upper layers override lower layers          |
+| **Staging**     | Collecting changes before commit      | Allows review before permanent save         |
+| **Commits**     | Snapshots in project history          | Creates audit trail and enables time travel |
+| **Promotion**   | Moving layers through maturity stages | ISO 19650 workflow for collaboration        |
+| **Export**      | Flattening layers into one file       | Creates deliverable or shareable asset      |
 
 ### Key Takeaways
 

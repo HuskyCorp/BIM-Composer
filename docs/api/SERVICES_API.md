@@ -54,10 +54,10 @@ src/core/services/
 
 ```javascript
 // Import singleton instances (recommended)
-import { layerService, primService } from './core/index.js';
+import { layerService, primService } from "./core/index.js";
 
 // Or import classes for custom instances
-import { LayerService, PrimService } from './core/services/index.js';
+import { LayerService, PrimService } from "./core/services/index.js";
 ```
 
 ### Service Pattern
@@ -79,8 +79,9 @@ export const myService = new MyService();
 ## LayerService API
 
 **Import:**
+
 ```javascript
-import { layerService } from './core/index.js';
+import { layerService } from "./core/index.js";
 ```
 
 **File**: [src/core/services/LayerService.js](../../src/core/services/LayerService.js)
@@ -92,14 +93,17 @@ import { layerService } from './core/index.js';
 Generates a unique layer ID.
 
 **Signature:**
+
 ```javascript
 generateLayerId(): string
 ```
 
 **Returns:**
+
 - `string`: Unique ID in format `"layer-{timestamp}-{random}"`
 
 **Example:**
+
 ```javascript
 const id = layerService.generateLayerId();
 // Returns: "layer-1234567890-abc123xyz"
@@ -112,16 +116,19 @@ const id = layerService.generateLayerId();
 Creates a new layer object with default properties.
 
 **Signature:**
+
 ```javascript
 createLayer(filePath: string, status?: string): Object
 ```
 
 **Parameters:**
+
 - `filePath` (string): Layer filename (e.g., "assets/char.usda")
 - `status` (string, optional): Initial status. Default: "WIP"
   - Valid values: "WIP", "Shared", "Published", "Archived"
 
 **Returns:**
+
 - `Object`: Layer object with:
   - `id` (string): Unique layer ID
   - `filePath` (string): File path
@@ -132,11 +139,13 @@ createLayer(filePath: string, status?: string): Object
   - `modifiedAt` (number): Last modification timestamp
 
 **Throws:**
+
 - `ValidationError`: If filePath is missing or status is invalid
 
 **Example:**
+
 ```javascript
-const layer = layerService.createLayer('assets/char.usda', 'WIP');
+const layer = layerService.createLayer("assets/char.usda", "WIP");
 /*
 Returns:
 {
@@ -158,25 +167,30 @@ Returns:
 Updates layer properties with new values.
 
 **Signature:**
+
 ```javascript
 updateLayer(layer: Object, updates: Object): Object
 ```
 
 **Parameters:**
+
 - `layer` (Object): The layer to update
 - `updates` (Object): Properties to update
 
 **Returns:**
+
 - `Object`: New layer object with merged properties and updated `modifiedAt`
 
 **Throws:**
+
 - `ValidationError`: If layer is missing
 
 **Example:**
+
 ```javascript
 const updated = layerService.updateLayer(layer, {
-  status: 'Shared',
-  visible: false
+  status: "Shared",
+  visible: false,
 });
 ```
 
@@ -189,30 +203,36 @@ const updated = layerService.updateLayer(layer, {
 Validates layer stack for correctness and consistency.
 
 **Signature:**
+
 ```javascript
 validateLayerStack(layerStack: Array<Object>): boolean
 ```
 
 **Parameters:**
+
 - `layerStack` (Array): Array of layer objects
 
 **Returns:**
+
 - `boolean`: `true` if validation passes
 
 **Throws:**
+
 - `ValidationError`: If layerStack is not an array or contains duplicate file paths
 
 **Validation Rules:**
+
 - Must be an array
 - No duplicate file paths
 
 **Example:**
+
 ```javascript
 try {
   layerService.validateLayerStack([layer1, layer2]);
-  console.log('Valid layer stack');
+  console.log("Valid layer stack");
 } catch (error) {
-  console.error('Invalid layer stack:', error.message);
+  console.error("Invalid layer stack:", error.message);
 }
 ```
 
@@ -223,21 +243,25 @@ try {
 Filters layers by status.
 
 **Signature:**
+
 ```javascript
 filterLayersByStatus(layerStack: Array<Object>, status: string): Array<Object>
 ```
 
 **Parameters:**
+
 - `layerStack` (Array): The layer stack to filter
 - `status` (string): Status to filter by ("All", "WIP", "Shared", "Published", "Archived")
 
 **Returns:**
+
 - `Array<Object>`: Filtered layer stack
 
 **Example:**
+
 ```javascript
-const wipLayers = layerService.filterLayersByStatus(layerStack, 'WIP');
-const allLayers = layerService.filterLayersByStatus(layerStack, 'All');
+const wipLayers = layerService.filterLayersByStatus(layerStack, "WIP");
+const allLayers = layerService.filterLayersByStatus(layerStack, "All");
 ```
 
 ---
@@ -247,14 +271,17 @@ const allLayers = layerService.filterLayersByStatus(layerStack, 'All');
 Gets all visible layers.
 
 **Signature:**
+
 ```javascript
 getVisibleLayers(layerStack: Array<Object>): Array<Object>
 ```
 
 **Returns:**
+
 - `Array<Object>`: Layers where `visible === true`
 
 **Example:**
+
 ```javascript
 const visible = layerService.getVisibleLayers(layerStack);
 ```
@@ -266,18 +293,21 @@ const visible = layerService.getVisibleLayers(layerStack);
 Gets the active layer (first layer where `active === true`).
 
 **Signature:**
+
 ```javascript
 getActiveLayer(layerStack: Array<Object>): Object|undefined
 ```
 
 **Returns:**
+
 - `Object|undefined`: The active layer or undefined if none
 
 **Example:**
+
 ```javascript
 const activeLayer = layerService.getActiveLayer(layerStack);
 if (activeLayer) {
-  console.log('Active layer:', activeLayer.filePath);
+  console.log("Active layer:", activeLayer.filePath);
 }
 ```
 
@@ -290,19 +320,23 @@ Promotes layer to the next status in the workflow.
 **Workflow:** WIP → Shared → Published → Archived
 
 **Signature:**
+
 ```javascript
 promoteLayer(layer: Object): Object
 ```
 
 **Parameters:**
+
 - `layer` (Object): The layer to promote
 
 **Returns:**
+
 - `Object`: Updated layer with new status
 
 **Example:**
+
 ```javascript
-const wipLayer = { id: '123', status: 'WIP', filePath: 'scene.usda' };
+const wipLayer = { id: "123", status: "WIP", filePath: "scene.usda" };
 const promoted = layerService.promoteLayer(wipLayer);
 console.log(promoted.status); // "Shared"
 
@@ -322,19 +356,23 @@ Demotes layer to the previous status in the workflow.
 **Workflow:** Archived → Published → Shared → WIP
 
 **Signature:**
+
 ```javascript
 demoteLayer(layer: Object): Object
 ```
 
 **Parameters:**
+
 - `layer` (Object): The layer to demote
 
 **Returns:**
+
 - `Object`: Updated layer with previous status
 
 **Example:**
+
 ```javascript
-const sharedLayer = { id: '123', status: 'Shared', filePath: 'scene.usda' };
+const sharedLayer = { id: "123", status: "Shared", filePath: "scene.usda" };
 const demoted = layerService.demoteLayer(sharedLayer);
 console.log(demoted.status); // "WIP"
 ```
@@ -348,28 +386,33 @@ console.log(demoted.status); // "WIP"
 Reorders layers by moving a layer from one index to another.
 
 **Signature:**
+
 ```javascript
 reorderLayers(layerStack: Array<Object>, fromIndex: number, toIndex: number): Array<Object>
 ```
 
 **Parameters:**
+
 - `layerStack` (Array): Current layer stack
 - `fromIndex` (number): Index to move from (0-based)
 - `toIndex` (number): Index to move to (0-based)
 
 **Returns:**
+
 - `Array<Object>`: New layer stack with reordered layers
 
 **Throws:**
+
 - `ValidationError`: If fromIndex or toIndex is out of bounds
 
 **Example:**
+
 ```javascript
 // Move layer at index 0 to index 2
 const reordered = layerService.reorderLayers(layerStack, 0, 2);
 
 // Layer composition order changed
-console.log(reordered.map(l => l.filePath));
+console.log(reordered.map((l) => l.filePath));
 ```
 
 ---
@@ -379,16 +422,19 @@ console.log(reordered.map(l => l.filePath));
 Finds layer by ID.
 
 **Signature:**
+
 ```javascript
 getLayerById(layerStack: Array<Object>, layerId: string): Object|undefined
 ```
 
 **Returns:**
+
 - `Object|undefined`: The layer or undefined if not found
 
 **Example:**
+
 ```javascript
-const layer = layerService.getLayerById(layerStack, 'layer-123');
+const layer = layerService.getLayerById(layerStack, "layer-123");
 ```
 
 ---
@@ -398,16 +444,19 @@ const layer = layerService.getLayerById(layerStack, 'layer-123');
 Finds layer by file path.
 
 **Signature:**
+
 ```javascript
 getLayerByPath(layerStack: Array<Object>, filePath: string): Object|undefined
 ```
 
 **Returns:**
+
 - `Object|undefined`: The layer or undefined if not found
 
 **Example:**
+
 ```javascript
-const layer = layerService.getLayerByPath(layerStack, 'scene.usda');
+const layer = layerService.getLayerByPath(layerStack, "scene.usda");
 ```
 
 ---
@@ -417,16 +466,19 @@ const layer = layerService.getLayerByPath(layerStack, 'scene.usda');
 Removes layer from the stack.
 
 **Signature:**
+
 ```javascript
 removeLayer(layerStack: Array<Object>, layerId: string): Array<Object>
 ```
 
 **Returns:**
+
 - `Array<Object>`: New layer stack without the removed layer
 
 **Example:**
+
 ```javascript
-const newStack = layerService.removeLayer(layerStack, 'layer-123');
+const newStack = layerService.removeLayer(layerStack, "layer-123");
 ```
 
 ---
@@ -436,16 +488,19 @@ const newStack = layerService.removeLayer(layerStack, 'layer-123');
 Toggles layer visibility.
 
 **Signature:**
+
 ```javascript
 toggleLayerVisibility(layerStack: Array<Object>, layerId: string): Array<Object>
 ```
 
 **Returns:**
+
 - `Array<Object>`: New layer stack with toggled visibility
 
 **Example:**
+
 ```javascript
-const updated = layerService.toggleLayerVisibility(layerStack, 'layer-123');
+const updated = layerService.toggleLayerVisibility(layerStack, "layer-123");
 ```
 
 ---
@@ -455,16 +510,19 @@ const updated = layerService.toggleLayerVisibility(layerStack, 'layer-123');
 Sets the active layer (deactivates all others).
 
 **Signature:**
+
 ```javascript
 setActiveLayer(layerStack: Array<Object>, layerId: string): Array<Object>
 ```
 
 **Returns:**
+
 - `Array<Object>`: New layer stack with updated active states
 
 **Example:**
+
 ```javascript
-const updated = layerService.setActiveLayer(layerStack, 'layer-123');
+const updated = layerService.setActiveLayer(layerStack, "layer-123");
 // Only layer-123 has active: true, all others have active: false
 ```
 
@@ -475,24 +533,31 @@ const updated = layerService.setActiveLayer(layerStack, 'layer-123');
 Gets layers eligible for promotion to target status.
 
 **Signature:**
+
 ```javascript
 getPromotableLayersFor(layerStack: Array<Object>, targetStatus: string): Array<Object>
 ```
 
 **Parameters:**
+
 - `layerStack` (Array): The layer stack
 - `targetStatus` (string): Target status ("Shared", "Published", "Archived")
 
 **Returns:**
+
 - `Array<Object>`: Layers eligible for promotion
 
 **Example:**
+
 ```javascript
 // Get layers that can be promoted to Shared (i.e., WIP layers)
-const promotable = layerService.getPromotableLayersFor(layerStack, 'Shared');
+const promotable = layerService.getPromotableLayersFor(layerStack, "Shared");
 
 // Get layers that can be promoted to Published (i.e., Shared layers)
-const publishable = layerService.getPromotableLayersFor(layerStack, 'Published');
+const publishable = layerService.getPromotableLayersFor(
+  layerStack,
+  "Published"
+);
 ```
 
 ---
@@ -500,8 +565,9 @@ const publishable = layerService.getPromotableLayersFor(layerStack, 'Published')
 ## PrimService API
 
 **Import:**
+
 ```javascript
-import { primService } from './core/index.js';
+import { primService } from "./core/index.js";
 ```
 
 **File**: [src/core/services/PrimService.js](../../src/core/services/PrimService.js)
@@ -513,31 +579,37 @@ import { primService } from './core/index.js';
 Validates prim path for correctness.
 
 **Signature:**
+
 ```javascript
 validatePrimPath(path: string): boolean
 ```
 
 **Parameters:**
+
 - `path` (string): The prim path to validate (e.g., "/World/Character")
 
 **Returns:**
+
 - `boolean`: `true` if validation passes
 
 **Throws:**
+
 - `ValidationError`: If path is invalid or contains forbidden characters
 
 **Validation Rules:**
+
 - Must start with "/"
 - Cannot contain: `<`, `>`, `"`, `|`, `?`, `*`
 
 **Example:**
+
 ```javascript
 try {
-  primService.validatePrimPath('/World/Character'); // Returns: true
-  primService.validatePrimPath('World/Character'); // Throws: must start with /
-  primService.validatePrimPath('/World<Character'); // Throws: invalid character
+  primService.validatePrimPath("/World/Character"); // Returns: true
+  primService.validatePrimPath("World/Character"); // Throws: must start with /
+  primService.validatePrimPath("/World<Character"); // Throws: invalid character
 } catch (error) {
-  console.error('Invalid path:', error.message);
+  console.error("Invalid path:", error.message);
 }
 ```
 
@@ -548,21 +620,25 @@ try {
 Normalizes prim path by removing trailing/duplicate slashes.
 
 **Signature:**
+
 ```javascript
 normalizePrimPath(path: string): string
 ```
 
 **Parameters:**
+
 - `path` (string): The path to normalize
 
 **Returns:**
+
 - `string`: Normalized path
 
 **Example:**
+
 ```javascript
-primService.normalizePrimPath('World/Character/');  // "/World/Character"
-primService.normalizePrimPath('//World///Character'); // "/World/Character"
-primService.normalizePrimPath('/World');           // "/World"
+primService.normalizePrimPath("World/Character/"); // "/World/Character"
+primService.normalizePrimPath("//World///Character"); // "/World/Character"
+primService.normalizePrimPath("/World"); // "/World"
 ```
 
 ---
@@ -572,24 +648,29 @@ primService.normalizePrimPath('/World');           // "/World"
 Gets the parent path from a prim path.
 
 **Signature:**
+
 ```javascript
 getParentPath(path: string): string|null
 ```
 
 **Parameters:**
+
 - `path` (string): The prim path (e.g., "/World/Character/Mesh")
 
 **Returns:**
+
 - `string|null`: Parent path or `null` if path is root "/"
 
 **Throws:**
+
 - `ValidationError`: If path is invalid
 
 **Example:**
+
 ```javascript
-primService.getParentPath('/World/Character/Mesh'); // "/World/Character"
-primService.getParentPath('/World');                // "/"
-primService.getParentPath('/');                     // null
+primService.getParentPath("/World/Character/Mesh"); // "/World/Character"
+primService.getParentPath("/World"); // "/"
+primService.getParentPath("/"); // null
 ```
 
 ---
@@ -599,24 +680,29 @@ primService.getParentPath('/');                     // null
 Gets prim name (last segment) from a path.
 
 **Signature:**
+
 ```javascript
 getPrimName(path: string): string
 ```
 
 **Parameters:**
+
 - `path` (string): The prim path (e.g., "/World/Character")
 
 **Returns:**
+
 - `string`: The prim name (e.g., "Character") or "Root" for root path
 
 **Throws:**
+
 - `ValidationError`: If path is invalid
 
 **Example:**
+
 ```javascript
-primService.getPrimName('/World/Character'); // "Character"
-primService.getPrimName('/World');           // "World"
-primService.getPrimName('/');                // "Root"
+primService.getPrimName("/World/Character"); // "Character"
+primService.getPrimName("/World"); // "World"
+primService.getPrimName("/"); // "Root"
 ```
 
 ---
@@ -626,21 +712,25 @@ primService.getPrimName('/');                // "Root"
 Joins multiple path segments into a single path.
 
 **Signature:**
+
 ```javascript
 joinPaths(...paths: string[]): string
 ```
 
 **Parameters:**
+
 - `...paths` (string[]): Path segments to join
 
 **Returns:**
+
 - `string`: Joined path starting with "/"
 
 **Example:**
+
 ```javascript
-primService.joinPaths('World', 'Character', 'Mesh'); // "/World/Character/Mesh"
-primService.joinPaths('/World', 'Character');        // "/World/Character"
-primService.joinPaths('/', 'World');                 // "/World"
+primService.joinPaths("World", "Character", "Mesh"); // "/World/Character/Mesh"
+primService.joinPaths("/World", "Character"); // "/World/Character"
+primService.joinPaths("/", "World"); // "/World"
 ```
 
 ---
@@ -650,17 +740,20 @@ primService.joinPaths('/', 'World');                 // "/World"
 Creates a new prim object.
 
 **Signature:**
+
 ```javascript
 createPrim(path: string, type?: string, properties?: Object): Object
 ```
 
 **Parameters:**
+
 - `path` (string): The prim path (e.g., "/World/Sphere")
 - `type` (string, optional): Prim type. Default: "Xform"
   - Common types: "Xform", "Mesh", "Sphere", "Cube", "Scope"
 - `properties` (Object, optional): Initial properties. Default: `{}`
 
 **Returns:**
+
 - `Object`: New prim object with:
   - `path` (string): Normalized prim path
   - `type` (string): Prim type
@@ -669,13 +762,15 @@ createPrim(path: string, type?: string, properties?: Object): Object
   - `metadata` (Object): Creation and modification timestamps
 
 **Throws:**
+
 - `ValidationError`: If path is invalid
 
 **Example:**
+
 ```javascript
-const prim = primService.createPrim('/World/Sphere', 'Sphere', {
+const prim = primService.createPrim("/World/Sphere", "Sphere", {
   radius: 1.0,
-  displayColor: [1, 0, 0] // Red
+  displayColor: [1, 0, 0], // Red
 });
 
 /*
@@ -703,22 +798,26 @@ Returns:
 Updates prim properties with new values.
 
 **Signature:**
+
 ```javascript
 updatePrimProperties(prim: Object, updates: Object): Object
 ```
 
 **Parameters:**
+
 - `prim` (Object): The prim to update
 - `updates` (Object): Properties to add or update
 
 **Returns:**
+
 - `Object`: New prim object with merged properties and updated `modifiedAt`
 
 **Example:**
+
 ```javascript
 const updated = primService.updatePrimProperties(prim, {
   radius: 2.0,
-  status: 'Shared'
+  status: "Shared",
 });
 ```
 
@@ -731,33 +830,35 @@ const updated = primService.updatePrimProperties(prim, {
 Finds prim by path in a hierarchy tree (recursive depth-first search).
 
 **Signature:**
+
 ```javascript
 findPrimByPath(hierarchy: Array<Object>, path: string): Object|null
 ```
 
 **Parameters:**
+
 - `hierarchy` (Array): Array of root-level prims with nested children
 - `path` (string): The prim path to find (e.g., "/World/Character")
 
 **Returns:**
+
 - `Object|null`: The prim object if found, `null` otherwise
 
 **Example:**
+
 ```javascript
 const hierarchy = [
   {
-    path: '/World',
-    type: 'Xform',
-    children: [
-      { path: '/World/Character', type: 'Xform', children: [] }
-    ]
-  }
+    path: "/World",
+    type: "Xform",
+    children: [{ path: "/World/Character", type: "Xform", children: [] }],
+  },
 ];
 
-const prim = primService.findPrimByPath(hierarchy, '/World/Character');
+const prim = primService.findPrimByPath(hierarchy, "/World/Character");
 console.log(prim); // { path: "/World/Character", type: "Xform", ... }
 
-const notFound = primService.findPrimByPath(hierarchy, '/NotFound');
+const notFound = primService.findPrimByPath(hierarchy, "/NotFound");
 console.log(notFound); // null
 ```
 
@@ -768,17 +869,21 @@ console.log(notFound); // null
 Gets all descendant prims (recursive).
 
 **Signature:**
+
 ```javascript
 getDescendants(prim: Object): Array<Object>
 ```
 
 **Parameters:**
+
 - `prim` (Object): The parent prim
 
 **Returns:**
+
 - `Array<Object>`: All descendant prims (children, grandchildren, etc.)
 
 **Example:**
+
 ```javascript
 const descendants = primService.getDescendants(parentPrim);
 console.log(`Found ${descendants.length} descendants`);
@@ -791,25 +896,30 @@ console.log(`Found ${descendants.length} descendants`);
 Gets the depth of a prim in the hierarchy.
 
 **Signature:**
+
 ```javascript
 getPrimDepth(path: string): number
 ```
 
 **Parameters:**
+
 - `path` (string): The prim path
 
 **Returns:**
+
 - `number`: Depth (0 for root "/", 1 for "/World", 2 for "/World/Character", etc.)
 
 **Throws:**
+
 - `ValidationError`: If path is invalid
 
 **Example:**
+
 ```javascript
-primService.getPrimDepth('/');                  // 0
-primService.getPrimDepth('/World');             // 1
-primService.getPrimDepth('/World/Character');   // 2
-primService.getPrimDepth('/World/Character/Mesh'); // 3
+primService.getPrimDepth("/"); // 0
+primService.getPrimDepth("/World"); // 1
+primService.getPrimDepth("/World/Character"); // 2
+primService.getPrimDepth("/World/Character/Mesh"); // 3
 ```
 
 ---
@@ -819,22 +929,26 @@ primService.getPrimDepth('/World/Character/Mesh'); // 3
 Checks if one path is an ancestor of another.
 
 **Signature:**
+
 ```javascript
 isAncestor(ancestorPath: string, descendantPath: string): boolean
 ```
 
 **Parameters:**
+
 - `ancestorPath` (string): Potential ancestor path
 - `descendantPath` (string): Potential descendant path
 
 **Returns:**
+
 - `boolean`: `true` if ancestorPath is an ancestor of descendantPath
 
 **Example:**
+
 ```javascript
-primService.isAncestor('/World', '/World/Character'); // true
-primService.isAncestor('/World', '/World');           // false (same path)
-primService.isAncestor('/World/Character', '/World'); // false (reversed)
+primService.isAncestor("/World", "/World/Character"); // true
+primService.isAncestor("/World", "/World"); // false (same path)
+primService.isAncestor("/World/Character", "/World"); // false (reversed)
 ```
 
 ---
@@ -844,27 +958,31 @@ primService.isAncestor('/World/Character', '/World'); // false (reversed)
 Builds a map for fast O(1) prim lookup by path.
 
 **Signature:**
+
 ```javascript
 buildPrimMap(hierarchy: Array<Object>): Map<string, Object>
 ```
 
 **Parameters:**
+
 - `hierarchy` (Array): Array of root-level prims with nested children
 
 **Returns:**
+
 - `Map<string, Object>`: Map of prim paths to prim objects
 
 **Example:**
+
 ```javascript
 const primMap = primService.buildPrimMap(hierarchy);
 
 // Fast O(1) lookup
-const prim = primMap.get('/World/Character');
+const prim = primMap.get("/World/Character");
 console.log(prim); // { path: "/World/Character", ... }
 
 // Check if prim exists
-if (primMap.has('/World/Building')) {
-  console.log('Building exists');
+if (primMap.has("/World/Building")) {
+  console.log("Building exists");
 }
 ```
 
@@ -875,26 +993,30 @@ if (primMap.has('/World/Building')) {
 Gets display name for prim (falls back to path name if no display name set).
 
 **Signature:**
+
 ```javascript
 getDisplayName(prim: Object): string
 ```
 
 **Parameters:**
+
 - `prim` (Object): The prim
 
 **Returns:**
+
 - `string`: Display name or prim name from path
 
 **Example:**
+
 ```javascript
 const prim = {
-  path: '/World/Character',
-  properties: { displayName: 'Hero Character' }
+  path: "/World/Character",
+  properties: { displayName: "Hero Character" },
 };
 
 primService.getDisplayName(prim); // "Hero Character"
 
-const primWithoutName = { path: '/World/Character', properties: {} };
+const primWithoutName = { path: "/World/Character", properties: {} };
 primService.getDisplayName(primWithoutName); // "Character"
 ```
 
@@ -905,20 +1027,24 @@ primService.getDisplayName(primWithoutName); // "Character"
 Sets display name for prim.
 
 **Signature:**
+
 ```javascript
 setDisplayName(prim: Object, displayName: string): Object
 ```
 
 **Parameters:**
+
 - `prim` (Object): The prim
 - `displayName` (string): The display name to set
 
 **Returns:**
+
 - `Object`: New prim with updated display name
 
 **Example:**
+
 ```javascript
-const updated = primService.setDisplayName(prim, 'Main Building');
+const updated = primService.setDisplayName(prim, "Main Building");
 console.log(updated.properties.displayName); // "Main Building"
 ```
 
@@ -929,23 +1055,28 @@ console.log(updated.properties.displayName); // "Main Building"
 Deep clones a prim with a new path.
 
 **Signature:**
+
 ```javascript
 clonePrim(prim: Object, newPath: string): Object
 ```
 
 **Parameters:**
+
 - `prim` (Object): The prim to clone
 - `newPath` (string): New path for the cloned prim
 
 **Returns:**
+
 - `Object`: Cloned prim with new path and updated timestamps
 
 **Throws:**
+
 - `ValidationError`: If newPath is invalid
 
 **Example:**
+
 ```javascript
-const cloned = primService.clonePrim(originalPrim, '/World/Character_Copy');
+const cloned = primService.clonePrim(originalPrim, "/World/Character_Copy");
 console.log(cloned.path); // "/World/Character_Copy"
 console.log(cloned !== originalPrim); // true (deep copy)
 ```
@@ -957,27 +1088,31 @@ console.log(cloned !== originalPrim); // true (deep copy)
 Merges prim properties for layer composition.
 
 **Signature:**
+
 ```javascript
 mergePrims(basePrim: Object, overridePrim: Object): Object
 ```
 
 **Parameters:**
+
 - `basePrim` (Object): The base prim (lower layer)
 - `overridePrim` (Object): The override prim (higher layer)
 
 **Returns:**
+
 - `Object`: Merged prim with combined properties (override takes precedence)
 
 **Example:**
+
 ```javascript
 const base = {
-  path: '/World/Wall',
-  properties: { status: 'WIP', displayColor: [1, 1, 1] }
+  path: "/World/Wall",
+  properties: { status: "WIP", displayColor: [1, 1, 1] },
 };
 
 const override = {
-  path: '/World/Wall',
-  properties: { status: 'Shared', displayName: 'Main Wall' }
+  path: "/World/Wall",
+  properties: { status: "Shared", displayName: "Main Wall" },
 };
 
 const merged = primService.mergePrims(base, override);
@@ -1001,20 +1136,24 @@ Returns:
 Filters prims by type (recursive).
 
 **Signature:**
+
 ```javascript
 filterPrimsByType(hierarchy: Array<Object>, type: string): Array<Object>
 ```
 
 **Parameters:**
+
 - `hierarchy` (Array): Array of root-level prims
 - `type` (string): Type to filter by (e.g., "Mesh", "Xform")
 
 **Returns:**
+
 - `Array<Object>`: All prims matching the type
 
 **Example:**
+
 ```javascript
-const meshes = primService.filterPrimsByType(hierarchy, 'Mesh');
+const meshes = primService.filterPrimsByType(hierarchy, "Mesh");
 console.log(`Found ${meshes.length} meshes`);
 ```
 
@@ -1025,17 +1164,21 @@ console.log(`Found ${meshes.length} meshes`);
 Counts total prims in hierarchy (recursive).
 
 **Signature:**
+
 ```javascript
 countPrims(hierarchy: Array<Object>): number
 ```
 
 **Parameters:**
+
 - `hierarchy` (Array): Array of root-level prims
 
 **Returns:**
+
 - `number`: Total prim count
 
 **Example:**
+
 ```javascript
 const count = primService.countPrims(hierarchy);
 console.log(`Total prims: ${count}`);
@@ -1046,8 +1189,9 @@ console.log(`Total prims: ${count}`);
 ## Service Registry
 
 **Import:**
+
 ```javascript
-import { services } from './core/index.js';
+import { services } from "./core/index.js";
 ```
 
 The service registry provides dependency injection for services.
@@ -1057,17 +1201,20 @@ The service registry provides dependency injection for services.
 Initializes all services (async).
 
 **Signature:**
+
 ```javascript
 async init(): Promise<Object>
 ```
 
 **Returns:**
+
 - `Promise<Object>`: The services registry
 
 **Example:**
+
 ```javascript
 await services.init();
-console.log('Services initialized');
+console.log("Services initialized");
 ```
 
 ### `services.get(name)`
@@ -1075,23 +1222,28 @@ console.log('Services initialized');
 Gets a service by name.
 
 **Signature:**
+
 ```javascript
 get(name: string): Object
 ```
 
 **Parameters:**
+
 - `name` (string): Service name ("layer", "prim")
 
 **Returns:**
+
 - `Object`: The service instance
 
 **Throws:**
+
 - `Error`: If service not found
 
 **Example:**
+
 ```javascript
-const layer = services.get('layer'); // layerService
-const prim = services.get('prim');   // primService
+const layer = services.get("layer"); // layerService
+const prim = services.get("prim"); // primService
 ```
 
 ---
@@ -1103,11 +1255,11 @@ Services work with state management for complete workflows.
 **Example: Add Layer Workflow**
 
 ```javascript
-import { store, actions } from './core/index.js';
-import { layerService } from './core/services/index.js';
+import { store, actions } from "./core/index.js";
+import { layerService } from "./core/services/index.js";
 
 // Create layer using service
-const layer = layerService.createLayer('scene.usda', 'WIP');
+const layer = layerService.createLayer("scene.usda", "WIP");
 
 // Validate layer stack
 const currentStack = store.getState().stage.layerStack;
@@ -1120,25 +1272,27 @@ store.dispatch(actions.addLayer(layer));
 **Example: Update Prim Properties**
 
 ```javascript
-import { store, actions } from './core/index.js';
-import { primService } from './core/services/index.js';
+import { store, actions } from "./core/index.js";
+import { primService } from "./core/services/index.js";
 
 // Get current hierarchy
 const hierarchy = store.getState().composedHierarchy;
 
 // Find prim
-const prim = primService.findPrimByPath(hierarchy, '/World/Wall');
+const prim = primService.findPrimByPath(hierarchy, "/World/Wall");
 
 // Update prim using service
 const updated = primService.updatePrimProperties(prim, {
-  status: 'Shared',
-  displayColor: [0, 0, 1]
+  status: "Shared",
+  displayColor: [0, 0, 1],
 });
 
 // Dispatch to state
-store.dispatch(actions.updatePrim('/World/Wall', {
-  properties: updated.properties
-}));
+store.dispatch(
+  actions.updatePrim("/World/Wall", {
+    properties: updated.properties,
+  })
+);
 ```
 
 ---
@@ -1148,22 +1302,24 @@ store.dispatch(actions.updatePrim('/World/Wall', {
 Services throw `ValidationError` for invalid inputs.
 
 **Import:**
+
 ```javascript
-import { ValidationError } from './core/errors/errors.js';
+import { ValidationError } from "./core/errors/errors.js";
 ```
 
 **Example:**
+
 ```javascript
-import { layerService } from './core/index.js';
-import { ValidationError } from './core/errors/errors.js';
+import { layerService } from "./core/index.js";
+import { ValidationError } from "./core/errors/errors.js";
 
 try {
-  const layer = layerService.createLayer('', 'WIP'); // Invalid: empty path
+  const layer = layerService.createLayer("", "WIP"); // Invalid: empty path
 } catch (error) {
   if (error instanceof ValidationError) {
-    console.error('Validation failed:', error.message);
-    console.error('Field:', error.field);
-    console.error('Value:', error.value);
+    console.error("Validation failed:", error.message);
+    console.error("Field:", error.field);
+    console.error("Value:", error.value);
   }
 }
 ```
@@ -1175,27 +1331,25 @@ try {
 ### Example 1: Layer Promotion Workflow
 
 ```javascript
-import { layerService } from './core/index.js';
+import { layerService } from "./core/index.js";
 
 function promoteSelectedLayers(selectedLayers) {
   // Check if layers can be promoted
   const promotable = layerService.getPromotableLayersFor(
     selectedLayers,
-    'Shared'
+    "Shared"
   );
 
   if (promotable.length === 0) {
-    console.error('No layers can be promoted to Shared');
+    console.error("No layers can be promoted to Shared");
     return;
   }
 
   // Promote each layer
-  const promoted = promotable.map(layer =>
-    layerService.promoteLayer(layer)
-  );
+  const promoted = promotable.map((layer) => layerService.promoteLayer(layer));
 
   // Update state (via store.dispatch)
-  promoted.forEach(layer => {
+  promoted.forEach((layer) => {
     store.dispatch(actions.updateLayer(layer.id, { status: layer.status }));
   });
 
@@ -1206,45 +1360,45 @@ function promoteSelectedLayers(selectedLayers) {
 ### Example 2: Find and Update Prim
 
 ```javascript
-import { primService } from './core/index.js';
+import { primService } from "./core/index.js";
 
 function updatePrimStatus(hierarchy, primPath, newStatus) {
   // Find prim
   const prim = primService.findPrimByPath(hierarchy, primPath);
 
   if (!prim) {
-    console.error('Prim not found:', primPath);
+    console.error("Prim not found:", primPath);
     return null;
   }
 
   // Update properties
   const updated = primService.updatePrimProperties(prim, {
-    status: newStatus
+    status: newStatus,
   });
 
   return updated;
 }
 
 // Usage
-const updatedPrim = updatePrimStatus(hierarchy, '/World/Wall', 'Shared');
+const updatedPrim = updatePrimStatus(hierarchy, "/World/Wall", "Shared");
 ```
 
 ### Example 3: Build Prim Map for Fast Lookup
 
 ```javascript
-import { primService } from './core/index.js';
+import { primService } from "./core/index.js";
 
 // Build map once
 const primMap = primService.buildPrimMap(hierarchy);
 
 // Fast lookups
-const wall = primMap.get('/World/Building/Wall');
-const floor = primMap.get('/World/Building/Floor');
-const ceiling = primMap.get('/World/Building/Ceiling');
+const wall = primMap.get("/World/Building/Wall");
+const floor = primMap.get("/World/Building/Floor");
+const ceiling = primMap.get("/World/Building/Ceiling");
 
 // Check existence
-if (primMap.has('/World/NewFeature')) {
-  console.log('Feature already exists');
+if (primMap.has("/World/NewFeature")) {
+  console.log("Feature already exists");
 }
 ```
 
@@ -1257,23 +1411,23 @@ Services are pure and easy to test.
 **Example: Testing LayerService**
 
 ```javascript
-import { describe, it, expect } from 'vitest';
-import { layerService } from '../../src/core/services/LayerService.js';
+import { describe, it, expect } from "vitest";
+import { layerService } from "../../src/core/services/LayerService.js";
 
-describe('LayerService', () => {
-  it('should create layer with default status', () => {
-    const layer = layerService.createLayer('test.usda');
+describe("LayerService", () => {
+  it("should create layer with default status", () => {
+    const layer = layerService.createLayer("test.usda");
 
-    expect(layer.filePath).toBe('test.usda');
-    expect(layer.status).toBe('WIP');
+    expect(layer.filePath).toBe("test.usda");
+    expect(layer.status).toBe("WIP");
     expect(layer.visible).toBe(true);
   });
 
-  it('should promote layer from WIP to Shared', () => {
-    const layer = { id: '1', status: 'WIP', filePath: 'test.usda' };
+  it("should promote layer from WIP to Shared", () => {
+    const layer = { id: "1", status: "WIP", filePath: "test.usda" };
     const promoted = layerService.promoteLayer(layer);
 
-    expect(promoted.status).toBe('Shared');
+    expect(promoted.status).toBe("Shared");
   });
 });
 ```
@@ -1290,7 +1444,7 @@ function addLayer(filePath) {
   const layer = {
     id: `layer-${Date.now()}`,
     filePath,
-    status: 'WIP',
+    status: "WIP",
     // ... more logic
   };
   store.dispatch(actions.addLayer(layer));
@@ -1298,7 +1452,7 @@ function addLayer(filePath) {
 
 // ✅ Good - Use service
 function addLayer(filePath) {
-  const layer = layerService.createLayer(filePath, 'WIP');
+  const layer = layerService.createLayer(filePath, "WIP");
   store.dispatch(actions.addLayer(layer));
 }
 ```
@@ -1307,11 +1461,11 @@ function addLayer(filePath) {
 
 ```javascript
 // ❌ Bad - Mutating service result
-const layer = layerService.createLayer('test.usda');
-layer.status = 'Shared'; // Mutation!
+const layer = layerService.createLayer("test.usda");
+layer.status = "Shared"; // Mutation!
 
 // ✅ Good - Use service method
-const updated = layerService.updateLayer(layer, { status: 'Shared' });
+const updated = layerService.updateLayer(layer, { status: "Shared" });
 ```
 
 ### 3. Handle Validation Errors
@@ -1328,13 +1482,13 @@ try {
 ### 4. Use Type Constants
 
 ```javascript
-import { LAYER_STATUS } from './constants.js';
+import { LAYER_STATUS } from "./constants.js";
 
 // ✅ Good - Use constants
-const layer = layerService.createLayer('test.usda', LAYER_STATUS.WIP);
+const layer = layerService.createLayer("test.usda", LAYER_STATUS.WIP);
 
 // ❌ Bad - Hardcoded strings
-const layer = layerService.createLayer('test.usda', 'WIP');
+const layer = layerService.createLayer("test.usda", "WIP");
 ```
 
 ---
