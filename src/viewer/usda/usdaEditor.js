@@ -357,6 +357,91 @@ export function updatePropertyInFile(
 }
 
 /**
+ * Prunes empty container prims (Xform/Scope with no geometry and no unique metadata)
+ * Promotes children one level up to flatten hierarchy
+ *
+ * @param {string} fileContent - The original USDA file content
+ * @param {Object} options - Pruning options
+ * @param {string[]} options.excludePaths - Paths to never prune (e.g., ["/World", "/_Classes"])
+ * @returns {Object} - { content: modified content, prunedCount: number }
+ */
+export function pruneEmptyContainers(fileContent, options = {}) {
+  const {
+    excludePaths = [
+      "/World",
+      "/IFCModel",
+      "/_Classes",
+      "/Materials",
+      "/Prototypes",
+    ],
+  } = options;
+
+  console.log("[PRUNE] Starting empty container pruning");
+  const hierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
+  const primsToRemove = [];
+
+  // Identify empty containers
+  function analyzeNode(node) {
+    if (excludePaths.includes(node.path)) {
+      if (node.children) {
+        node.children.forEach((child) => analyzeNode(child));
+      }
+      return;
+    }
+
+    // Check if this is an empty container
+    if (["Xform", "Scope"].includes(node.type) && isEmptyContainer(node)) {
+      if (node.children && node.children.length > 0) {
+        console.log(
+          `[PRUNE] Marking ${node.path} for removal (promoting ${node.children.length} children)`
+        );
+        primsToRemove.push(node);
+      }
+    }
+
+    if (node.children) {
+      node.children.forEach((child) => analyzeNode(child, node.path));
+    }
+  }
+
+  function isEmptyContainer(node) {
+    // Has geometry? Not empty
+    if (node.properties?.points || node.properties?.faceVertexIndices)
+      return false;
+
+    // Has references/payloads? Not empty
+    if (node.references || node.payload) return false;
+
+    // Has meaningful metadata? Not empty
+    const meaningfulProps = ["displayName", "status", "entityType"];
+    if (meaningfulProps.some((prop) => node.properties?.[prop])) return false;
+
+    return true;
+  }
+
+  hierarchy.forEach((root) => analyzeNode(root));
+
+  if (primsToRemove.length === 0) {
+    console.log("[PRUNE] No empty containers found");
+    return { content: fileContent, prunedCount: 0 };
+  }
+
+  // Sort by depth (deepest first) to avoid removing parent before child
+  primsToRemove.sort(
+    (a, b) => b.path.split("/").length - a.path.split("/").length
+  );
+
+  // Remove empty containers
+  let modifiedContent = fileContent;
+  for (const prim of primsToRemove) {
+    modifiedContent = removePrimFromFile(modifiedContent, prim.path);
+  }
+
+  console.log(`[PRUNE] Removed ${primsToRemove.length} empty containers`);
+  return { content: modifiedContent, prunedCount: primsToRemove.length };
+}
+
+/**
  * Renames a prim in a USDA file by changing its definition name.
  * This updates the prim's name in the def/over statement.
  *
