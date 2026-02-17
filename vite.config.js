@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ command }) => ({
   // Use root path in dev, custom path in production
-  base: command === "serve" ? "/" : "/USDA-Composer/",
+  base: command === "serve" ? "/" : "/BIM-Composer/",
   root: ".",
   plugins: [
     {
