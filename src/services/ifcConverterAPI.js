@@ -3,8 +3,10 @@
  * Communicates with backend server for Python-based conversion
  */
 
+import { API_ENDPOINTS } from "../config/api.js";
+
 export class IFCConverterAPI {
-  constructor(baseURL = "/api/convert") {
+  constructor(baseURL = API_ENDPOINTS.convert) {
     this.baseURL = baseURL;
   }
 

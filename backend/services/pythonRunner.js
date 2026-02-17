@@ -8,7 +8,8 @@ const PYTHON_SCRIPT = path.join(__dirname, "../python/ifctousdconverter.py");
 export async function convertIFC(inputPath, outputPath, progressCallback) {
   return new Promise((resolve, reject) => {
     // Spawn Python process
-    const python = spawn("python", [PYTHON_SCRIPT, inputPath, outputPath]);
+    const pythonCmd = process.env.PYTHON_CMD || "python3";
+    const python = spawn(pythonCmd, [PYTHON_SCRIPT, inputPath, outputPath]);
 
     let errorOutput = "";
 
