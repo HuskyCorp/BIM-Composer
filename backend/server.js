@@ -8,7 +8,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
 app.use(
   cors({
     origin: [
@@ -21,15 +20,14 @@ app.use(
 );
 app.use(express.json());
 
-// Routes
-app.use("/api/convert", convertRouter);
+app.get("/", (req, res) => {
+  res.send("BIM Composer Backend is running!");
+});
 
-// Health check
+app.use("/api/convert", convertRouter);
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "ifc-converter-backend" });
 });
-
-// Start server
 app.listen(PORT, () => {
   console.log(`🚀 IFC Converter Backend running on http://localhost:${PORT}`);
   console.log(`📝 API endpoint: http://localhost:${PORT}/api/convert`);
