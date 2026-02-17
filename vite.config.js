@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -8,6 +9,15 @@ export default defineConfig(({ command }) => ({
   // Use root path in dev, custom path in production
   base: command === "serve" ? "/" : "/USDA-Composer/",
   root: ".",
+  plugins: [
+    {
+      name: "create-nojekyll",
+      closeBundle() {
+        const nojekyllPath = path.resolve(__dirname, "dist", ".nojekyll");
+        fs.writeFileSync(nojekyllPath, "", "utf8");
+      },
+    },
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
