@@ -7,6 +7,11 @@ playwright-report/
 .env
 .env.local
 
+# Backend
+backend/uploads/
+backend/python/venv/
+backend/python/__pycache__/
+
 # Claude AI assistant settings (local only)
 .claude/
 

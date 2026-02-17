@@ -11,7 +11,7 @@ import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
 import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
 import { explodeUsda } from "../../utils/atomicFileHandler.js";
-import { ifcToUsdConverter } from "../../viewer/ifc/ifcToUsdConverter.js";
+import { ifcConverterAPI } from "../../services/ifcConverterAPI.js";
 import { loadingIndicator } from "../loadingIndicator.js";
 
 const STATUS_ORDER = ["WIP", "Shared", "Published", "Archived"];
@@ -478,7 +478,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
       try {
         // Convert IFC to USD with progress reporting
-        const usdContent = await ifcToUsdConverter.convert(
+        const usdContent = await ifcConverterAPI.convert(
           file,
           (percentage, message) => {
             loadingIndicator.updateProgress(percentage, message);
