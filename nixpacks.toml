@@ -25,4 +25,4 @@ cmds = [
 ]
 
 [start]
-cmd = "node backend/server.js"
+cmd = "PYTHON_CMD=python node backend/server.js"
