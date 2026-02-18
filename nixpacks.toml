@@ -18,8 +18,7 @@ nixLibs = [
 [phases.install]
 cmds = [
     "npm install",
-    "pip install --break-system-packages --upgrade pip wheel",
-    "pip install --break-system-packages --verbose -r backend/python/requirements.txt 2>&1 | tee /tmp/pip-install.log || (cat /tmp/pip-install.log && exit 1)",
+    "python -m pip install --break-system-packages --verbose -r backend/python/requirements.txt 2>&1 | tee /tmp/pip-install.log || (cat /tmp/pip-install.log && exit 1)",
     "python backend/python/verify_install.py"
 ]
 
