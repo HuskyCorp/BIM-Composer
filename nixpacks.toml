@@ -14,10 +14,10 @@ nixLibs = ["...", "zlib", "stdenv.cc.cc.lib"]
 [phases.install]
 cmds = [
     "npm install",
-    # Python provider creates venv, we need to install packages from subdirectory
-    "python -m pip install -r backend/python/requirements.txt",
-    "python backend/python/verify_install.py"
+    # Use venv Python explicitly (Python provider creates it at /opt/venv)
+    "/opt/venv/bin/pip install -r backend/python/requirements.txt",
+    "/opt/venv/bin/python backend/python/verify_install.py"
 ]
 
 [start]
-cmd = "PYTHON_CMD=python node backend/server.js"
+cmd = "PYTHON_CMD=/opt/venv/bin/python node backend/server.js"

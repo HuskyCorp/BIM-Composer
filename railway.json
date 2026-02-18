@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "PYTHON_CMD=python node backend/server.js",
+    "startCommand": "PYTHON_CMD=/opt/venv/bin/python node backend/server.js",
     "healthcheckPath": "/api/health",
     "restartPolicyType": "ON_FAILURE"
   }
