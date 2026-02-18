@@ -15,6 +15,22 @@ router.post("/", upload.single("ifcFile"), async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
+  // Helper function to clean up temp files safely without ENOENT errors
+  const cleanupFile = async (filePath) => {
+    try {
+      // Only attempt to unlink if the file actually exists
+      const exists = await fs
+        .stat(filePath)
+        .then(() => true)
+        .catch(() => false);
+      if (exists) {
+        await fs.unlink(filePath);
+      }
+    } catch (err) {
+      console.error(`Cleanup error for ${filePath}:`, err);
+    }
+  };
+
   try {
     // Progress callback sends SSE events
     const sendProgress = (percentage, message) => {
@@ -38,9 +54,9 @@ router.post("/", upload.single("ifcFile"), async (req, res) => {
 
     res.end();
 
-    // Clean up temp files
-    await fs.unlink(ifcPath);
-    await fs.unlink(usdPath);
+    // Clean up temp files on success
+    await cleanupFile(ifcPath);
+    await cleanupFile(usdPath);
   } catch (error) {
     console.error("Conversion error:", error);
     res.write(
@@ -51,13 +67,9 @@ router.post("/", upload.single("ifcFile"), async (req, res) => {
     );
     res.end();
 
-    // Clean up on error
-    try {
-      await fs.unlink(ifcPath);
-      await fs.unlink(usdPath);
-    } catch (cleanupError) {
-      console.error("Cleanup error:", cleanupError);
-    }
+    // Clean up temp files on error
+    await cleanupFile(ifcPath);
+    await cleanupFile(usdPath);
   }
 });
 
