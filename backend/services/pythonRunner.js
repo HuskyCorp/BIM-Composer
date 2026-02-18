@@ -1,28 +1,16 @@
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
-import { existsSync } from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PYTHON_SCRIPT = path.join(__dirname, "../python/ifctousdconverter.py");
 
 export async function convertIFC(inputPath, outputPath, progressCallback) {
   return new Promise((resolve, reject) => {
-    // Correctly point to the venv created in nixpacks.toml relative to this file
-    const venvPath = path.join(
-      __dirname,
-      "..",
-      "python",
-      "venv",
-      "bin",
-      "python"
-    );
-
-    let pythonCmd = process.env.PYTHON_CMD;
-    if (!pythonCmd) {
-      // Prioritize the local venv; fall back to system python3 only as a last resort
-      pythonCmd = existsSync(venvPath) ? venvPath : "python3";
-    }
+    // Use PYTHON_CMD env var if set, otherwise use system python3
+    // In Railway/production, packages are installed globally
+    // In local dev, you can set PYTHON_CMD to point to a venv if needed
+    const pythonCmd = process.env.PYTHON_CMD || "python3";
 
     console.log(`[PythonRunner] Executing conversion with: ${pythonCmd}`);
     const python = spawn(pythonCmd, [PYTHON_SCRIPT, inputPath, outputPath]);

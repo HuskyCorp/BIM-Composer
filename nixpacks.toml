@@ -18,10 +18,9 @@ nixLibs = [
 [phases.install]
 cmds = [
     "npm install",
-    "python -m venv backend/python/venv",
-    "backend/python/venv/bin/pip install --upgrade pip wheel",
-    "backend/python/venv/bin/pip install --verbose -r backend/python/requirements.txt 2>&1 | tee /tmp/pip-install.log || (cat /tmp/pip-install.log && exit 1)",
-    "backend/python/venv/bin/python backend/python/verify_install.py"
+    "pip install --upgrade pip wheel",
+    "pip install --verbose -r backend/python/requirements.txt 2>&1 | tee /tmp/pip-install.log || (cat /tmp/pip-install.log && exit 1)",
+    "python backend/python/verify_install.py"
 ]
 
 [start]
