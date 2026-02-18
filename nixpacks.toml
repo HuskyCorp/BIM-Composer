@@ -6,7 +6,8 @@ PYTHON_CMD = "python"                # Use same Python command as build phase
 
 [phases.setup]
 # Use "..." to extend auto-detected packages, not replace them
-nixPkgs = ["...", "gcc", "stdenv.cc.cc.lib", "zlib", "libGL", "libGLU"]
+# Python provider already adds gcc, so we only add packages it doesn't
+nixPkgs = ["...", "stdenv.cc.cc.lib", "zlib", "libGL", "libGLU"]
 
 nixLibs = ["...", "zlib", "stdenv.cc.cc.lib"]
 
