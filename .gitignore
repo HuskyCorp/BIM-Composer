@@ -30,3 +30,6 @@ ARCHITECTURE_REFACTOR_PLAN.md
 test-results.txt
 test-results.json
 debug_output.txt
+
+backend/uploads/*
+!backend/uploads/.gitkeep
