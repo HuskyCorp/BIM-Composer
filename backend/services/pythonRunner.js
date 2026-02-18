@@ -7,10 +7,10 @@ const PYTHON_SCRIPT = path.join(__dirname, "../python/ifctousdconverter.py");
 
 export async function convertIFC(inputPath, outputPath, progressCallback) {
   return new Promise((resolve, reject) => {
-    // Use PYTHON_CMD env var if set, otherwise use system python3
-    // In Railway/production, packages are installed globally
+    // Use PYTHON_CMD env var if set, otherwise use "python"
+    // In Railway/Nixpacks, packages are installed for "python" command
     // In local dev, you can set PYTHON_CMD to point to a venv if needed
-    const pythonCmd = process.env.PYTHON_CMD || "python3";
+    const pythonCmd = process.env.PYTHON_CMD || "python";
 
     console.log(`[PythonRunner] Executing conversion with: ${pythonCmd}`);
     const python = spawn(pythonCmd, [PYTHON_SCRIPT, inputPath, outputPath]);
