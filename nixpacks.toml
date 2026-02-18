@@ -1,31 +1,19 @@
+# Declare multiple providers explicitly for Node + Python hybrid project
+providers = ["node", "python"]
+
 [variables]
 PYTHON_CMD = "python"                # Use same Python command as build phase
 
 [phases.setup]
-nixPkgs = [
-    "nodejs_20",
-    "python311",                     # Python 3.11
-    "gcc",                           # Provides libstdc++.so (C++ standard library)
-    "stdenv.cc.cc.lib",              # Runtime C++ libraries
-    "zlib",                          # Compression library dependency
-    "libGL",                         # OpenGL library
-    "libGLU"                         # OpenGL Utility library
-]
+# Use "..." to extend auto-detected packages, not replace them
+nixPkgs = ["...", "gcc", "stdenv.cc.cc.lib", "zlib", "libGL", "libGLU"]
 
-nixLibs = [
-    "zlib",                          # Make available via LD_LIBRARY_PATH
-    "stdenv.cc.cc.lib"               # Make C++ runtime available
-]
-
-cmds = [
-    "python -m ensurepip --default-pip",  # Install pip using Python's ensurepip
-    "python -m pip install --upgrade pip"  # Upgrade to latest pip
-]
+nixLibs = ["...", "zlib", "stdenv.cc.cc.lib"]
 
 [phases.install]
 cmds = [
     "npm install",
-    "python -m pip install --break-system-packages --verbose -r backend/python/requirements.txt 2>&1 | tee /tmp/pip-install.log || (cat /tmp/pip-install.log && exit 1)",
+    # Python provider automatically installs from requirements.txt
     "python backend/python/verify_install.py"
 ]
 
