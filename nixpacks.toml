@@ -4,7 +4,7 @@ PYTHON_CMD = "python"                # Use same Python command as build phase
 [phases.setup]
 nixPkgs = [
     "nodejs_20",
-    "python311Full",                 # Python with pip and standard utilities
+    "python311",                     # Python 3.11
     "gcc",                           # Provides libstdc++.so (C++ standard library)
     "stdenv.cc.cc.lib",              # Runtime C++ libraries
     "zlib",                          # Compression library dependency
@@ -15,6 +15,11 @@ nixPkgs = [
 nixLibs = [
     "zlib",                          # Make available via LD_LIBRARY_PATH
     "stdenv.cc.cc.lib"               # Make C++ runtime available
+]
+
+cmds = [
+    "python -m ensurepip --default-pip",  # Install pip using Python's ensurepip
+    "python -m pip install --upgrade pip"  # Upgrade to latest pip
 ]
 
 [phases.install]
