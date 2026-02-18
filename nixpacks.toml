@@ -1,3 +1,6 @@
+[variables]
+PYTHON_CMD = "python"                # Use same Python command as build phase
+
 [phases.setup]
 nixPkgs = [
     "nodejs_20",
