@@ -11,6 +11,11 @@ nixPkgs = ["...", "stdenv.cc.cc.lib", "zlib", "libGL", "libGLU"]
 
 nixLibs = ["...", "zlib", "stdenv.cc.cc.lib"]
 
+cmds = [
+    # Create venv since Python provider doesn't auto-detect subdirectory requirements.txt
+    "python -m venv /opt/venv"
+]
+
 [phases.install]
 cmds = [
     "npm install",
