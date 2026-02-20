@@ -18,6 +18,73 @@ export function initViewControls(
   const stageCanvas = document.getElementById("stageCanvas");
   const historyCanvas = document.getElementById("historyCanvas");
   const saveButton = document.getElementById("saveButton");
+  const themeToggle = document.getElementById("themeToggle");
+
+  // --- Theme Toggle Logic ---
+  let isDarkMode = false; // Default is now light mode (SketchUp style)
+
+  // Check local storage for theme preference
+  const savedTheme = localStorage.getItem("usda-composer-theme");
+  if (savedTheme === "dark") {
+    isDarkMode = true;
+    document.body.classList.add("dark-theme");
+    if (themeToggle) themeToggle.textContent = "☀️";
+  }
+
+  function updateThreeJSColors() {
+    const bgColor = isDarkMode ? 0x2e2e2e : 0xffffff;
+    const gridColor = isDarkMode ? 0xffffff : 0xcccccc;
+    const gridOpacity = isDarkMode ? 0.2 : 0.5;
+
+    // Update File View Scene
+    if (fileThreeScene && fileThreeScene.scene) {
+      fileThreeScene.scene.background.setHex(bgColor);
+      // Find and update grid
+      fileThreeScene.scene.children.forEach((child) => {
+        if (child.isGridHelper) {
+          child.material.color.setHex(gridColor);
+          child.material.opacity = gridOpacity;
+        }
+        if (child.isAxesHelper) {
+          child.visible = !isDarkMode; // Hide axes in dark mode
+        }
+      });
+    }
+
+    // Update Stage View Scene
+    if (stageThreeScene && stageThreeScene.scene) {
+      stageThreeScene.scene.background.setHex(bgColor);
+      stageThreeScene.scene.children.forEach((child) => {
+        if (child.isGridHelper) {
+          child.material.color.setHex(gridColor);
+          child.material.opacity = gridOpacity;
+        }
+        if (child.isAxesHelper) {
+          child.visible = !isDarkMode;
+        }
+      });
+    }
+  }
+
+  // Apply initial colors
+  // Wait a tick for scenes to be fully initialized if needed, or apply immediately
+  setTimeout(updateThreeJSColors, 100);
+
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      isDarkMode = !isDarkMode;
+      if (isDarkMode) {
+        document.body.classList.add("dark-theme");
+        themeToggle.textContent = "☀️";
+        localStorage.setItem("usda-composer-theme", "dark");
+      } else {
+        document.body.classList.remove("dark-theme");
+        themeToggle.textContent = "🌚";
+        localStorage.setItem("usda-composer-theme", "light");
+      }
+      updateThreeJSColors();
+    });
+  }
 
   function updateView() {
     const state = store.getState();

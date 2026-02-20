@@ -8,9 +8,9 @@
 
 .view-controls button {
   padding: 6px 12px;
-  background: #2e2e2e;
-  color: #ffffff;
-  border: none;
+  background: #ffffff;
+  color: #333333;
+  border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
@@ -18,12 +18,13 @@
 }
 
 .view-controls button:hover {
-  background: #3e3e3e;
+  background: #f0f0f0;
 }
 
 .view-controls button.active {
-  background: #007aff;
-  color: #ffffff;
+  background: #e0e0e0;
+  color: #007aff;
+  border-color: #007aff;
 }
 
 .file-controls,
@@ -36,10 +37,10 @@
 .file-controls button,
 .hierarchy-controls button,
 .scene-controls button {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid #ccc;
   border-radius: 8px;
-  color: #fff;
+  color: #333333;
   cursor: pointer;
   font-size: 16px;
   width: 24px;
@@ -57,13 +58,13 @@
 .file-controls button:hover,
 .hierarchy-controls button:hover,
 .scene-controls button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .button-group {
   padding: 8px;
-  background: #2e2e2e;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #f4f4f4;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -77,9 +78,9 @@
 
 .button-group button {
   padding: 6px 12px;
-  background: #555;
-  color: #ffffff;
-  border: none;
+  background: #e0e0e0;
+  color: #333;
+  border: 1px solid #ccc;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 400;
@@ -94,16 +95,16 @@
 }
 
 .button-group button:hover {
-  background: #2994ff;
+  background: #d0d0d0;
 }
 
 .button-group button.active {
-  background: #2994ff;
-  box-shadow: 0 0 0 2px rgba(41, 148, 255, 0.5);
+  background: #d0d0d0;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 .button-group button:disabled {
-  background: #555;
+  background: #e0e0e0;
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -164,7 +165,7 @@
   appearance: none;
   width: 100%;
   height: 6px; /* Thicker track */
-  background: #555;
+  background: #ccc;
   border-radius: 3px;
   outline: none;
   margin: 0;
@@ -212,7 +213,7 @@
 
 .timeline-controls span {
   font-size: 13px; /* Slightly larger text */
-  color: #e0e0e0;
+  color: #333333;
   min-width: 60px;
   text-align: center;
   font-weight: 500;

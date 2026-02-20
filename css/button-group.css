@@ -1,8 +1,8 @@
 /* css/button-group.css */
 .button-group {
   padding: 8px;
-  background: #2e2e2e;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #f4f4f4;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -16,9 +16,9 @@
 
 .button-group button {
   padding: 6px 12px;
-  background: #555;
-  color: #ffffff;
-  border: none;
+  background: #e0e0e0;
+  color: #333;
+  border: 1px solid #ccc;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 400;
@@ -33,12 +33,12 @@
 }
 
 .button-group button:hover {
-  background: #2994ff;
+  background: #d0d0d0;
 }
 
 .button-group button.active {
-  background: #2994ff;
-  box-shadow: 0 0 0 2px rgba(41, 148, 255, 0.5);
+  background: #d0d0d0;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 .button-group button:disabled {

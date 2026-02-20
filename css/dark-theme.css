@@ -1,0 +1,156 @@
+/* css/dark-theme.css */
+
+/* BASE CSS OVERRIDES */
+body.dark-theme {
+  background: linear-gradient(180deg, #0a0a0a 0%, #1c1c1c 100%);
+  color: #ffffff;
+}
+
+body.dark-theme #usdaEditor {
+  background: #2e2e2e;
+  border: none;
+  color: #e0e0e0;
+}
+
+/* LAYOUT CSS OVERRIDES */
+body.dark-theme .top-bar {
+  background: linear-gradient(90deg, #2c2c2c, #3a3a3a);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .title {
+  color: #ffffff;
+}
+
+body.dark-theme #currentFileTab {
+  background: #2e2e2e;
+  color: #e0e0e0;
+}
+
+body.dark-theme #currentFileTab:hover {
+  background: #3e3e3e;
+}
+
+body.dark-theme .main-view {
+  background: #2e2e2e;
+}
+
+/* PANEL CSS OVERRIDES */
+body.dark-theme .panel {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: #2d2d2d;
+}
+
+body.dark-theme .panel-header {
+  background: #333;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .panel-header:hover {
+  background: #3a3a3a;
+}
+
+body.dark-theme .panel h3 {
+  color: #e0e0e0;
+}
+
+/* SIDEBAR CSS OVERRIDES */
+body.dark-theme .sidebar {
+  background: #2d2d2d;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+}
+
+/* FILTERS CSS OVERRIDES */
+body.dark-theme .filter-btn {
+  background: #444;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ccc;
+}
+body.dark-theme .filter-btn:hover {
+  background: #555;
+}
+
+/* CONTROLS CSS OVERRIDES */
+body.dark-theme .view-controls button {
+  background: #2e2e2e;
+  color: #ffffff;
+  border: none;
+}
+
+body.dark-theme .view-controls button:hover {
+  background: #3e3e3e;
+}
+
+body.dark-theme .view-controls button.active {
+  background: #007aff;
+  color: #ffffff;
+}
+
+body.dark-theme .file-controls button,
+body.dark-theme .hierarchy-controls button,
+body.dark-theme .scene-controls button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+}
+
+body.dark-theme .file-controls button:hover,
+body.dark-theme .hierarchy-controls button:hover,
+body.dark-theme .scene-controls button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-theme .button-group {
+  background: #2e2e2e;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .button-group button {
+  background: #555;
+  color: #ffffff;
+  border: none;
+}
+
+body.dark-theme .button-group button:hover {
+  background: #2994ff;
+}
+
+body.dark-theme .button-group button.active {
+  background: #2994ff;
+  box-shadow: 0 0 0 2px rgba(41, 148, 255, 0.5);
+}
+
+body.dark-theme .button-group button:disabled {
+  background: #555;
+}
+
+body.dark-theme .timeline-controls input[type="range"] {
+  background: #555;
+}
+
+body.dark-theme .timeline-controls span {
+  color: #e0e0e0;
+}
+
+body.dark-theme .timeline-graph-container {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .timeline-graph-container::-webkit-scrollbar-track {
+  background: #2e2e2e;
+}
+
+body.dark-theme .timeline-graph-container::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+body.dark-theme .timeline-graph-container::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+body.dark-theme .timeline-node {
+  background-color: #888;
+  border-color: #444;
+}

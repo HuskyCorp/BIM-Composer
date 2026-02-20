@@ -8,9 +8,9 @@
 
 .view-controls button {
   padding: 6px 12px;
-  background: #2e2e2e;
-  color: #ffffff;
-  border: none;
+  background: #ffffff;
+  color: #333333;
+  border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
@@ -18,10 +18,11 @@
 }
 
 .view-controls button:hover {
-  background: #3e3e3e;
+  background: #f0f0f0;
 }
 
 .view-controls button.active {
-  background: #007aff;
-  color: #ffffff;
+  background: #e0e0e0;
+  color: #007aff;
+  border-color: #007aff;
 }

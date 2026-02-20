@@ -4,9 +4,9 @@ body {
   padding: 0;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(180deg, #0a0a0a 0%, #1c1c1c 100%);
+  background: #f0f0f0;
   font-family: -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
-  color: #ffffff;
+  color: #333333;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -14,9 +14,9 @@ body {
 #usdaEditor {
   width: 100%;
   height: 100%;
-  background: #2e2e2e;
-  border: none;
-  color: #e0e0e0;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  color: #333333;
   font-family: "Courier New", Courier, monospace;
   font-size: 14px;
   padding: 16px;

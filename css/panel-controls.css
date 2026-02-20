@@ -9,10 +9,10 @@
 .file-controls button,
 .hierarchy-controls button,
 .scene-controls button {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid #ccc;
   border-radius: 8px;
-  color: #fff;
+  color: #333333;
   cursor: pointer;
   font-size: 16px;
   width: 24px;
@@ -30,5 +30,5 @@
 .file-controls button:hover,
 .hierarchy-controls button:hover,
 .scene-controls button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
 }

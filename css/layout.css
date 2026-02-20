@@ -1,35 +1,35 @@
 /* css/layout.css */
 .top-bar {
-  background: linear-gradient(90deg, #2c2c2c, #3a3a3a);
+  background: #e0e0e0;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: relative;
 }
 
 .title {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #333333;
   margin-right: 16px;
   letter-spacing: 0.5px;
 }
 
 #currentFileTab {
-  background: #2e2e2e;
+  background: #ffffff;
   padding: 6px 12px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 400;
-  color: #e0e0e0;
+  color: #333333;
   transition: background 0.2s ease;
 }
 
 #currentFileTab:hover {
-  background: #3e3e3e;
+  background: #f0f0f0;
 }
 
 .container {
@@ -40,7 +40,7 @@
 .main-view {
   flex: 1;
   position: relative;
-  background: #2e2e2e;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
 }

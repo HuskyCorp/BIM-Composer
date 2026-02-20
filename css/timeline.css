@@ -23,7 +23,7 @@
   appearance: none;
   width: 100%;
   height: 6px;
-  background: #555;
+  background: #ccc;
   border-radius: 3px;
   outline: none;
   margin: 0;
@@ -67,7 +67,7 @@
 
 .timeline-controls span {
   font-size: 13px;
-  color: #e0e0e0;
+  color: #333333;
   min-width: 60px;
   text-align: center;
   font-weight: 500;
@@ -82,7 +82,7 @@
   align-items: center;
   height: 100%;
   min-height: 40px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 6px;
   flex-grow: 1;
 }
@@ -92,26 +92,26 @@
 }
 
 .timeline-graph-container::-webkit-scrollbar-track {
-  background: #2e2e2e;
+  background: #e0e0e0;
   border-radius: 3px;
 }
 
 .timeline-graph-container::-webkit-scrollbar-thumb {
-  background: #555;
+  background: #ccc;
   border-radius: 3px;
 }
 
 .timeline-graph-container::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: #d0d0d0;
 }
 
 .timeline-node {
   width: 14px;
   height: 14px;
-  background-color: #888;
+  background-color: #f0f0f0;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid #444;
+  border: 2px solid #ccc;
   flex-shrink: 0;
   transition: all 0.2s ease;
 }

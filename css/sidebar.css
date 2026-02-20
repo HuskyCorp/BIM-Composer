@@ -1,9 +1,9 @@
 /* css/sidebar.css */
 .sidebar {
   width: 25%;
-  background: #2d2d2d;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+  background: #f0f0f0;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
   position: relative;
   min-width: 150px;
   display: flex;

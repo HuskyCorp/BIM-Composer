@@ -5,10 +5,10 @@
   /* Don't grow (0), Allow shrinking (1), Auto basis */
   flex: 0 1 auto;
   padding: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   transition: flex-grow 0.3s ease;
   overflow: hidden;
-  background: #2d2d2d;
+  background: #f4f4f4;
   /* REMOVED GAP & RADIUS per request */
   margin-bottom: 0;
   border-radius: 0;
@@ -41,23 +41,23 @@
 .panel-header {
   position: relative;
   padding: 8px 12px;
-  background: #333;
+  background: #e0e0e0;
   cursor: pointer;
   user-select: none;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .panel-header:hover {
-  background: #3a3a3a;
+  background: #d0d0d0;
 }
 
 .panel h3 {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
-  color: #e0e0e0;
+  color: #333333;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex-grow: 1;

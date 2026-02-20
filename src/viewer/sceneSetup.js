@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 export function initializeScene(scene, camera, renderer) {
-  scene.background = new THREE.Color(0x2e2e2e);
+  scene.background = new THREE.Color(0xffffff);
   renderer.setSize(
     renderer.domElement.clientWidth,
     renderer.domElement.clientHeight,
@@ -18,10 +18,13 @@ export function initializeScene(scene, camera, renderer) {
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
 
-  const gridHelper = new THREE.GridHelper(100, 100, 0xffffff, 0xffffff);
-  gridHelper.material.opacity = 0.2;
+  const gridHelper = new THREE.GridHelper(100, 100, 0xcccccc, 0xcccccc);
+  gridHelper.material.opacity = 0.5;
   gridHelper.material.transparent = true;
   scene.add(gridHelper);
+
+  const axesHelper = new THREE.AxesHelper(100);
+  scene.add(axesHelper);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
