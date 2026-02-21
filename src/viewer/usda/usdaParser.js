@@ -1,7 +1,10 @@
 // src/viewer/usda/usdaParser.js
 import { parsePrimTree } from "./parser/hierarchyParser.js";
 import { parseStatementLog } from "./parser/logParser.js";
-import { extractGeometries } from "./parser/geometryParser.js";
+import {
+  extractGeometries,
+  extractGeometriesDirect,
+} from "./parser/geometryParser.js";
 
 function findMatchingBrace(str, start) {
   let depth = 1;
@@ -51,7 +54,30 @@ export const USDA_PARSER = {
   },
 
   parseUSDA(usdaText) {
+    // Files larger than 500 KB are typically IFC-converted USD assets.
+    // parsePrimTree is O(n²) on file size (recursive substring copying +
+    // findMatchingBrace scanning). For a 24 MB file this causes a browser
+    // freeze or silently empty geometry list.
+    // Use the O(n) direct line-scanner for large files instead.
+    if (usdaText && usdaText.length > 500_000) {
+      const sizeKB = Math.round(usdaText.length / 1024);
+      console.log(
+        `[parseUSDA] Large file detected: ${sizeKB} KB → using extractGeometriesDirect`
+      );
+      console.time("[parseUSDA] extractGeometriesDirect total");
+      const result = extractGeometriesDirect(usdaText);
+      console.timeEnd("[parseUSDA] extractGeometriesDirect total");
+      console.log(`[parseUSDA] Extracted ${result.length} meshes`);
+      return result;
+    }
+    console.log(
+      `[parseUSDA] Normal file (${Math.round(usdaText.length / 1024)} KB) → parsePrimTree`
+    );
+    console.time("[parseUSDA] parsePrimTree + extractGeometries");
     const primHierarchy = parsePrimTree(usdaText);
-    return extractGeometries(primHierarchy);
+    const result = extractGeometries(primHierarchy);
+    console.timeEnd("[parseUSDA] parsePrimTree + extractGeometries");
+    console.log(`[parseUSDA] Extracted ${result.length} meshes`);
+    return result;
   },
 };

@@ -487,9 +487,15 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
         // Create USD filename
         const usdFileName = file.name.replace(/\.ifc$/i, ".usda");
+        const sizeKB = Math.round((usdContent?.length || 0) / 1024);
+        console.log(
+          `[IFC→USD] 📄 usdContent received in layerStackController: ${sizeKB} KB`
+        );
 
         // Process as single USD file
+        console.time("[IFC→USD] loadFile dispatch");
         store.dispatch(coreActions.loadFile(usdFileName, usdContent));
+        console.timeEnd("[IFC→USD] loadFile dispatch");
 
         // Create layer with current user as owner
         const newLayer = {
@@ -500,6 +506,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
           owner: store.getState().currentUser,
           groupName: null,
         };
+        console.time("[IFC→USD] addLayer + renderLayerStack");
         store.dispatch(coreActions.addLayer(newLayer));
 
         loadingIndicator.updateProgress(100, "Conversion complete!");
@@ -508,6 +515,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         renderLayerStack();
+        console.timeEnd("[IFC→USD] addLayer + renderLayerStack");
         console.log(
           `✅ Successfully converted and loaded IFC file: ${file.name} → ${usdFileName}`
         );

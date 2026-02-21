@@ -1,0 +1,1150 @@
+{
+  "Unique_IFC_Classes": {
+    "IfcActuator": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcAirTerminal": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcAlarm": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcApplication": [
+      "ApplicationDeveloper",
+      "Version",
+      "ApplicationFullName",
+      "ApplicationIdentifier"
+    ],
+    "IfcAxis2Placement3D": ["Location", "Axis", "RefDirection"],
+    "IfcBeam": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcBearing": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcBuilding": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "LongName",
+      "CompositionType",
+      "ElevationOfRefHeight",
+      "ElevationOfTerrain",
+      "BuildingAddress"
+    ],
+    "IfcBuildingElementPart": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcBuildingElementProxy": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcBuildingStorey": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "LongName",
+      "CompositionType",
+      "Elevation"
+    ],
+    "IfcCartesianPoint": ["Coordinates"],
+    "IfcCartesianPointList3D": ["CoordList", "TagList"],
+    "IfcChimney": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcCivilElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcClassification": [
+      "Source",
+      "Edition",
+      "EditionDate",
+      "Name",
+      "Description",
+      "Specification",
+      "ReferenceTokens"
+    ],
+    "IfcClassificationReference": [
+      "Location",
+      "Identification",
+      "Name",
+      "ReferencedSource",
+      "Description",
+      "Sort"
+    ],
+    "IfcColourRgb": ["Name", "Red", "Green", "Blue"],
+    "IfcColumn": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcController": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcConversionBasedUnit": [
+      "Dimensions",
+      "UnitType",
+      "Name",
+      "ConversionFactor"
+    ],
+    "IfcCovering": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcCurtainWall": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcDeepFoundation": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcDimensionalExponents": [
+      "LengthExponent",
+      "MassExponent",
+      "TimeExponent",
+      "ElectricCurrentExponent",
+      "ThermodynamicTemperatureExponent",
+      "AmountOfSubstanceExponent",
+      "LuminousIntensityExponent"
+    ],
+    "IfcDirection": ["DirectionRatios"],
+    "IfcDiscreteAccessory": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcDistributionChamberElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcDistributionFlowElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcDoor": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "OverallHeight",
+      "OverallWidth",
+      "PredefinedType",
+      "OperationType",
+      "UserDefinedOperationType"
+    ],
+    "IfcElementAssembly": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "AssemblyPlace",
+      "PredefinedType"
+    ],
+    "IfcEnergyConversionDevice": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFastener": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcFeatureElementAddition": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFeatureElementSubtraction": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFlowController": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFlowFitting": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFlowInstrument": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcFlowMovingDevice": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFlowSegment": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFlowStorageDevice": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFlowTerminal": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFlowTreatmentDevice": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFooting": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcFurnishingElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcFurniture": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcGeographicElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcGeometricRepresentationContext": [
+      "ContextIdentifier",
+      "ContextType",
+      "CoordinateSpaceDimension",
+      "Precision",
+      "WorldCoordinateSystem",
+      "TrueNorth"
+    ],
+    "IfcGeometricRepresentationSubContext": [
+      "ContextIdentifier",
+      "ContextType",
+      "CoordinateSpaceDimension",
+      "Precision",
+      "WorldCoordinateSystem",
+      "TrueNorth",
+      "ParentContext",
+      "TargetScale",
+      "TargetView",
+      "UserDefinedTargetView"
+    ],
+    "IfcIndexedPolyCurve": ["Points", "Segments", "SelfIntersect"],
+    "IfcIndexedPolygonalFace": ["CoordIndex"],
+    "IfcIndexedPolygonalFaceWithVoids": ["CoordIndex", "InnerCoordIndices"],
+    "IfcLocalPlacement": ["PlacementRelTo", "RelativePlacement"],
+    "IfcMaterial": ["Name", "Description", "Category"],
+    "IfcMeasureWithUnit": ["ValueComponent", "UnitComponent"],
+    "IfcMechanicalFastener": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "NominalDiameter",
+      "NominalLength",
+      "PredefinedType"
+    ],
+    "IfcMember": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcOpeningElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcOrganization": [
+      "Identification",
+      "Name",
+      "Description",
+      "Roles",
+      "Addresses"
+    ],
+    "IfcOwnerHistory": [
+      "OwningUser",
+      "OwningApplication",
+      "State",
+      "ChangeAction",
+      "LastModifiedDate",
+      "LastModifyingUser",
+      "LastModifyingApplication",
+      "CreationDate"
+    ],
+    "IfcPerson": [
+      "Identification",
+      "FamilyName",
+      "GivenName",
+      "MiddleNames",
+      "PrefixTitles",
+      "SuffixTitles",
+      "Roles",
+      "Addresses"
+    ],
+    "IfcPersonAndOrganization": ["ThePerson", "TheOrganization", "Roles"],
+    "IfcPlate": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcPolygonalFaceSet": ["Coordinates", "Closed", "Faces", "PnIndex"],
+    "IfcPresentationLayerAssignment": [
+      "Name",
+      "Description",
+      "AssignedItems",
+      "Identifier"
+    ],
+    "IfcProductDefinitionShape": ["Name", "Description", "Representations"],
+    "IfcProject": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "LongName",
+      "Phase",
+      "RepresentationContexts",
+      "UnitsInContext"
+    ],
+    "IfcPropertySet": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "HasProperties"
+    ],
+    "IfcPropertySingleValue": ["Name", "Description", "NominalValue", "Unit"],
+    "IfcProtectiveDeviceTrippingUnit": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcPump": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcRailing": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcRamp": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcRampFlight": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcReinforcingElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag"
+    ],
+    "IfcRelAggregates": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingObject",
+      "RelatedObjects"
+    ],
+    "IfcRelAssignsToActor": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatedObjectsType",
+      "RelatingActor",
+      "ActingRole"
+    ],
+    "IfcRelAssignsToControl": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatedObjectsType",
+      "RelatingControl"
+    ],
+    "IfcRelAssignsToGroup": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatedObjectsType",
+      "RelatingGroup"
+    ],
+    "IfcRelAssignsToProcess": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatedObjectsType",
+      "RelatingProcess",
+      "QuantityInProcess"
+    ],
+    "IfcRelAssignsToProduct": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatedObjectsType",
+      "RelatingProduct"
+    ],
+    "IfcRelAssignsToResource": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatedObjectsType",
+      "RelatingResource"
+    ],
+    "IfcRelAssociatesApproval": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingApproval"
+    ],
+    "IfcRelAssociatesClassification": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingClassification"
+    ],
+    "IfcRelAssociatesConstraint": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "Intent",
+      "RelatingConstraint"
+    ],
+    "IfcRelAssociatesDocument": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingDocument"
+    ],
+    "IfcRelAssociatesLibrary": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingLibrary"
+    ],
+    "IfcRelAssociatesMaterial": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingMaterial"
+    ],
+    "IfcRelAssociatesProfileDef": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingProfileDef"
+    ],
+    "IfcRelConnectsElements": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ConnectionGeometry",
+      "RelatingElement",
+      "RelatedElement"
+    ],
+    "IfcRelConnectsPathElements": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ConnectionGeometry",
+      "RelatingElement",
+      "RelatedElement",
+      "RelatingPriorities",
+      "RelatedPriorities",
+      "RelatedConnectionType",
+      "RelatingConnectionType"
+    ],
+    "IfcRelConnectsPortToElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingPort",
+      "RelatedElement"
+    ],
+    "IfcRelConnectsPorts": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingPort",
+      "RelatedPort",
+      "RealizingElement"
+    ],
+    "IfcRelConnectsStructuralActivity": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingElement",
+      "RelatedStructuralActivity"
+    ],
+    "IfcRelConnectsStructuralElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingStructuralElement",
+      "RelatedStructuralElement"
+    ],
+    "IfcRelConnectsWithRealizingElements": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ConnectionGeometry",
+      "RelatingElement",
+      "RelatedElement",
+      "RealizingElements",
+      "ConnectionType"
+    ],
+    "IfcRelContainedInSpatialStructure": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedElements",
+      "RelatingStructure"
+    ],
+    "IfcRelDeclares": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingContext",
+      "RelatedDefinitions"
+    ],
+    "IfcRelDefinesByProperties": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingPropertyDefinition"
+    ],
+    "IfcRelDefinesByTemplate": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedPropertySets",
+      "RelatingTemplate"
+    ],
+    "IfcRelDefinesByType": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedObjects",
+      "RelatingType"
+    ],
+    "IfcRelInterferesElements": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingElement",
+      "RelatedElement",
+      "InterferenceGeometry",
+      "InterferenceType",
+      "ImpliedOrder"
+    ],
+    "IfcRelNests": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingObject",
+      "RelatedObjects"
+    ],
+    "IfcRelProjectsElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingElement",
+      "RelatedFeatureElement"
+    ],
+    "IfcRelReferencedInSpatialStructure": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatedElements",
+      "RelatingStructure"
+    ],
+    "IfcRelVoidsElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "RelatingBuildingElement",
+      "RelatedOpeningElement"
+    ],
+    "IfcRoof": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcSIUnit": ["Dimensions", "UnitType", "Prefix", "Name"],
+    "IfcSanitaryTerminal": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcSensor": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcShadingDevice": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcShapeRepresentation": [
+      "ContextOfItems",
+      "RepresentationIdentifier",
+      "RepresentationType",
+      "Items"
+    ],
+    "IfcSite": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "LongName",
+      "CompositionType",
+      "RefLatitude",
+      "RefLongitude",
+      "RefElevation",
+      "LandTitleNumber",
+      "SiteAddress"
+    ],
+    "IfcSlab": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcSpace": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "LongName",
+      "CompositionType",
+      "PredefinedType",
+      "ElevationWithFlooring"
+    ],
+    "IfcStair": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcStairFlight": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcStyledItem": ["Item", "Styles", "Name"],
+    "IfcSurfaceFeature": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcSurfaceStyle": ["Name", "Side", "Styles"],
+    "IfcSurfaceStyleRendering": [
+      "SurfaceColour",
+      "Transparency",
+      "DiffuseColour",
+      "TransmissionColour",
+      "DiffuseTransmissionColour",
+      "ReflectionColour",
+      "SpecularColour",
+      "SpecularHighlight",
+      "ReflectanceMethod"
+    ],
+    "IfcSystemFurnitureElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcTank": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcTransportElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcUnitAssignment": ["Units"],
+    "IfcUnitaryControlElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcVibrationDamper": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcVibrationIsolator": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcVirtualElement": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation"
+    ],
+    "IfcWall": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "PredefinedType"
+    ],
+    "IfcWindow": [
+      "GlobalId",
+      "OwnerHistory",
+      "Name",
+      "Description",
+      "ObjectType",
+      "ObjectPlacement",
+      "Representation",
+      "Tag",
+      "OverallHeight",
+      "OverallWidth",
+      "PredefinedType",
+      "PartitioningType",
+      "UserDefinedPartitioningType"
+    ]
+  }
+}

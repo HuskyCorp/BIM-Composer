@@ -24,15 +24,29 @@ export function renderFileView(threeScene, filesData) {
 
   filesData.forEach((fileData) => {
     const { name: fileName, content: usdaContent } = fileData;
+    console.log(
+      `[renderFileView] Calling parseUSDA on "${fileName}" (${Math.round(usdaContent.length / 1024)} KB)`
+    );
+    console.time("[renderFileView] parseUSDA");
     const parsedMeshesData = threeScene.parser.parseUSDA(usdaContent);
+    console.timeEnd("[renderFileView] parseUSDA");
+    console.log(
+      `[renderFileView] parseUSDA returned ${parsedMeshesData.length} meshes for "${fileName}"`
+    );
 
-    if (parsedMeshesData.length === 0) return;
+    if (parsedMeshesData.length === 0) {
+      console.warn(
+        `[renderFileView] ⚠️ No meshes — scene empty. Check parser output above.`
+      );
+      return;
+    }
 
     // Ensure file entry in hierarchy
     if (!combinedHierarchy[fileName]) {
       combinedHierarchy[fileName] = {};
     }
 
+    console.time("[renderFileView] build Three.js scene");
     parsedMeshesData.forEach((data) => {
       const [xformName, primName] = data.name.split("/");
 
@@ -41,9 +55,12 @@ export function renderFileView(threeScene, filesData) {
       }
 
       const geometry = data.geometry;
+      const isTransparent = data.opacity !== undefined && data.opacity < 1.0;
       const material = new THREE.MeshStandardMaterial({
         color: data.color ? data.color.getHex() : 0xcccccc,
         side: THREE.DoubleSide,
+        transparent: isTransparent,
+        opacity: isTransparent ? data.opacity : 1.0,
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.name = data.name;
@@ -56,7 +73,7 @@ export function renderFileView(threeScene, filesData) {
       mesh.userData.outlinerElement = childItem;
       mesh.userData.originalMaterial = material;
       mesh.userData.primPath = `/${data.name}`;
-      mesh.userData.originFile = fileName; // Track origin file for multi-file contexts
+      mesh.userData.originFile = fileName;
 
       threeScene.meshesGroup.add(mesh);
       combinedHierarchy[fileName][xformName].push({
@@ -64,6 +81,7 @@ export function renderFileView(threeScene, filesData) {
         mesh: mesh,
       });
     });
+    console.timeEnd("[renderFileView] build Three.js scene");
   });
 
   buildFileOutliner(threeScene.outlinerEl, combinedHierarchy);

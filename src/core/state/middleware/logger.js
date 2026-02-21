@@ -47,30 +47,75 @@ export function createLoggerMiddleware(options = {}) {
       colors ? "color: #9E9E9E; font-weight: lighter;" : ""
     );
 
+    // Sanitize huge payloads before passing them to console.log, otherwise
+    // browser DevTools freezes completely when inspecting 25MB strings
+    const sanitizeState = (st) => {
+      if (!st) return st;
+      const res = { ...st };
+      if (res.loadedFiles)
+        res.loadedFiles = "[HIDDEN FOR LOGGING: LARGE FILES]";
+      if (res.composedHierarchy)
+        res.composedHierarchy = `[HIDDEN: ${Object.keys(st.composedHierarchy || {}).length} nodes]`;
+      if (res.allPrimsByPath)
+        res.allPrimsByPath = `[HIDDEN: ${Object.keys(st.allPrimsByPath || {}).length} paths]`;
+      return res;
+    };
+
+    const sanitizeUpdates = (upd) => {
+      if (!upd) return upd;
+      if (upd.type === "LOAD_FILE" && upd.payload) {
+        return {
+          ...upd,
+          payload: {
+            ...upd.payload,
+            content: `[TRUNCATED ${upd.payload.content?.length} chars]`,
+          },
+        };
+      }
+      // Stage change content can also be extremely large if editing points arrays
+      if (
+        upd.type === "STAGE_CHANGE" &&
+        upd.payload?.change?.value?.length > 1000
+      ) {
+        return {
+          ...upd,
+          payload: {
+            ...upd.payload,
+            change: { ...upd.payload.change, value: "[TRUNCATED VALUE]" },
+          },
+        };
+      }
+      return upd;
+    };
+
+    const sPrevState = sanitizeState(prevState);
+    const sNextState = sanitizeState(nextState);
+    const sUpdates = sanitizeUpdates(updates);
+
     // Log previous state
     console.log(
       "%cprev state",
       colors ? "color: #9E9E9E; font-weight: bold;" : "",
-      prevState
+      sPrevState
     );
 
     // Log updates/action
     console.log(
       "%cupdates",
       colors ? "color: #03A9F4; font-weight: bold;" : "",
-      updates
+      sUpdates
     );
 
     // Log next state
     console.log(
       "%cnext state",
       colors ? "color: #4CAF50; font-weight: bold;" : "",
-      nextState
+      sNextState
     );
 
     // Log diff if enabled
     if (diff) {
-      const differences = getDiff(prevState, nextState);
+      const differences = getDiff(sPrevState, sNextState);
       if (Object.keys(differences).length > 0) {
         console.log(
           "%cdiff",

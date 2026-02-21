@@ -48,6 +48,9 @@ export async function convertIFC(inputPath, outputPath, progressCallback) {
         reject(
           new Error(`Python process exited with code ${code}: ${errorOutput}`)
         );
+      } else {
+        // Resolve successfully when the script finishes without error
+        resolve(outputPath);
       }
     });
   });
