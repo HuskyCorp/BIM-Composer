@@ -152,6 +152,7 @@ export function extractGeometriesDirect(usdaText) {
   // Parent Xform tracking (IFC elements are always Xform parents of Mesh)
   const xformStack = []; // { name: string, depth: number }[]
   let globalDepth = 0; // brace depth for the file as a whole
+  let metadataDepth = 0; // depth inside metadata e.g. (...)
 
   console.time("[extractGeometriesDirect] Step3: main line scan");
   for (let i = 0; i < lines.length; i++) {
@@ -161,15 +162,21 @@ export function extractGeometriesDirect(usdaText) {
     if (!insideMesh) {
       // Maintain global depth and pop closed Xform entries
       for (const ch of trimmed) {
-        if (ch === "{") {
-          globalDepth++;
-        } else if (ch === "}") {
-          globalDepth--;
-          while (
-            xformStack.length > 0 &&
-            xformStack[xformStack.length - 1].depth >= globalDepth
-          ) {
-            xformStack.pop();
+        if (ch === "(") {
+          metadataDepth++;
+        } else if (ch === ")") {
+          if (metadataDepth > 0) metadataDepth--;
+        } else if (metadataDepth === 0) {
+          if (ch === "{") {
+            globalDepth++;
+          } else if (ch === "}") {
+            globalDepth--;
+            while (
+              xformStack.length > 0 &&
+              xformStack[xformStack.length - 1].depth >= globalDepth
+            ) {
+              xformStack.pop();
+            }
           }
         }
       }
