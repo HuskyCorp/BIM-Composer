@@ -948,40 +948,167 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
   deleteFileButton.addEventListener("click", handleDeleteFile);
 
+  // Helper to extract selected items (objects or layer fallback)
+  const getSelectedItemsForStaging = (actionName) => {
+    const items = [];
+    let fileToOpen = store.getState().currentFile;
+
+    // 1. Check for Object Selection in 3D View (Priority)
+    const activeScene =
+      store.getState().currentView === "stage"
+        ? stageThreeScene
+        : fileThreeScene;
+    if (activeScene && activeScene.selectionController) {
+      const { selectedMeshes, activeMesh } = activeScene.selectionController;
+
+      const primPaths = new Set();
+      if (selectedMeshes && selectedMeshes.size > 0) {
+        selectedMeshes.forEach((m) => {
+          if (m.userData.primPath && m.visible)
+            primPaths.add(m.userData.primPath);
+        });
+      } else if (
+        activeMesh &&
+        activeMesh.userData.primPath &&
+        activeMesh.visible
+      ) {
+        primPaths.add(activeMesh.userData.primPath);
+      }
+
+      if (primPaths.size > 0) {
+        const state = store.getState();
+        let hierarchySource = [];
+
+        if (state.currentView === "stage") {
+          hierarchySource = state.composedHierarchy || [];
+        } else if (
+          state.currentView === "file" &&
+          state.currentFile &&
+          state.loadedFiles[state.currentFile]
+        ) {
+          try {
+            hierarchySource = USDA_PARSER.getPrimHierarchy(
+              state.loadedFiles[state.currentFile]
+            );
+          } catch (e) {
+            console.error(
+              "[SELECTION] Failed to parse file hierarchy for selection",
+              e
+            );
+          }
+        }
+
+        const findPrim = (nodes, path) => {
+          for (const n of nodes) {
+            if (n.path === path) return n;
+            if (n.children) {
+              const found = findPrim(n.children, path);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+
+        primPaths.forEach((path) => {
+          const prim = findPrim(hierarchySource, path);
+          if (prim) {
+            items.push({
+              primPath: prim.path,
+              originFile: prim._sourceFile || state.currentFile,
+              name: prim.name,
+              type: prim.type,
+            });
+          }
+        });
+
+        if (items.length > 0) {
+          fileToOpen = items[0].originFile; // Context file
+          return { items, fileToOpen };
+        }
+      }
+    }
+
+    // 2. Fallback: Check for Layer Selection in Sidebar
+    const selectedFileItems = Array.from(
+      layerStackList.querySelectorAll("li.selected")
+    );
+    if (selectedFileItems.length > 0) {
+      const state = store.getState();
+      const filesToProcess = new Set();
+      let hasPermissionError = false;
+
+      selectedFileItems.forEach((li) => {
+        const layerId = li.dataset.layerId;
+        const layer = state.stage.layerStack.find((l) => l.id === layerId);
+
+        if (
+          layer &&
+          state.currentUser !== "Project Manager" &&
+          layer.owner &&
+          layer.owner !== state.currentUser
+        ) {
+          hasPermissionError = true;
+          throw new ValidationError(
+            `Only the owner (${layer.owner}) or Project Manager can perform this action on items from layer ${layer.filePath}`,
+            "permission",
+            { user: state.currentUser, owner: layer.owner }
+          );
+        }
+        if (layer) filesToProcess.add(layer.filePath);
+      });
+
+      if (!hasPermissionError) {
+        filesToProcess.forEach((filePath) => {
+          // Parse all root prims from this file directly
+          const fileContent = state.loadedFiles[filePath];
+          if (fileContent) {
+            try {
+              const fileHierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
+              fileHierarchy.forEach((prim) => {
+                items.push({
+                  primPath: prim.path,
+                  originFile: filePath,
+                  name: prim.name,
+                  type: prim.type,
+                });
+              });
+            } catch (e) {
+              console.error(`Failed to parse hierarchy for ${filePath}`, e);
+            }
+          }
+        });
+
+        if (filesToProcess.size > 0) {
+          fileToOpen = Array.from(filesToProcess)[0];
+        }
+        return { items, fileToOpen };
+      }
+    }
+
+    return { items: [], fileToOpen: null };
+  };
+
   // ==================== Set Stage Button ====================
   const handleSetStage = errorHandler.wrap(() => {
-    const selectedFileItems = layerStackList.querySelectorAll("li.selected");
+    const { items, fileToOpen } = getSelectedItemsForStaging("stage");
 
-    if (selectedFileItems.length === 0) {
+    if (items.length === 0) {
       throw new ValidationError(
-        "Please select a file to open the prim selector",
+        "Please select an object in the viewer or a layer in the stack to stage.",
         "selection",
         null
       );
     }
 
-    // Permission Check
-    const layerId = selectedFileItems[0].dataset.layerId;
-    const state = store.getState();
-    const layer = state.stage.layerStack.find((l) => l.id === layerId);
-
-    if (
-      layer &&
-      state.currentUser !== "Project Manager" &&
-      layer.owner &&
-      layer.owner !== state.currentUser
-    ) {
-      throw new ValidationError(
-        `Only the owner (${layer.owner}) or Project Manager can stage items from this layer`,
-        "permission",
-        { user: state.currentUser, owner: layer.owner }
-      );
-    }
-
-    // Modal currently only supports single file context
-    const fileName = selectedFileItems[0].dataset.filePath;
     document.dispatchEvent(
-      new CustomEvent("openPrimModal", { detail: { fileName, mode: "normal" } })
+      new CustomEvent("openPrimModal", {
+        detail: {
+          fileName: fileToOpen,
+          mode: "normal",
+          preSelectedItems: items,
+          isConfirmationOnly: true,
+        },
+      })
     );
   });
 
@@ -990,44 +1117,29 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   // ==================== Entity Stage Button ====================
   const entityStageButton = document.getElementById("entity-stage-button");
   if (entityStageButton) {
-    // Remove existing listeners to prevent duplicates if init is called multiple times
     const newBtn = entityStageButton.cloneNode(true);
     entityStageButton.parentNode.replaceChild(newBtn, entityStageButton);
 
     const handleEntityStage = errorHandler.wrap(() => {
-      const selectedFileItems = layerStackList.querySelectorAll("li.selected");
+      const { items, fileToOpen } =
+        getSelectedItemsForStaging("entity placeholder");
 
-      if (selectedFileItems.length === 0) {
+      if (items.length === 0) {
         throw new ValidationError(
-          "Please select a file to open the entity selector",
+          "Please select an object in the viewer or a layer in the stack to create an entity placeholder.",
           "selection",
           null
         );
       }
 
-      // Permission Check
-      const layerId = selectedFileItems[0].dataset.layerId;
-      const state = store.getState();
-      const layer = state.stage.layerStack.find((l) => l.id === layerId);
-
-      if (
-        layer &&
-        state.currentUser !== "Project Manager" &&
-        layer.owner &&
-        layer.owner !== state.currentUser
-      ) {
-        throw new ValidationError(
-          `Only the owner (${layer.owner}) or Project Manager can create entity placeholders from this layer`,
-          "permission",
-          { user: state.currentUser, owner: layer.owner }
-        );
-      }
-
-      // Modal currently only supports single file context
-      const fileName = selectedFileItems[0].dataset.filePath;
       document.dispatchEvent(
         new CustomEvent("openPrimModal", {
-          detail: { fileName, mode: "entity" },
+          detail: {
+            fileName: fileToOpen,
+            mode: "entity",
+            preSelectedItems: items,
+            isConfirmationOnly: true,
+          },
         })
       );
     });
@@ -1036,295 +1148,43 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   }
 
   promoteLayerButton.addEventListener("click", () => {
-    // 1. Check for Object Selection in 3D View
-    const objectsToPromote = [];
+    const { items } = getSelectedItemsForStaging("promote");
 
-    console.log("[PROMOTE] Button clicked");
-    console.log("[PROMOTE] Current view:", store.getState().currentView);
-
-    // Check both file view and stage view scenes
-    const activeScene =
-      store.getState().currentView === "stage"
-        ? stageThreeScene
-        : fileThreeScene;
-    console.log(
-      "[PROMOTE] Using scene:",
-      store.getState().currentView === "stage"
-        ? "stageThreeScene"
-        : "fileThreeScene"
-    );
-    console.log("[PROMOTE] activeScene exists:", !!activeScene);
-    console.log(
-      "[PROMOTE] selectionController exists:",
-      !!activeScene?.selectionController
-    );
-
-    if (activeScene && activeScene.selectionController) {
-      const { selectedMeshes, activeMesh } = activeScene.selectionController;
-
-      console.log("[PROMOTE] selectedMeshes size:", selectedMeshes?.size);
-      console.log("[PROMOTE] activeMesh:", activeMesh?.name);
-
-      const primPaths = new Set();
-      if (selectedMeshes && selectedMeshes.size > 0) {
-        selectedMeshes.forEach((m) => {
-          console.log(
-            "[PROMOTE] Checking mesh:",
-            m.name,
-            "primPath:",
-            m.userData.primPath,
-            "visible:",
-            m.visible
-          );
-          if (m.userData.primPath && m.visible) {
-            primPaths.add(m.userData.primPath);
-          }
-        });
-      } else if (
-        activeMesh &&
-        activeMesh.userData.primPath &&
-        activeMesh.visible
-      ) {
-        primPaths.add(activeMesh.userData.primPath);
-      }
-
-      console.log(
-        "[PROMOTE] primPaths collected:",
-        primPaths.size,
-        Array.from(primPaths)
-      );
-
-      if (primPaths.size > 0) {
-        const findPrim = (nodes, path) => {
-          for (const n of nodes) {
-            if (n.path === path) return n;
-            if (n.children) {
-              const found = findPrim(n.children, path);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-
-        const composedHierarchy = store.getState().composedHierarchy || [];
-        console.log(
-          "[PROMOTE] composedHierarchy length:",
-          composedHierarchy.length
-        );
-
-        primPaths.forEach((path) => {
-          const prim = findPrim(composedHierarchy, path);
-          console.log(
-            "[PROMOTE] Finding prim for path:",
-            path,
-            "found:",
-            !!prim
-          );
-          if (prim) {
-            objectsToPromote.push(prim);
-          }
-        });
-      }
-    }
-
-    console.log("[PROMOTE] objectsToPromote length:", objectsToPromote.length);
-
-    if (objectsToPromote.length > 0) {
+    if (items.length > 0) {
       document.dispatchEvent(
         new CustomEvent("openPromotionModal", {
           detail: {
             mode: "object",
-            prims: objectsToPromote, // Plural
+            prims: items,
             direction: "promote",
           },
         })
       );
-      return;
-    }
-
-    // 2. Check for Layer Selection
-    const selectedLis = layerStackList.querySelectorAll("li.selected");
-
-    if (selectedLis.length === 0) {
-      alert("Please select one or more layers or objects to promote.");
-      return;
-    }
-
-    // Layer Promotion Logic
-    const selectedLayers = Array.from(selectedLis)
-      .map((li) => {
-        const layerId = li.dataset.layerId;
-        return store.getState().stage.layerStack.find((l) => l.id === layerId);
-      })
-      .filter((l) => l);
-
-    if (selectedLayers.length === 0) return;
-
-    // Permission Check
-    if (store.getState().currentUser !== "Project Manager") {
-      const unauthorized = selectedLayers.filter(
-        (l) => l.owner && l.owner !== store.getState().currentUser
+    } else {
+      alert(
+        "Please select one or more objects in the viewer or a layer in the stack to promote."
       );
-      if (unauthorized.length > 0) {
-        alert(
-          `Permission Denied: You cannot promote layers owned by others. ${unauthorized.length} layer(s) belong to other users.`
-        );
-        return;
-      }
     }
-
-    // Dispatch event to open modal
-    document.dispatchEvent(
-      new CustomEvent("openPromotionModal", {
-        detail: { initialSelection: selectedLayers, direction: "promote" },
-      })
-    );
   });
 
   demoteLayerButton.addEventListener("click", () => {
-    // 1. Check for Object Selection in 3D View
-    const objectsToDemote = [];
+    const { items } = getSelectedItemsForStaging("demote");
 
-    console.log("[DEMOTE] Button clicked");
-    console.log("[DEMOTE] Current view:", store.getState().currentView);
-
-    // Check both file view and stage view scenes
-    const activeScene =
-      store.getState().currentView === "stage"
-        ? stageThreeScene
-        : fileThreeScene;
-    console.log(
-      "[DEMOTE] Using scene:",
-      store.getState().currentView === "stage"
-        ? "stageThreeScene"
-        : "fileThreeScene"
-    );
-    console.log("[DEMOTE] activeScene exists:", !!activeScene);
-    console.log(
-      "[DEMOTE] selectionController exists:",
-      !!activeScene?.selectionController
-    );
-
-    if (activeScene && activeScene.selectionController) {
-      const { selectedMeshes, activeMesh } = activeScene.selectionController;
-
-      console.log("[DEMOTE] selectedMeshes size:", selectedMeshes?.size);
-      console.log("[DEMOTE] activeMesh:", activeMesh?.name);
-
-      const primPaths = new Set();
-      if (selectedMeshes && selectedMeshes.size > 0) {
-        selectedMeshes.forEach((m) => {
-          console.log(
-            "[DEMOTE] Checking mesh:",
-            m.name,
-            "primPath:",
-            m.userData.primPath,
-            "visible:",
-            m.visible
-          );
-          if (m.userData.primPath && m.visible) {
-            primPaths.add(m.userData.primPath);
-          }
-        });
-      } else if (
-        activeMesh &&
-        activeMesh.userData.primPath &&
-        activeMesh.visible
-      ) {
-        primPaths.add(activeMesh.userData.primPath);
-      }
-
-      console.log(
-        "[DEMOTE] primPaths collected:",
-        primPaths.size,
-        Array.from(primPaths)
-      );
-
-      if (primPaths.size > 0) {
-        const findPrim = (nodes, path) => {
-          for (const n of nodes) {
-            if (n.path === path) return n;
-            if (n.children) {
-              const found = findPrim(n.children, path);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-
-        const composedHierarchy = store.getState().composedHierarchy || [];
-        console.log(
-          "[DEMOTE] composedHierarchy length:",
-          composedHierarchy.length
-        );
-
-        primPaths.forEach((path) => {
-          const prim = findPrim(composedHierarchy, path);
-          console.log(
-            "[DEMOTE] Finding prim for path:",
-            path,
-            "found:",
-            !!prim
-          );
-          if (prim) {
-            objectsToDemote.push(prim);
-          }
-        });
-      }
-    }
-
-    console.log("[DEMOTE] objectsToDemote length:", objectsToDemote.length);
-
-    if (objectsToDemote.length > 0) {
+    if (items.length > 0) {
       document.dispatchEvent(
         new CustomEvent("openPromotionModal", {
           detail: {
             mode: "object",
-            prims: objectsToDemote, // Plural
+            prims: items,
             direction: "demote",
           },
         })
       );
-      return;
-    }
-
-    // 2. Check for Layer Selection
-    const selectedLis = layerStackList.querySelectorAll("li.selected");
-
-    if (selectedLis.length === 0) {
-      alert("Please select one or more layers or objects to demote.");
-      return;
-    }
-
-    // Layer Demotion Logic
-    const selectedLayers = Array.from(selectedLis)
-      .map((li) => {
-        const layerId = li.dataset.layerId;
-        return store.getState().stage.layerStack.find((l) => l.id === layerId);
-      })
-      .filter((l) => l);
-
-    if (selectedLayers.length === 0) return;
-
-    // Permission Check
-    if (store.getState().currentUser !== "Project Manager") {
-      const unauthorized = selectedLayers.filter(
-        (l) => l.owner && l.owner !== store.getState().currentUser
+    } else {
+      alert(
+        "Please select one or more objects in the viewer or a layer in the stack to demote."
       );
-      if (unauthorized.length > 0) {
-        alert(
-          `Permission Denied: You cannot demote layers owned by others. ${unauthorized.length} layer(s) belong to other users.`
-        );
-        return;
-      }
     }
-
-    // Dispatch event to open modal
-    document.dispatchEvent(
-      new CustomEvent("openPromotionModal", {
-        detail: { initialSelection: selectedLayers, direction: "demote" },
-      })
-    );
   });
 
   renderLayerStack();

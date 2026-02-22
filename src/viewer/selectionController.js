@@ -127,6 +127,7 @@ export class SelectionController {
               fileName: fileToOpen,
               mode: mode,
               preSelectedItems: selectedItems, // NEW: Pass detailed items
+              isConfirmationOnly: true, // User requested strict confirmation
             },
           })
         );

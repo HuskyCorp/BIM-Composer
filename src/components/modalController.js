@@ -153,7 +153,11 @@ export function initModal(updateView) {
     currentModalFile = fileName;
     // Store mode in DOM to ensure single source of truth across potential multiple closures
     modal.dataset.mode = mode || "normal";
-    openPrimSelectionModal(fileName, preSelectedItems);
+    openPrimSelectionModal(
+      fileName,
+      preSelectedItems,
+      e.detail.isConfirmationOnly
+    );
   });
 
   document.addEventListener("openPrimModal", handleOpenModal);
@@ -167,7 +171,7 @@ export function initModal(updateView) {
 
   // ==================== Open Prim Selection Modal ====================
   const openPrimSelectionModal = errorHandler.wrapAsync(
-    async (fileName, preSelectedItems) => {
+    async (fileName, preSelectedItems, isConfirmationOnly = false) => {
       if (!fileName) {
         throw new ValidationError(
           "File name is required to open modal",
@@ -186,35 +190,55 @@ export function initModal(updateView) {
         );
       }
 
-      // Parse hierarchy with error handling
-      let originalHierarchy;
-      try {
-        originalHierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
-      } catch (error) {
-        throw new ParseError(
-          `Failed to parse USDA file: ${fileName}`,
-          fileContent,
-          error
-        );
+      // Parse hierarchy with error handling only if we need to show the tree
+      let originalHierarchy = [];
+      if (!isConfirmationOnly) {
+        try {
+          originalHierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
+        } catch (error) {
+          throw new ParseError(
+            `Failed to parse USDA file: ${fileName}`,
+            fileContent,
+            error
+          );
+        }
       }
 
       // Clear existing lists
       availablePrimsList.innerHTML = "";
       stagePrimsList.innerHTML = "";
 
-      // Find layer status
-
+      // Find layer status //
       const layer = state.stage.layerStack.find((l) => l.filePath === fileName);
       const layerStatus = layer ? layer.status : "Published";
 
-      // Build tree UI
+      // Build tree UI if required
+      if (!isConfirmationOnly) {
+        await buildTreeUI(
+          originalHierarchy,
+          availablePrimsList,
+          fileName,
+          layerStatus
+        );
+      }
 
-      await buildTreeUI(
-        originalHierarchy,
-        availablePrimsList,
-        fileName,
-        layerStatus
+      // Handle UI for Confirmation Only mode
+      const selectionArea = modal.querySelector(".selection-area");
+      const availableContainer = modal.querySelector(
+        ".available-prims-container"
       );
+      const transferButtons = modal.querySelector(".transfer-buttons");
+      const stagedContainer = modal.querySelector(".staged-prims-container");
+
+      if (isConfirmationOnly) {
+        if (availableContainer) availableContainer.style.display = "none";
+        if (transferButtons) transferButtons.style.display = "none";
+        if (stagedContainer) stagedContainer.style.width = "100%";
+      } else {
+        if (availableContainer) availableContainer.style.display = "flex";
+        if (transferButtons) transferButtons.style.display = "flex";
+        if (stagedContainer) stagedContainer.style.width = "45%";
+      }
 
       // Show modal
       modal.style.display = "flex";
@@ -223,10 +247,17 @@ export function initModal(updateView) {
       const currentMode = modal.dataset.mode;
       const header = modal.querySelector(".modal-header h2");
       if (header) {
-        header.textContent =
-          currentMode === "entity"
-            ? "Select Entity Placeholders"
-            : "Select Prims for Stage";
+        if (isConfirmationOnly) {
+          header.textContent =
+            currentMode === "entity"
+              ? "Confirm Entity Placeholders"
+              : "Confirm Prims for Stage";
+        } else {
+          header.textContent =
+            currentMode === "entity"
+              ? "Select Entity Placeholders"
+              : "Select Prims for Stage";
+        }
       }
 
       // NEW: Handle pre-selected items (multiple, potentially from different files)
@@ -243,7 +274,8 @@ export function initModal(updateView) {
         const externalItems = [];
 
         preSelectedItems.forEach((item) => {
-          if (item.originFile === fileName) {
+          // If in confirmation mode, all items act like "external" because we don't have a tree to pull from
+          if (item.originFile === fileName && !isConfirmationOnly) {
             localItems.push(item);
           } else {
             externalItems.push(item);

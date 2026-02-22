@@ -138,11 +138,21 @@ export function initPromotionController(updateView) {
             : `Object: ${firstPrim.name}`;
         targetStatusLabel.textContent = `${actionTextPresent} ${objCountText} (${currentSourceStatus} ${actionArrow} ${currentTargetStatus})`;
 
-        // Disable list interactions for object mode
+        // Disable and hide list interactions for object mode
         addBtn.disabled = true;
         removeBtn.disabled = true;
         addAllBtn.disabled = true;
         removeAllBtn.disabled = true;
+
+        // Hide the Eligible Lists and Transfer Buttons
+        const eligibleContainer = eligibleList.closest(".prim-list-container");
+        if (eligibleContainer) eligibleContainer.style.display = "none";
+
+        const transferButtons = modal.querySelector(".prim-transfer-buttons");
+        if (transferButtons) transferButtons.style.display = "none";
+
+        const promoteContainer = promoteList.closest(".prim-list-container");
+        if (promoteContainer) promoteContainer.style.width = "100%";
 
         // Show the objects in the "Promote" list
         objectsToPromote.forEach((p) => {
@@ -157,11 +167,20 @@ export function initPromotionController(updateView) {
       promotionMode = "layer";
       objectsToPromote = []; // Clear
 
-      // Re-enable list interactions
+      // Re-enable and show list interactions for layer mode (if ever used)
       addBtn.disabled = false;
       removeBtn.disabled = false;
       addAllBtn.disabled = false;
       removeAllBtn.disabled = false;
+
+      const eligibleContainer = eligibleList.closest(".prim-list-container");
+      if (eligibleContainer) eligibleContainer.style.display = "flex";
+
+      const transferButtons = modal.querySelector(".prim-transfer-buttons");
+      if (transferButtons) transferButtons.style.display = "flex";
+
+      const promoteContainer = promoteList.closest(".prim-list-container");
+      if (promoteContainer) promoteContainer.style.width = "45%";
 
       if (!initialSelection || initialSelection.length === 0) return;
 
