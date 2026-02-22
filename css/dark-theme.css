@@ -154,3 +154,121 @@ body.dark-theme .timeline-node {
   background-color: #888;
   border-color: #444;
 }
+
+/* MODAL CSS OVERRIDES */
+body.dark-theme .modal-content {
+  background: #3a3a3a;
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .prim-list-container {
+  background: #2e2e2e;
+}
+
+body.dark-theme .prim-list-container.outliner-clone .outliner-row:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .prim-transfer-buttons button {
+  background: #555;
+  color: white;
+}
+
+body.dark-theme .modal-footer button {
+  background: #555;
+  color: white;
+}
+
+body.dark-theme #close-modal-button {
+  background: #555;
+  color: white;
+}
+
+body.dark-theme .input-group label {
+  color: #ccc;
+}
+
+body.dark-theme .input-group input,
+body.dark-theme .input-group select {
+  background: #2e2e2e;
+  border: 1px solid #555;
+  color: white;
+}
+
+body.dark-theme .conflict-option {
+  border: 2px solid #555;
+}
+
+body.dark-theme .conflict-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #777;
+}
+
+body.dark-theme .conflict-option strong {
+  color: #fff;
+}
+
+body.dark-theme .conflict-option small {
+  color: #aaa;
+}
+
+body.dark-theme #conflict-current-value,
+body.dark-theme #conflict-new-value {
+  color: #ffd700;
+}
+
+body.dark-theme #conflict-current-source,
+body.dark-theme #conflict-new-owner {
+  color: #00bfff;
+}
+
+/* LOADING MODAL CSS OVERRIDES */
+body.dark-theme .loading-modal-content {
+  background: linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .loading-text h3 {
+  color: #fff;
+}
+
+body.dark-theme .loading-text p {
+  color: #aaa;
+}
+
+body.dark-theme .progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* SAVE MODAL CSS OVERRIDES */
+body.dark-theme .status-checkbox-group {
+  background: #2e2e2e;
+}
+
+body.dark-theme .status-checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .status-checkbox-text {
+  color: #fff;
+}
+
+body.dark-theme .save-options-modal .modal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .save-options-modal .modal-footer button:not(.primary) {
+  background: #555;
+  color: #fff;
+}
+
+body.dark-theme .save-options-modal .modal-footer button:not(.primary):hover {
+  background: #666;
+}

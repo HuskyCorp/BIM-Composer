@@ -819,7 +819,9 @@ def process_element(stage, element, parent_path, settings, mat_manager):
             usd_xform.GetPrim().SetCustomDataByKey("PresentationLayers", layer_dict)
 
     except Exception as exc:
-        report_progress(-1, f"[WARN] Geometry skipped for {element.is_a()} #{element.id()}: {exc}")
+        exc_str = str(exc)
+        if "Representation is NULL" not in exc_str and "'NoneType' object has no attribute 'geometry'" not in exc_str:
+            report_progress(-1, f"[WARN] Geometry skipped for {element.is_a()} #{element.id()}: {exc}")
 
     # Recurse into children
     for rel_attr, target_attr in [

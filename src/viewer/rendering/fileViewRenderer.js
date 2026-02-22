@@ -48,7 +48,10 @@ export function renderFileView(threeScene, filesData) {
 
     console.time("[renderFileView] build Three.js scene");
     parsedMeshesData.forEach((data) => {
-      const [xformName, primName] = data.name.split("/");
+      const nameParts = data.name.split("/");
+      const primName = nameParts.pop();
+      const xformName =
+        nameParts.length > 0 ? nameParts[nameParts.length - 1] : "Root";
 
       if (!combinedHierarchy[fileName][xformName]) {
         combinedHierarchy[fileName][xformName] = [];

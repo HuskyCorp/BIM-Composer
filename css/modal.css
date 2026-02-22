@@ -13,7 +13,8 @@
 }
 
 .modal-content {
-  background: #3a3a3a;
+  background: #ffffff;
+  color: #333333;
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
@@ -25,7 +26,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   padding-bottom: 12px;
   margin-bottom: 16px;
 }
@@ -54,7 +55,7 @@
 
 .prim-list-container {
   width: 45%;
-  background: #2e2e2e;
+  background: #f5f5f5;
   border-radius: 8px;
   padding: 8px;
   height: 400px;
@@ -75,7 +76,7 @@
   cursor: pointer;
 }
 .prim-list-container.outliner-clone .outliner-row:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 .prim-list-container.outliner-clone li.selected > .outliner-row {
   background-color: #007aff;
@@ -97,9 +98,9 @@
 }
 
 .prim-transfer-buttons button {
-  background: #555;
+  background: #e0e0e0;
   border: none;
-  color: white;
+  color: #333333;
   border-radius: 6px;
   width: 30px;
   height: 30px;
@@ -117,6 +118,8 @@
   border-radius: 8px;
   cursor: pointer;
   margin-left: 8px;
+  background: #e0e0e0;
+  color: #333333;
 }
 
 #save-hierarchy-button {
@@ -125,8 +128,8 @@
 }
 
 #close-modal-button {
-  background: #555;
-  color: white;
+  background: #e0e0e0;
+  color: #333333;
 }
 
 /* Reference Manager Styles */
@@ -177,15 +180,15 @@
 
 .input-group label {
   font-size: 12px;
-  color: #ccc;
+  color: #555;
 }
 
 .input-group input,
 .input-group select {
-  background: #2e2e2e;
-  border: 1px solid #555;
+  background: #ffffff;
+  border: 1px solid #ccc;
   padding: 8px;
-  color: white;
+  color: #333333;
   border-radius: 4px;
 }
 
@@ -199,15 +202,15 @@
 
 .conflict-option {
   padding: 12px;
-  border: 2px solid #555;
+  border: 2px solid #ccc;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .conflict-option:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: #777;
+  background: rgba(0, 0, 0, 0.05);
+  border-color: #999;
 }
 
 .conflict-option input[type="radio"] {
@@ -226,22 +229,22 @@
 }
 
 .conflict-option strong {
-  color: #fff;
+  color: #333;
 }
 
 .conflict-option small {
-  color: #aaa;
+  color: #666;
 }
 
 #conflict-current-value,
 #conflict-new-value {
-  color: #ffd700;
+  color: #d4af37;
   font-family: monospace;
 }
 
 #conflict-current-source,
 #conflict-new-owner {
-  color: #00bfff;
+  color: #007aff;
 }
 
 .conflict-warning {

@@ -148,6 +148,7 @@ export function extractGeometriesDirect(usdaText) {
   let faceVertexIndices = null;
   let points = null;
   let boundMatName = null; // resolved from GeomSubset `material:binding`
+  let currentMeshName = null;
 
   // Parent Xform tracking (IFC elements are always Xform parents of Mesh)
   const xformStack = []; // { name: string, depth: number }[]
@@ -188,7 +189,8 @@ export function extractGeometriesDirect(usdaText) {
       }
 
       // Detect the start of a Mesh prim (opening { may be on the same or next line)
-      if (/^def\s+Mesh\s+"/.test(trimmed)) {
+      const meshM = trimmed.match(/^def\s+Mesh\s+"([^"]+)"/);
+      if (meshM) {
         let openLine = trimmed;
         let j = i;
         while (!openLine.includes("{") && j < lines.length - 1) {
@@ -201,6 +203,7 @@ export function extractGeometriesDirect(usdaText) {
           faceVertexIndices = null;
           points = null;
           boundMatName = null;
+          currentMeshName = meshM[1]; // Store mesh name
           i = j; // fast-forward
         }
       }
@@ -253,14 +256,16 @@ export function extractGeometriesDirect(usdaText) {
               opacity = matOpacities[boundMatName] ?? 1.0;
             }
 
-            const xformName =
+            const fullPath =
               xformStack.length > 0
-                ? xformStack[xformStack.length - 1].name
+                ? xformStack.map((x) => x.name).join("/")
                 : `Mesh${meshIndex}`;
             meshIndex++;
 
             meshes.push({
-              name: `${xformName}/Geometry`,
+              name: currentMeshName
+                ? `${fullPath}/${currentMeshName}`
+                : `${fullPath}/Geometry`,
               geometry,
               color,
               opacity: opacity < 1.0 ? opacity : undefined,
@@ -275,6 +280,7 @@ export function extractGeometriesDirect(usdaText) {
         faceVertexIndices = null;
         points = null;
         boundMatName = null;
+        currentMeshName = null;
         continue;
       }
 
@@ -283,16 +289,17 @@ export function extractGeometriesDirect(usdaText) {
         faceVertexIndices === null &&
         trimmed.startsWith("int[] faceVertexIndices")
       ) {
-        const m = trimmed.match(
-          /int\[\]\s+faceVertexIndices\s*=\s*\[([^\]]+)\]/
-        );
-        if (m) faceVertexIndices = m[1];
+        const startIdx = trimmed.indexOf("[", trimmed.indexOf("="));
+        const endIdx = trimmed.lastIndexOf("]");
+        if (startIdx !== -1 && endIdx !== -1)
+          faceVertexIndices = trimmed.slice(startIdx + 1, endIdx);
       }
 
       if (points === null && trimmed.startsWith("point3f[] points")) {
-        const idx = trimmed.indexOf("[");
-        const end = trimmed.lastIndexOf("]");
-        if (idx !== -1 && end !== -1) points = trimmed.slice(idx + 1, end);
+        const startIdx = trimmed.indexOf("[", trimmed.indexOf("="));
+        const endIdx = trimmed.lastIndexOf("]");
+        if (startIdx !== -1 && endIdx !== -1)
+          points = trimmed.slice(startIdx + 1, endIdx);
       }
 
       // First GeomSubset `material:binding` wins
