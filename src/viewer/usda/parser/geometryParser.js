@@ -122,8 +122,16 @@ export function extractGeometriesDirect(usdaText) {
     );
     const oMatch = snippet.match(/float\s+inputs:opacity\s*=\s*([\d.]+)/);
     if (cMatch) {
+      // Store the USDA sRGB value as a plain hex integer so renderers can pass
+      // it directly to Three.js as `color: hexInt`. This avoids the
+      // linearisation round-trip that happens when using `new THREE.Color(r,g,b)`
+      // followed by `.getHex()` in newer Three.js (the constructor treats inputs
+      // as linear, getHex() then gamma-expands them, producing washed-out colours).
       const [r, g, b] = cMatch[1].split(",").map(Number);
-      matColors[matName] = new THREE.Color(r, g, b);
+      const ri = Math.round(r * 255) & 0xff;
+      const gi = Math.round(g * 255) & 0xff;
+      const bi = Math.round(b * 255) & 0xff;
+      matColors[matName] = (ri << 16) | (gi << 8) | bi;
     }
     if (oMatch) {
       matOpacities[matName] = parseFloat(oMatch[1]);
@@ -252,7 +260,11 @@ export function extractGeometriesDirect(usdaText) {
             let color = null;
             let opacity = 1.0;
             if (boundMatName) {
-              color = matColors[boundMatName] || null;
+              // matColors stores sRGB hex integers; null means no colour found
+              color =
+                matColors[boundMatName] !== undefined
+                  ? matColors[boundMatName]
+                  : null;
               opacity = matOpacities[boundMatName] ?? 1.0;
             }
 

@@ -118,62 +118,52 @@ export function renderStageView(threeScene, state) {
         );
 
         // FORCE Override for Entity Placeholders
-        // FORCE Override for Entity Placeholders
         // Check property based on user request ("custom string")
         const entityType = prim.properties?.entityType;
+
+        // Helper: coerce colour value to something MeshStandardMaterial accepts.
+        // prim.properties.displayColor is a THREE.Color (from hierarchyParser).
+        // geomData.color is a plain sRGB hex integer (from extractGeometriesDirect).
+        // displayColor strings like "[(0.5,0.5,0.5)]" are also handled.
+        const resolveColor = (raw) => {
+          if (raw === null || raw === undefined) return null;
+          if (typeof raw === "number") return raw; // hex integer — use as-is
+          if (raw && typeof raw === "object" && typeof raw.r === "number")
+            return raw; // THREE.Color — MeshStandardMaterial accepts it
+          if (typeof raw === "string" && raw.startsWith("[")) {
+            const m = raw.match(/[\d.]+/g);
+            if (m && m.length >= 3) {
+              const ri = Math.round(parseFloat(m[0]) * 255) & 0xff;
+              const gi = Math.round(parseFloat(m[1]) * 255) & 0xff;
+              const bi = Math.round(parseFloat(m[2]) * 255) & 0xff;
+              return (ri << 16) | (gi << 8) | bi;
+            }
+          }
+          return null;
+        };
 
         if (entityType === "placeholder") {
           finalColor = new THREE.Color(0x8fff8f); // Light Green
           opacity = 0.1;
           isWireframe = false;
-          // Explicitly handle "Real Element" if we want to enforce standard behavior?
-          // Or just let it fall through to default.
-          // User asked: "if it comes from S should receive the value as Real Element... then depending on this string you make the element transparent or not."
-          // So strict logic:
         } else if (entityType === "Real Element") {
-          // Fallback to standard logic below (Status Coloring etc)
           if (state.stage.colorizeByStatus) {
-            // PHASE 4: ACTIVE STATE MANAGEMENT - Use centralized resolver
-            // Use 'state' argument instead of 'store' global
             const status = resolvePrimStatus(prim, state.stage.layerStack);
             finalColor = new THREE.Color(getStatusColor(status));
           } else {
-            // ... Standard color logic
             finalColor =
-              prim.properties.displayColor ||
-              geomData.color ||
-              new THREE.Color(0xcccccc);
-            if (typeof finalColor === "string" && finalColor.startsWith("[")) {
-              const match = finalColor.match(/[\d.]+/g);
-              if (match && match.length >= 3) {
-                finalColor = new THREE.Color(
-                  parseFloat(match[0]),
-                  parseFloat(match[1]),
-                  parseFloat(match[2])
-                );
-              }
-            }
+              resolveColor(prim.properties.displayColor) ??
+              resolveColor(geomData.color) ??
+              0xcccccc;
           }
         } else if (state.stage.colorizeByStatus) {
           const status = resolvePrimStatus(prim, state.stage.layerStack);
           finalColor = new THREE.Color(getStatusColor(status));
         } else {
           finalColor =
-            prim.properties.displayColor ||
-            geomData.color ||
-            new THREE.Color(0xcccccc);
-
-          if (typeof finalColor === "string" && finalColor.startsWith("[")) {
-            // Parse "[(r, g, b)]" or "[r, g, b]"
-            const match = finalColor.match(/[\d.]+/g);
-            if (match && match.length >= 3) {
-              finalColor = new THREE.Color(
-                parseFloat(match[0]),
-                parseFloat(match[1]),
-                parseFloat(match[2])
-              );
-            }
-          }
+            resolveColor(prim.properties.displayColor) ??
+            resolveColor(geomData.color) ??
+            0xcccccc;
         }
 
         const material = new THREE.MeshStandardMaterial({

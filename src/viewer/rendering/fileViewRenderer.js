@@ -59,8 +59,10 @@ export function renderFileView(threeScene, filesData) {
 
       const geometry = data.geometry;
       const isTransparent = data.opacity !== undefined && data.opacity < 1.0;
+      // data.color is a plain sRGB hex integer (e.g. 0x94684b);
+      // pass it directly so Three.js creates the right colour without gamma conversion.
       const material = new THREE.MeshStandardMaterial({
-        color: data.color ? data.color.getHex() : 0xcccccc,
+        color: data.color !== null ? data.color : 0xcccccc,
         side: THREE.DoubleSide,
         transparent: isTransparent,
         opacity: isTransparent ? data.opacity : 1.0,

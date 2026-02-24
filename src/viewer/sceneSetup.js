@@ -12,10 +12,15 @@ export function initializeScene(scene, camera, renderer) {
   camera.position.set(30, 30, 30);
   camera.lookAt(0, 0, 0);
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
   scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-  directionalLight.position.set(1, 1, 1);
+
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+  hemiLight.position.set(0, 50, 0);
+  scene.add(hemiLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, Math.PI);
+  directionalLight.position.set(50, 100, 50);
   scene.add(directionalLight);
 
   const gridHelper = new THREE.GridHelper(100, 100, 0xcccccc, 0xcccccc);

@@ -16,21 +16,73 @@ function findMatchingBrace(str, start) {
   return -1;
 }
 
+/**
+ * Locate the opening `{` that begins a prim body, skipping over an optional
+ * multi-line `(...)` metadata block.  Standard `[^)]*` stops at the first `)`,
+ * which breaks on IFC-exported USDA where metadata contains values like
+ * `color3f inputs:diffuseColor = (0.5, 0.5, 0.5)`.  This scanner handles
+ * arbitrarily-deep nested parens correctly.
+ *
+ * Returns the index of the first `{` outside any paren group that appears
+ * after `start`, or -1 if none found before a line that clearly belongs to a
+ * different prim definition.
+ */
+function findPrimOpenBrace(str, start) {
+  let parenDepth = 0;
+  for (let i = start; i < str.length; i++) {
+    const ch = str[i];
+    if (ch === "(") {
+      parenDepth++;
+    } else if (ch === ")") {
+      if (parenDepth > 0) parenDepth--;
+    } else if (ch === "{" && parenDepth === 0) {
+      return i;
+    } else if (ch === "\n" && parenDepth === 0) {
+      // If we hit a newline outside any paren group, check whether the next
+      // non-whitespace token starts a new prim — if so, abort.
+      const rest = str.slice(i + 1).match(/^\s*((def|over)\s+[A-Z]|#)/);
+      if (rest && parenDepth === 0) {
+        // Peek further — still OK if the `{` comes first on the next line(s)
+        // (common: closing `)` + blank line + `{` on next line).
+        // We only abort if we see another prim keyword before any `{`.
+        const nextBrace = str.indexOf("{", i + 1);
+        const nextPrimKw = str.slice(i + 1).search(/(def|over)\s+[A-Z]/);
+        if (
+          nextPrimKw !== -1 &&
+          (nextBrace === -1 || nextPrimKw < nextBrace - (i + 1))
+        ) {
+          return -1;
+        }
+      }
+    }
+  }
+  return -1;
+}
+
 export function parsePrimTree(usdaContent, pathPrefix = "") {
   const prims = [];
-  const primRegex =
-    /(def|over)\s+([A-Z][a-zA-Z0-9_]*)\s+"([^"]+)"\s*(?:\(([^)]*)\))?\s*{/g;
+  // Match only the prim header: `def Type "Name"` — the optional `(...)` metadata
+  // block and the opening `{` are located by findPrimOpenBrace so that
+  // multi-line metadata containing `)` chars does not confuse the regex.
+  const primRegex = /(def|over)\s+([A-Z][a-zA-Z0-9_]*)\s+"([^"]+)"/g;
   let match;
 
   while ((match = primRegex.exec(usdaContent)) !== null) {
     const specifier = match[1];
     const primType = match[2];
     const primName = match[3];
-    const metadata = match[4] || ""; // Capture metadata content
     const currentPath = `${pathPrefix}/${primName}`;
 
-    const contentStart = match.index + match[0].length;
-    const contentEnd = findMatchingBrace(usdaContent, contentStart - 1);
+    // Find the true opening brace for this prim, skipping any metadata `(...)`.
+    const headerEnd = match.index + match[0].length;
+    const braceIdx = findPrimOpenBrace(usdaContent, headerEnd);
+    if (braceIdx === -1) continue; // malformed — skip
+
+    // Extract the metadata text between the header and `{` for reference parsing.
+    const metadata = usdaContent.slice(headerEnd, braceIdx);
+
+    const contentStart = braceIdx + 1;
+    const contentEnd = findMatchingBrace(usdaContent, braceIdx);
 
     if (contentEnd !== -1) {
       const innerContent = usdaContent.substring(contentStart, contentEnd);

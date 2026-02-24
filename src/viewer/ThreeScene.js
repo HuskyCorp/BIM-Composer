@@ -15,6 +15,8 @@ export class ThreeScene {
       1000
     );
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.useLegacyLights = false; // Physically correct lighting
     this.meshesGroup = new THREE.Group();
     this.outlinerEl = document.getElementById("usdaOutliner");
     this._viewType = viewType; // Store the view type ('stage', 'file', or 'history')

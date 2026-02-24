@@ -58,6 +58,7 @@ vi.mock("three", () => {
     LineSegments: vi.fn(function () {}),
     BoxGeometry: vi.fn(function () {}),
     Mesh: vi.fn(function () {}),
+    SRGBColorSpace: "srgb",
   };
 });
 

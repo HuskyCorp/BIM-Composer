@@ -2,6 +2,19 @@
 import { USDA_PARSER } from "../viewer/usda/usdaParser.js";
 
 export function explodeUsda(fileContent, originalFileName) {
+  // Fast pre-check: if the file has a top-level Scope prim (e.g. `_Materials`,
+  // `_Classes`, `Prototypes`) at column 0, don't split it.  Scope prims are
+  // shared resources; separating them from the geometry prims breaks
+  // `material:binding` lookups and strips colours from the rendered scene.
+  // IFC-to-USDA outputs (both Python-backend and JS converter) follow this
+  // pattern, so returning early here is always correct for those files.
+  if (/^def\s+Scope\s+"/m.test(fileContent)) {
+    console.log(
+      `[explodeUsda] Top-level Scope prim detected in "${originalFileName}" — loading as single file to preserve material bindings.`
+    );
+    return { [originalFileName]: fileContent };
+  }
+
   const hierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
   const atomicFiles = {};
 
