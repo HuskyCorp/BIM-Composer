@@ -57,6 +57,7 @@ export function renderLayerStack() {
 
   const createLayerItem = (layer, displayName) => {
     const li = document.createElement("li");
+    li.draggable = true;
     li.dataset.layerId = layer.id;
     li.dataset.filePath = layer.filePath;
 
@@ -499,6 +500,17 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         );
 
         // Process as single USD file
+        const existingPathsIfc = store
+          .getState()
+          .stage.layerStack.map((l) => l.filePath);
+        if (existingPathsIfc.includes(usdFileName)) {
+          console.warn(
+            `[LayerStack] Skipping duplicate IFC-converted layer: ${usdFileName}`
+          );
+          loadingIndicator.hide();
+          return;
+        }
+
         console.time("[IFC→USD] loadFile dispatch");
         store.dispatch(coreActions.loadFile(usdFileName, usdContent));
         console.timeEnd("[IFC→USD] loadFile dispatch");
@@ -586,6 +598,14 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         }
 
         Object.entries(atomicFiles).forEach(([fileName, content]) => {
+          const existingPaths = store
+            .getState()
+            .stage.layerStack.map((l) => l.filePath);
+          if (existingPaths.includes(fileName)) {
+            console.warn(`[LayerStack] Skipping duplicate layer: ${fileName}`);
+            return;
+          }
+
           store.dispatch(coreActions.loadFile(fileName, content));
 
           // Create layer with current user as owner
@@ -870,6 +890,89 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   });
 
   layerFilterControls.addEventListener("click", handleLayerFilter);
+
+  // ==================== Drag-to-Reorder ====================
+  let dragSrcEl = null;
+
+  layerStackList.addEventListener("dragstart", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+    dragSrcEl = li;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", li.dataset.layerId || "");
+    li.classList.add("dragging");
+  });
+
+  layerStackList.addEventListener("dragend", (e) => {
+    const li = e.target.closest("li");
+    if (li) li.classList.remove("dragging");
+    layerStackList.querySelectorAll(".drag-over").forEach((el) => {
+      el.classList.remove("drag-over");
+    });
+    dragSrcEl = null;
+  });
+
+  layerStackList.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const li = e.target.closest("li");
+    if (!li || li === dragSrcEl) return;
+    layerStackList.querySelectorAll(".drag-over").forEach((el) => {
+      el.classList.remove("drag-over");
+    });
+    li.classList.add("drag-over");
+  });
+
+  layerStackList.addEventListener("dragleave", (e) => {
+    const li = e.target.closest("li");
+    if (li) li.classList.remove("drag-over");
+  });
+
+  layerStackList.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const targetLi = e.target.closest("li");
+    if (!targetLi || !dragSrcEl || targetLi === dragSrcEl) return;
+
+    // Reorder DOM
+    const srcIdx = Array.from(layerStackList.querySelectorAll("li")).indexOf(
+      dragSrcEl
+    );
+    const tgtIdx = Array.from(layerStackList.querySelectorAll("li")).indexOf(
+      targetLi
+    );
+    if (srcIdx < tgtIdx) {
+      targetLi.after(dragSrcEl);
+    } else {
+      targetLi.before(dragSrcEl);
+    }
+    targetLi.classList.remove("drag-over");
+
+    // Rebuild ordered layerStack from DOM order
+    const currentStack = store.getState().stage.layerStack;
+    const newStack = [];
+    const seen = new Set();
+    Array.from(layerStackList.querySelectorAll("li")).forEach((li) => {
+      const isGroup = li.dataset.isGroup === "true";
+      const ids = isGroup
+        ? li.dataset.layerIds.split(",")
+        : [li.dataset.layerId];
+      ids.forEach((id) => {
+        if (!seen.has(id)) {
+          seen.add(id);
+          const layer = currentStack.find((l) => l.id === id);
+          if (layer) newStack.push(layer);
+        }
+      });
+    });
+    // Append layers not shown in the current filtered view (preserve their relative order)
+    currentStack.forEach((l) => {
+      if (!seen.has(l.id)) newStack.push(l);
+    });
+
+    store.dispatch(coreActions.reorderLayers(newStack));
+    recomposeStage();
+    if (store.getState().currentView === "stage") updateView();
+  });
 
   // ==================== Delete File Button ====================
   const handleDeleteFile = errorHandler.wrap(() => {

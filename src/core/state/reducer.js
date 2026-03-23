@@ -11,6 +11,15 @@ import {
   generateId,
 } from "./helpers.js";
 
+function buildAllPrimsByPath(prims, map = new Map()) {
+  for (const prim of prims || []) {
+    if (prim.path) map.set(prim.path, prim);
+    if (prim.children && prim.children.length)
+      buildAllPrimsByPath(prim.children, map);
+  }
+  return map;
+}
+
 /**
  * Main reducer function
  * @param {Object} state - Current state
@@ -144,6 +153,7 @@ export function reducer(state, action) {
     case "SET_COMPOSED_HIERARCHY":
       return {
         composedHierarchy: payload.composedHierarchy,
+        allPrimsByPath: buildAllPrimsByPath(payload.composedHierarchy),
         stage: {
           ...state.stage,
           composedPrims: payload.composedHierarchy,

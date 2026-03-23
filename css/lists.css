@@ -83,3 +83,16 @@
   align-items: center;
   gap: 8px;
 }
+
+/* Drag-to-reorder */
+#layersPanel li[draggable="true"] {
+  cursor: grab;
+}
+
+#layersPanel li[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+#layersPanel li.drag-over {
+  border-top: 2px solid #007aff;
+}
