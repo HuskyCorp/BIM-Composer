@@ -2,11 +2,7 @@
 import { store, errorHandler, actions as coreActions } from "../core/index.js";
 import { USDA_PARSER } from "../viewer/usda/usdaParser.js";
 import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
-import {
-  buildPathTranslationRegistry,
-  translatePrimPaths,
-  translatePath,
-} from "../viewer/usda/pathTranslationRegistry.js";
+import { buildPathTranslationRegistry } from "../viewer/usda/pathTranslationRegistry.js";
 
 export function initTimelineController(historyThreeScene) {
   const historyToggleButton = document.getElementById("history-toggle-button");
@@ -114,22 +110,18 @@ export function initTimelineController(historyThreeScene) {
       return;
     }
 
-    // Build path translation registry for rename tracking
-    console.log("[HISTORY] Building path translation registry...");
-    pathTranslationRegistry = buildPathTranslationRegistry(history.commits);
-    console.log(
-      "[HISTORY] Registry built with",
-      pathTranslationRegistry.pathMap.size,
-      "path mappings"
-    );
-
-    // Log registry contents for debugging
-    if (pathTranslationRegistry.pathMap.size > 0) {
-      console.log("[HISTORY] Path mappings:");
-      pathTranslationRegistry.pathMap.forEach((newPath, oldPath) => {
-        console.log(`[HISTORY]   ${oldPath} → ${newPath}`);
-      });
+    // Hash chain integrity verification (TASK 6.3)
+    console.log("[HISTORY] Verifying commit graph integrity...");
+    const integrityResult = verifyHashChain(history.commits);
+    if (!integrityResult.valid) {
+      console.warn(
+        "[HISTORY] Integrity issues detected:",
+        integrityResult.issues
+      );
     }
+
+    // Build path translation registry (kept for external consumers / debug)
+    pathTranslationRegistry = buildPathTranslationRegistry(history.commits);
 
     renderGraph();
   }
@@ -159,6 +151,19 @@ export function initTimelineController(historyThreeScene) {
     });
   }
 
+  /** Returns a color hex string for a given commit type */
+  function getCommitTypeColor(type) {
+    const palette = {
+      "Prim Selection": "#4a90d9",
+      "Entity Placeholder": "#27ae60",
+      "Property Edit": "#e67e22",
+      Rename: "#9b59b6",
+      Promotion: "#f39c12",
+      promotion: "#f39c12",
+    };
+    return palette[type] || "#888";
+  }
+
   function renderGraph() {
     console.log("[HISTORY] Rendering commit graph...");
     graphContainer.innerHTML = "";
@@ -182,29 +187,34 @@ export function initTimelineController(historyThreeScene) {
     }
 
     commits.forEach((commit) => {
+      const typeColor = getCommitTypeColor(commit.type);
       const node = document.createElement("div");
       node.className = "timeline-node";
-      node.title = `Entry: ${commit.entry}\nType: ${commit.type}\nID: ${commit.id}\nPrims: ${commit.stagedPrims?.length || 0}`;
+      node.dataset.commitId = commit.id;
+      node.dataset.baseColor = typeColor;
+      node.title = `[${commit.type}] Entry #${commit.entry}\nUser: ${commit.user || "Unknown"}\n${new Date(commit.timestamp).toLocaleString()}\nPrims: ${commit.stagedPrims?.length || 0}\nID: ${commit.id.substring(0, 12)}...`;
       node.style.cssText = `
             width: 14px;
             height: 14px;
-            background-color: #888;
+            background-color: ${typeColor};
             border-radius: 50%;
             cursor: pointer;
-            border: 2px solid #444;
+            border: 2px solid #333;
             flex-shrink: 0;
             transition: all 0.2s;
         `;
 
       node.addEventListener("mouseenter", () => {
-        node.style.transform = "scale(1.3)";
-        node.style.borderColor = "#007aff";
+        node.style.transform = "scale(1.4)";
+        node.style.borderColor = "#fff";
+        node.style.boxShadow = `0 0 6px ${typeColor}`;
       });
 
       node.addEventListener("mouseleave", () => {
         node.style.transform = "scale(1)";
-        if (node.style.backgroundColor !== "rgb(0, 122, 255)") {
-          node.style.borderColor = "#444";
+        node.style.boxShadow = "";
+        if (!node.classList.contains("selected")) {
+          node.style.borderColor = "#333";
         }
       });
 
@@ -212,9 +222,17 @@ export function initTimelineController(historyThreeScene) {
         console.log(
           `[HISTORY] Commit node clicked: ${commit.id} (Entry ${commit.entry})`
         );
-        Array.from(graphContainer.children).forEach((c) => {
-          if (c.style) c.style.backgroundColor = "#888";
-        });
+        // Deselect all nodes
+        Array.from(graphContainer.querySelectorAll(".timeline-node")).forEach(
+          (n) => {
+            n.classList.remove("selected");
+            n.style.borderColor = "#333";
+            n.style.backgroundColor = n.dataset.baseColor;
+          }
+        );
+        // Select this node
+        node.classList.add("selected");
+        node.style.borderColor = "#fff";
         node.style.backgroundColor = "#007aff";
         updateSceneFromHistory(commit.id);
       });
@@ -264,33 +282,131 @@ export function initTimelineController(historyThreeScene) {
   }
 
   function updateInfoBox(commit) {
+    const state = store.getState();
+    const commitsMap =
+      state.history.commits instanceof Map
+        ? state.history.commits
+        : new Map(Object.entries(state.history.commits));
+
+    // Build diff: compare this commit's serializedPrims to parent's serializedPrims
+    const parentCommit = commit.parent ? commitsMap.get(commit.parent) : null;
+    const diffLines = buildCommitDiff(commit, parentCommit);
+
+    const typeColor = getCommitTypeColor(commit.type);
+    const integrityOk = !commit.parent || commitsMap.has(commit.parent);
+
     historyInfoBox.style.display = "block";
     historyInfoBox.innerHTML = `
         <div class="info-box-title">Statement Trace</div>
         <div class="info-box-row">
-            <span class="info-box-label">Entry ID</span>
+            <span class="info-box-label">Entry</span>
             <span class="info-box-value">#${commit.entry}</span>
         </div>
         <div class="info-box-row">
-            <span class="info-box-label">Timestamp</span>
-            <span class="info-box-value">${new Date(commit.timestamp).toLocaleString()}</span>
+            <span class="info-box-label">Type</span>
+            <span class="info-box-value" style="color:${typeColor};font-weight:bold;">${commit.type}</span>
         </div>
         <div class="info-box-row">
             <span class="info-box-label">User</span>
             <span class="info-box-value">${commit.user || "System"}</span>
         </div>
         <div class="info-box-row">
-            <span class="info-box-label">Action</span>
-            <span class="info-box-value">${commit.type}</span>
+            <span class="info-box-label">Timestamp</span>
+            <span class="info-box-value">${new Date(commit.timestamp).toLocaleString()}</span>
         </div>
         <div class="info-box-row">
-            <span class="info-box-label">Staged Prims</span>
+            <span class="info-box-label">Prims</span>
             <span class="info-box-value">${commit.stagedPrims ? commit.stagedPrims.length : 0}</span>
         </div>
-        <div style="margin-top: 10px; font-size: 11px; color: #aaa;">
-            Commit Hash: ${commit.id}
+        <div class="info-box-row">
+            <span class="info-box-label">Status</span>
+            <span class="info-box-value">${commit.sourceStatus || "—"}</span>
         </div>
+        <div class="info-box-row">
+            <span class="info-box-label">Parent</span>
+            <span class="info-box-value" style="color:${integrityOk ? "#aaa" : "#e74c3c"};">
+              ${commit.parent ? commit.parent.substring(0, 12) + "…" : "genesis"}
+              ${integrityOk ? "" : " ⚠ missing"}
+            </span>
+        </div>
+        <div style="margin-top: 8px; padding: 6px 8px; background:#1a1a1a; border-radius:4px; font-size:11px; color:#888; word-break:break-all;">
+            ${commit.id}
+        </div>
+        ${
+          diffLines.length > 0
+            ? `
+        <div class="info-box-title" style="margin-top:10px;">Changes in this commit</div>
+        <div style="font-size:11px; line-height:1.6; max-height:120px; overflow-y:auto;">
+          ${diffLines.join("")}
+        </div>`
+            : ""
+        }
       `;
+  }
+
+  /**
+   * Produce a list of HTML snippets describing what this commit changed
+   * relative to its parent commit.
+   */
+  function buildCommitDiff(commit, parentCommit) {
+    const lines = [];
+
+    if (commit.type === "Rename" && commit.oldPath && commit.newPath) {
+      lines.push(
+        `<div style="color:#9b59b6;">&#8594; Renamed <strong>${commit.oldPath.split("/").pop()}</strong> → <strong>${commit.newPath.split("/").pop()}</strong></div>`
+      );
+      return lines;
+    }
+
+    const currentPaths = new Set(
+      (commit.serializedPrims || []).map((p) => p.path)
+    );
+    const parentPaths = new Set(
+      (parentCommit?.serializedPrims || []).map((p) => p.path)
+    );
+
+    // Added prims (in this commit but not in parent)
+    currentPaths.forEach((path) => {
+      if (!parentPaths.has(path)) {
+        const shortPath = path.split("/").pop();
+        lines.push(
+          `<div style="color:#27ae60;">+ ${shortPath} <span style="color:#555;">${path}</span></div>`
+        );
+      }
+    });
+
+    // Modified prims (in both — show changed properties)
+    (commit.serializedPrims || []).forEach((prim) => {
+      if (!parentPaths.has(prim.path)) return; // already shown as added
+      const parentPrim = (parentCommit?.serializedPrims || []).find(
+        (p) => p.path === prim.path
+      );
+      if (!parentPrim) return;
+
+      const changedProps = [];
+      Object.entries(prim.properties || {}).forEach(([key, val]) => {
+        const oldVal = parentPrim.properties?.[key];
+        if (JSON.stringify(oldVal) !== JSON.stringify(val)) {
+          changedProps.push(
+            `<span style="color:#e67e22;">${key}: ${JSON.stringify(oldVal)} → ${JSON.stringify(val)}</span>`
+          );
+        }
+      });
+
+      if (changedProps.length > 0) {
+        lines.push(
+          `<div style="color:#4a90d9;">~ ${prim.path.split("/").pop()} &nbsp; ${changedProps.join(", ")}</div>`
+        );
+      }
+    });
+
+    if (lines.length === 0 && currentPaths.size > 0) {
+      lines.push(
+        `<div style="color:#aaa;">${currentPaths.size} prim(s) recorded</div>`
+      );
+    }
+
+    return lines;
   }
 
   function updateSceneFromHistory(commitId) {
@@ -325,181 +441,228 @@ export function initTimelineController(historyThreeScene) {
     console.log("[HISTORY] Scene updated successfully");
   }
 
-  function getPrimWithAncestors(path) {
-    console.log(`[HISTORY]   Getting prim with ancestors for: ${path}`);
+  // ─── Algorithm B Helpers ────────────────────────────────────────────────────
 
-    const prims = [];
-    const pathSegments = path.split("/").filter(Boolean);
+  /**
+   * Traverse parent pointers from targetCommitId back to genesis, then reverse
+   * to get commits in chronological order (genesis → target).
+   */
+  function buildCommitPathToTarget(commitsMap, targetCommitId) {
+    const path = [];
+    let currentId = targetCommitId;
+    const visited = new Set();
 
-    for (let i = 0; i < pathSegments.length; i++) {
-      const currentPath = "/" + pathSegments.slice(0, i + 1).join("/");
-      const primFromMasterList = store
-        .getState()
-        .allPrimsByPath.get(currentPath);
-
-      if (primFromMasterList) {
-        const clonedPrim = JSON.parse(JSON.stringify(primFromMasterList));
-        // Keep children (including mesh children) for geometry rendering
-        // clonedPrim.children = []; // DON'T clear children - we need them for rendering!
-        prims.push(clonedPrim);
-        console.log(`[HISTORY]     Found: ${currentPath}`);
-      } else {
-        console.warn(`[HISTORY]     Missing: ${currentPath}`);
+    while (currentId) {
+      if (visited.has(currentId)) {
+        console.error(
+          "[HISTORY] Cycle detected in commit graph at:",
+          currentId
+        );
+        break;
       }
+      const commit = commitsMap.get(currentId);
+      if (!commit) break;
+      visited.add(currentId);
+      path.unshift(commit); // prepend → chronological order
+      currentId = commit.parent;
     }
 
-    console.log(`[HISTORY]   Got ${prims.length} prims (including ancestors)`);
-    return prims;
+    return path;
   }
 
-  function reconstructStateAt(targetCommitId) {
-    console.log(`[HISTORY] Reconstructing state at commit: ${targetCommitId}`);
-
-    // ISOLATION VIEW: Only show the objects attached to this specific entry.
-    // Instead of building the full state from root, we only process the target commit.
-
-    const history = store.getState().history;
-    const curr = history.commits.get(targetCommitId);
-
-    if (!curr) {
-      console.error(`[HISTORY] Target commit not found: ${targetCommitId}`);
-      return [];
-    }
-
-    const commitPath = [curr]; // Only the target commit
-
-    console.log(`[HISTORY] Isolating commit: ${curr.id} (Entry ${curr.entry})`);
-
-    const primsToReconstruct = new Map();
-
-    commitPath.forEach((logEntry, index) => {
-      console.log(`[HISTORY] Processing isolated commit: ${logEntry.id}`);
-
-      // NEW LOGIC: Use serialized prims directly from the log
-      if (logEntry.serializedPrims && logEntry.serializedPrims.length > 0) {
-        console.log(
-          `[HISTORY]   Found ${logEntry.serializedPrims.length} serialized prims`
-        );
-        logEntry.serializedPrims.forEach((prim) => {
-          // In logs, we might have stored "status" in properties.
-          // We need to ensure it's applied correctly.
-          // The serialized prim ALREADY contains the properties as they were at that time.
-          // We just need to put it into the map, overwriting previous states.
-
-          // Ensure _sourceFile is preserved if possible?
-          // History view doesn't necessarily need to know source file for rendering,
-          // but stage renderer might look for it.
-          // We can infer it from logEntry['File Name'] if missing?
-          if (!prim._sourceFile) prim._sourceFile = logEntry["File Name"];
-
-          // Force status from log metadata if present, or trust the prim properties?
-          // Trust serialized prim properties first.
-
-          // Translate historical paths to current paths using path translation registry
-          // This handles cases where prims were renamed after this log entry was created
-          const translatedPrim = pathTranslationRegistry
-            ? translatePrimPaths(prim, pathTranslationRegistry)
-            : prim;
-
-          primsToReconstruct.set(translatedPrim.path, translatedPrim);
-        });
-      } else if (logEntry.stagedPrims && logEntry.stagedPrims.length > 0) {
-        // FALLBACK for legacy logs or incomplete data: Try to find in current state (Warning: this is "Live" state leaking into history)
-        console.warn(
-          `[HISTORY]   No serialized prims found, falling back to live state lookup (Legacy behavior)`
-        );
-        logEntry.stagedPrims.forEach((path) => {
-          console.log(`[HISTORY]   Processing staged prim: ${path}`);
-
-          // Translate historical paths to current paths (handles renamed prims)
-          const translatedPath = pathTranslationRegistry
-            ? translatePath(path, pathTranslationRegistry)
-            : path;
-
-          if (translatedPath !== path) {
-            console.log(
-              `[HISTORY]   ✓ Translated staged prim path: ${path} -> ${translatedPath}`
-            );
-          } else {
-            console.log(`[HISTORY]   ✗ No translation found for: ${path}`);
-          }
-
-          const primAndAncestors = getPrimWithAncestors(translatedPath);
-          console.log(
-            `[HISTORY]   Found ${primAndAncestors.length} prims (including ancestors) for ${translatedPath}`
-          );
-
-          if (primAndAncestors.length === 0) {
-            console.warn(
-              `[HISTORY]   ⚠️  Could not find prim at translated path: ${translatedPath}`
-            );
-          }
-
-          primAndAncestors.forEach((p) => {
-            // Create a localized copy to avoid mutating the live state cache
-            const pClone = JSON.parse(JSON.stringify(p));
-            pClone._historicalStatus = logEntry.sourceStatus || "History";
-            primsToReconstruct.set(pClone.path, pClone);
-          });
-        });
+  /**
+   * Flatten a prim hierarchy into a path → prim Map (children cleared, to be rebuilt).
+   */
+  function flattenHierarchyToMap(prims, map, sourceFile) {
+    prims.forEach((prim) => {
+      const entry = {
+        ...prim,
+        properties: { ...prim.properties },
+        children: [],
+      };
+      if (sourceFile && !entry._sourceFile) entry._sourceFile = sourceFile;
+      map.set(prim.path, entry);
+      if (prim.children && prim.children.length > 0) {
+        flattenHierarchyToMap(prim.children, map, sourceFile);
       }
     });
+  }
 
-    console.log(
-      `[HISTORY] Total unique prims to reconstruct: ${primsToReconstruct.size}`
-    );
-
-    // Rebuild hierarchy
-    const finalHierarchy = [];
-    primsToReconstruct.forEach((prim) => {
-      const pathSegments = prim.path.split("/").filter(Boolean);
-      if (pathSegments.length > 1) {
-        const parentPath = "/" + pathSegments.slice(0, -1).join("/");
-        const parent = primsToReconstruct.get(parentPath);
+  /**
+   * Rebuild a prim hierarchy tree from a flat path → prim Map.
+   */
+  function buildHierarchyFromMap(primMap) {
+    const roots = [];
+    primMap.forEach((prim) => {
+      prim.children = []; // reset before rebuild
+    });
+    primMap.forEach((prim) => {
+      const segments = prim.path.split("/").filter(Boolean);
+      if (segments.length > 1) {
+        const parentPath = "/" + segments.slice(0, -1).join("/");
+        const parent = primMap.get(parentPath);
         if (parent) {
-          if (!parent.children) parent.children = [];
-          if (!parent.children.some((c) => c.path === prim.path)) {
-            parent.children.push(prim);
-          }
+          parent.children.push(prim);
         } else {
-          // Parent missing in history?
-          // This can happen if only the child was modified and logged, and parent wasn't included in the serialized set?
-          // Ideally we should serialize ancestors too, or have a base state.
-          // For now, if parent is missing, treat as root? Or try to fetch ancestor from live state?
-          // FETCH ANCESTOR FROM LIVE STATE is safer for structure.
-          console.warn(
-            `[HISTORY] Parent ${parentPath} missing for ${prim.path}. Fetching from live...`
-          );
-          const liveParent = store.getState().allPrimsByPath.get(parentPath);
-          if (liveParent) {
-            const liveParentClone = JSON.parse(JSON.stringify(liveParent));
-            liveParentClone.children = [prim];
-            primsToReconstruct.set(parentPath, liveParentClone);
-            // We'll process this parent in the loop? No, map iteration order is fixed?
-            // We might need to restart or ensure parents are processed.
-            // Map iteration handles insertion? Yes in JS Maps.
-            // But better to just push to finalHierarchy if we can't find parent,
-            // OR ensuring all ancestors are in primsToReconstruct.
-
-            // Let's rely on getPrimWithAncestors logic if we are missing parents?
-            // But that uses live state properties.
-
-            // If we treat it as root for now, it renders.
-            // But hierarchy indentation will be wrong.
-            finalHierarchy.push(prim);
-          } else {
-            finalHierarchy.push(prim);
-          }
+          roots.push(prim);
         }
       } else {
-        finalHierarchy.push(prim);
+        roots.push(prim);
+      }
+    });
+    return roots;
+  }
+
+  // ─── TASK 6.3: Hash Chain Integrity Verification ────────────────────────────
+
+  /**
+   * Verifies the structural integrity of the commit graph:
+   * - Every commit's parent pointer references an existing commit
+   * - No circular references exist in the graph
+   * Returns { valid: boolean, issues: string[] }
+   */
+  function verifyHashChain(commits) {
+    const commitsMap =
+      commits instanceof Map ? commits : new Map(Object.entries(commits));
+
+    const issues = [];
+
+    // Check 1: all parent pointers reference existing commits
+    commitsMap.forEach((commit, id) => {
+      if (commit.parent && !commitsMap.has(commit.parent)) {
+        issues.push(
+          `Commit ${id.substring(0, 8)} references missing parent ${commit.parent.substring(0, 8)}`
+        );
       }
     });
 
+    // Check 2: no cycles using DFS
+    const visited = new Set();
+    const inStack = new Set();
+
+    const hasCycle = (id) => {
+      if (inStack.has(id)) return true;
+      if (visited.has(id)) return false;
+      visited.add(id);
+      inStack.add(id);
+      const commit = commitsMap.get(id);
+      if (commit && commit.parent && hasCycle(commit.parent)) {
+        issues.push(`Cycle detected involving commit ${id.substring(0, 8)}`);
+        inStack.delete(id);
+        return true;
+      }
+      inStack.delete(id);
+      return false;
+    };
+    commitsMap.forEach((_, id) => hasCycle(id));
+
+    const valid = issues.length === 0;
+    if (valid) {
+      console.log(
+        `[HISTORY] Chain integrity OK — ${commitsMap.size} commits verified`
+      );
+    } else {
+      console.warn("[HISTORY] Chain integrity FAILED:", issues);
+    }
+
+    return { valid, issues };
+  }
+
+  // ─── Algorithm B: History Reconstruction Engine ──────────────────────────────
+
+  /**
+   * Reconstruct the composed scene state at a given commit by replaying all
+   * commits from genesis up to and including targetCommitId (Algorithm B).
+   *
+   * 1. Build ordered commit path from genesis → target via parent pointers
+   * 2. Start with base layer from all loaded non-statement files
+   * 3. For each commit in order: apply serializedPrims as property overrides;
+   *    for Rename commits, move prim paths in the composed map first
+   * 4. Rebuild tree hierarchy from flat map
+   */
+  function reconstructStateAt(targetCommitId) {
     console.log(
-      `[HISTORY] Final hierarchy has ${finalHierarchy.length} root prims`
+      `[HISTORY] Algorithm B: cumulative replay to commit ${targetCommitId}`
     );
-    return finalHierarchy;
+
+    const state = store.getState();
+    const history = state.history;
+    const commitsMap =
+      history.commits instanceof Map
+        ? history.commits
+        : new Map(Object.entries(history.commits));
+
+    // Step 1: ordered commits from genesis → target
+    const orderedCommits = buildCommitPathToTarget(commitsMap, targetCommitId);
+    console.log(`[HISTORY] Replaying ${orderedCommits.length} commits`);
+
+    // Step 2: base map from all loaded non-statement files
+    const composedMap = new Map();
+    for (const fileName in state.loadedFiles) {
+      if (fileName === "statement.usda") continue;
+      const content = state.loadedFiles[fileName];
+      const prims = USDA_PARSER.getPrimHierarchy(content);
+      flattenHierarchyToMap(prims, composedMap, fileName);
+    }
+    console.log(`[HISTORY] Base map: ${composedMap.size} prims`);
+
+    // Step 3: replay each commit in chronological order
+    for (const commit of orderedCommits) {
+      // Handle renames first: move all affected paths in the map
+      if (commit.type === "Rename" && commit.oldPath && commit.newPath) {
+        const toMove = [];
+        composedMap.forEach((prim, path) => {
+          if (
+            path === commit.oldPath ||
+            path.startsWith(commit.oldPath + "/")
+          ) {
+            toMove.push([path, prim]);
+          }
+        });
+        toMove.forEach(([oldP, prim]) => {
+          composedMap.delete(oldP);
+          const newP = commit.newPath + oldP.substring(commit.oldPath.length);
+          const segments = newP.split("/").filter(Boolean);
+          prim.path = newP;
+          prim.name = segments[segments.length - 1];
+          composedMap.set(newP, prim);
+        });
+      }
+
+      // Apply serialized prims as property overrides (or add new prims)
+      if (commit.serializedPrims && commit.serializedPrims.length > 0) {
+        const applyPrim = (prim) => {
+          if (!prim._sourceFile)
+            prim._sourceFile = commit["File Name"] || commit.fileName;
+          const existing = composedMap.get(prim.path);
+          if (existing) {
+            Object.assign(existing.properties, prim.properties);
+            if (prim._sourceFile) existing._sourceFile = prim._sourceFile;
+            if (prim.references) existing.references = prim.references;
+          } else {
+            composedMap.set(prim.path, {
+              ...prim,
+              properties: { ...prim.properties },
+              children: [],
+            });
+          }
+          // Recurse into children embedded in the serialized prim
+          if (prim.children && prim.children.length > 0) {
+            prim.children.forEach(applyPrim);
+          }
+        };
+        commit.serializedPrims.forEach(applyPrim);
+      }
+    }
+
+    console.log(
+      `[HISTORY] Composed map after replay: ${composedMap.size} prims`
+    );
+
+    // Step 4: rebuild tree
+    const result = buildHierarchyFromMap(composedMap);
+    console.log(`[HISTORY] Final hierarchy: ${result.length} root prims`);
+    return result;
   }
 
   document.addEventListener("updateView", () => {
@@ -514,7 +677,30 @@ export function initTimelineController(historyThreeScene) {
       setupTimeline();
       historyToggleButton.classList.add("active");
       timelineControlsContainer.style.display = "flex";
-      // timelineControlsContainer.style.visibility = "visible";
+
+      // Inject "History Mode" read-only banner
+      let banner = document.getElementById("history-mode-banner");
+      if (!banner) {
+        banner = document.createElement("div");
+        banner.id = "history-mode-banner";
+        banner.style.cssText = `
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          z-index: 9999;
+          background: linear-gradient(90deg, #7b2ff7, #007aff);
+          color: #fff;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-align: center;
+          padding: 5px 12px;
+          pointer-events: none;
+        `;
+        banner.textContent =
+          "HISTORY MODE — Read Only. Click Return to Live to resume editing.";
+        document.body.appendChild(banner);
+      }
+      banner.style.display = "block";
 
       // Show/Reset Overlay
       historyOverlay.style.display = "flex";
@@ -535,9 +721,13 @@ export function initTimelineController(historyThreeScene) {
 
           // Highlight the latest node
           setTimeout(() => {
-            const nodes = graphContainer.querySelectorAll(".timeline-node");
-            if (nodes.length > 0) {
-              nodes[0].style.backgroundColor = "#007aff";
+            const firstNode = graphContainer.querySelector(
+              `.timeline-node[data-commit-id="${latest.id}"]`
+            );
+            if (firstNode) {
+              firstNode.classList.add("selected");
+              firstNode.style.borderColor = "#fff";
+              firstNode.style.backgroundColor = "#007aff";
             }
           }, 100);
         }
@@ -546,11 +736,12 @@ export function initTimelineController(historyThreeScene) {
       console.log("[HISTORY] Exiting history mode");
       historyToggleButton.classList.remove("active");
       timelineControlsContainer.style.display = "none";
-      // timelineControlsContainer.style.visibility = "hidden";
 
-      // Hide Overlay
+      // Hide Overlay and banner
       historyOverlay.style.display = "none";
       historyInfoBox.style.display = "none";
+      const banner = document.getElementById("history-mode-banner");
+      if (banner) banner.style.display = "none";
       label.textContent = "Live";
     }
   });
