@@ -21,6 +21,7 @@ import { initPromotionController } from "./components/promotionController.js";
 import { initUserController } from "./components/userController.js";
 import { initConflictModal } from "./components/conflictModal.js";
 import { initStagingPanel } from "./components/staging/stagingPanelController.js";
+import { initGenesisCommit } from "./components/staging/primStaging.js";
 import { loadingIndicator } from "./components/loadingIndicator.js";
 
 function initSidebarResizing() {
@@ -125,4 +126,5 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sampleSceneItem").textContent =
     store.getState().sceneName;
   updateView();
+  initGenesisCommit(); // TASK 6.1: anchor the commit graph on first load
 });

@@ -5,6 +5,7 @@ import { generateStageUsda } from "../viewer/usda/usdaComposer.js";
 import { renderFileView } from "../viewer/rendering/fileViewRenderer.js";
 import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
 import { validateUsdaSyntax } from "../utils/atomicFileHandler.js";
+import { recomposeStage } from "./sidebar/layerStackController.js";
 
 export function initViewControls(
   fileThreeScene,
@@ -232,10 +233,9 @@ export function initViewControls(
     clearTimeout(editorSyncTimer);
     editorSyncTimer = setTimeout(() => {
       const state = store.getState();
-      // Only save to the single file being edited in file view
+      // Only save when editing a single source file in file view
       if (state.currentView === "file" && state.currentFile) {
         const content = editor.value;
-        // Validate basic USDA syntax
         const { valid, errors } = validateUsdaSyntax(content);
         if (!valid) {
           editorErrorBadge.textContent = `⚠ ${errors[0]}`;
@@ -244,7 +244,10 @@ export function initViewControls(
         } else {
           editorErrorBadge.style.display = "none";
           editor.style.outline = "";
+          // TASK 9.4: persist the edit then recompose → re-render 3D scene
           actions.updateLoadedFile(state.currentFile, content);
+          recomposeStage();
+          updateView();
         }
       }
     }, 600);

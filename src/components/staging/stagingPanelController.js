@@ -44,7 +44,7 @@ function writeCommitToStatement(changes, message) {
     "File Size": fileSize,
     Type: commitType,
     User: state.currentUser || "Unknown",
-    Status: message,
+    commitMessage: message,
     sourceStatus: firstChange.sourceStatus || "WIP",
     targetStatus: firstChange.targetStatus || "WIP",
     stagedPrims: stagedPaths,

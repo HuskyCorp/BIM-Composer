@@ -263,6 +263,7 @@ export function initTimelineController(historyThreeScene) {
                 <span>${commit.user || "Unknown"}</span>
             </div>
             <div class="history-item-title">${commit.type}</div>
+            ${commit.commitMessage ? `<div class="history-item-details" style="font-style:italic;color:#aaa;">${commit.commitMessage}</div>` : ""}
             <div class="history-item-details">Ref: ${commit.id.substring(0, 8)}...</div>
           `;
 
@@ -322,6 +323,14 @@ export function initTimelineController(historyThreeScene) {
             <span class="info-box-label">Status</span>
             <span class="info-box-value">${commit.sourceStatus || "—"}</span>
         </div>
+        ${
+          commit.commitMessage
+            ? `<div class="info-box-row" style="align-items:flex-start;">
+            <span class="info-box-label">Message</span>
+            <span class="info-box-value" style="font-style:italic;color:#ccc;">${commit.commitMessage}</span>
+        </div>`
+            : ""
+        }
         <div class="info-box-row">
             <span class="info-box-label">Parent</span>
             <span class="info-box-value" style="color:${integrityOk ? "#aaa" : "#e74c3c"};">

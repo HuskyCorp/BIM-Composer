@@ -105,6 +105,11 @@ export function parseStatementLog(statementContent) {
     const userMatch = logBody.match(/custom string user = "([^"]+)"/);
     if (userMatch) commit.user = userMatch[1];
 
+    const commitMessageMatch = logBody.match(
+      /custom string commitMessage = "([^"]*)"/
+    );
+    if (commitMessageMatch) commit.commitMessage = commitMessageMatch[1];
+
     // For nested prims, we need to extract the parts of logBody that look like prim definitions
     // i.e. def "Type" "Name" { or def Type "Name" {
     // We can use parsePrimTree on the logBody!

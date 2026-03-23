@@ -59,10 +59,29 @@ export const applyAttributeChange = errorHandler.wrap(
     console.log("[PROPERTY CHANGE] Attribute:", attrName, "=", attrValue);
     console.log("[PROPERTY CHANGE] skipRefresh:", skipRefresh);
 
-    // 1. Stage the change (deferred — not yet written to statement.usda)
+    // 1. Parse attribute name to extract property name and type
+    const { propertyName, propertyType } = parseAttributeName(attrName);
+    console.log(
+      "[PROPERTY CHANGE] Parsed - Property:",
+      propertyName,
+      "Type:",
+      propertyType
+    );
+
+    // 2. TASK 5.3: Check permissions BEFORE staging — block non-owners immediately
+    const permission = checkPermission(prim, propertyName);
+    if (!permission.allowed) {
+      throw new ValidationError(
+        `Permission Denied: ${permission.reason}`,
+        "permission",
+        permission
+      );
+    }
+
+    // 3. Stage the change (deferred — not yet written to statement.usda)
     const { propertyName: stagedPropName } = parseAttributeName(attrName);
     const change = {
-      type: stagedPropName === "status" ? "propertyEdit" : "propertyEdit",
+      type: "propertyEdit",
       targetPath: prim.path,
       attributeName: attrName,
       attributeValue: attrValue,
@@ -78,25 +97,6 @@ export const applyAttributeChange = errorHandler.wrap(
     actions.addStagedChange(change);
     if (commitButton) {
       commitButton.classList.add("has-changes");
-    }
-
-    // 2. Parse attribute name to extract property name and type
-    const { propertyName, propertyType } = parseAttributeName(attrName);
-    console.log(
-      "[PROPERTY CHANGE] Parsed - Property:",
-      propertyName,
-      "Type:",
-      propertyType
-    );
-
-    // 3. Check for conflicts and permissions
-    const permission = checkPermission(prim, propertyName);
-    if (!permission.allowed) {
-      throw new ValidationError(
-        `Permission Denied: ${permission.reason}`,
-        "permission",
-        permission
-      );
     }
 
     const conflicts = detectConflict(prim, propertyName, attrValue);

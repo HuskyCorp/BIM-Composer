@@ -164,8 +164,18 @@
 
         <div class="panel" id="staged-changes-panel">
           <div class="panel-header">
-            <h3>Staged Changes <span id="staged-count-badge" class="staged-badge">0</span></h3>
-            <button id="commitButton" class="commit-btn" disabled title="Commit staged changes">Commit</button>
+            <h3>
+              Staged Changes
+              <span id="staged-count-badge" class="staged-badge">0</span>
+            </h3>
+            <button
+              id="commitButton"
+              class="commit-btn"
+              disabled
+              title="Commit staged changes"
+            >
+              Commit
+            </button>
           </div>
           <div class="panel-content">
             <ul id="staged-changes-list"></ul>
@@ -348,12 +358,19 @@
           <h2>⚠ Quality Gate Failures</h2>
         </div>
         <div class="modal-body column-layout">
-          <p id="quality-gate-summary" style="margin: 0 0 8px; font-size: 13px; color: #c0392b"></p>
+          <p
+            id="quality-gate-summary"
+            style="margin: 0 0 8px; font-size: 13px; color: #c0392b"
+          ></p>
           <ul id="quality-gate-list" class="quality-gate-list"></ul>
         </div>
         <div class="modal-footer" style="gap: 8px">
-          <span style="margin-right: auto; font-size: 12px; color: #888">Fix the issues above, or force-proceed at your own risk.</span>
-          <button id="quality-gate-force-btn" class="danger-btn">Force Proceed</button>
+          <span style="margin-right: auto; font-size: 12px; color: #888"
+            >Fix the issues above, or force-proceed at your own risk.</span
+          >
+          <button id="quality-gate-force-btn" class="danger-btn">
+            Force Proceed
+          </button>
           <button id="quality-gate-cancel-btn">Cancel</button>
         </div>
       </div>
@@ -513,16 +530,80 @@
         </div>
         <div class="modal-body">
           <div class="input-group" style="margin-bottom: 12px">
-            <label for="commit-user-display" style="display: block; margin-bottom: 4px; color: #aaa; font-size: 12px">Author</label>
-            <input type="text" id="commit-user-display" readonly style="width: 100%; padding: 6px 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #ccc; font-size: 13px" />
+            <label
+              for="commit-user-display"
+              style="
+                display: block;
+                margin-bottom: 4px;
+                color: #aaa;
+                font-size: 12px;
+              "
+              >Author</label
+            >
+            <input
+              type="text"
+              id="commit-user-display"
+              readonly
+              style="
+                width: 100%;
+                padding: 6px 8px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: #ccc;
+                font-size: 13px;
+              "
+            />
           </div>
           <div class="input-group" style="margin-bottom: 12px">
-            <label for="commit-message-input" style="display: block; margin-bottom: 4px; color: #aaa; font-size: 12px">Commit message</label>
-            <textarea id="commit-message-input" rows="3" placeholder="Describe what changed and why…" style="width: 100%; padding: 6px 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 13px; resize: vertical"></textarea>
+            <label
+              for="commit-message-input"
+              style="
+                display: block;
+                margin-bottom: 4px;
+                color: #aaa;
+                font-size: 12px;
+              "
+              >Commit message</label
+            >
+            <textarea
+              id="commit-message-input"
+              rows="3"
+              placeholder="Describe what changed and why…"
+              style="
+                width: 100%;
+                padding: 6px 8px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: #fff;
+                font-size: 13px;
+                resize: vertical;
+              "
+            ></textarea>
           </div>
           <div>
-            <label style="display: block; margin-bottom: 4px; color: #aaa; font-size: 12px">Changes (<span id="commit-change-count">0</span>)</label>
-            <ul id="commit-preview-list" style="list-style: none; padding: 0; margin: 0; max-height: 160px; overflow-y: auto; font-size: 12px; color: #ccc"></ul>
+            <label
+              style="
+                display: block;
+                margin-bottom: 4px;
+                color: #aaa;
+                font-size: 12px;
+              "
+              >Changes (<span id="commit-change-count">0</span>)</label
+            >
+            <ul
+              id="commit-preview-list"
+              style="
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                max-height: 160px;
+                overflow-y: auto;
+                font-size: 12px;
+                color: #ccc;
+              "
+            ></ul>
           </div>
         </div>
         <div class="modal-footer">

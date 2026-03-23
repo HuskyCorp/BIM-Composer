@@ -455,3 +455,48 @@ export function stagePrims(primInput, options = {}) {
     serializedPrims: serializedPrims,
   });
 }
+
+/**
+ * TASK 6.1 — Write a genesis commit (no parent) to statement.usda the first
+ * time a project is opened, anchoring the commit graph.
+ * Safe to call on every load — skips silently if commits already exist.
+ */
+export function initGenesisCommit() {
+  const state = store.getState();
+  const statementContent = state.loadedFiles["statement.usda"];
+  if (!statementContent) return; // nothing to anchor yet
+
+  // Only write genesis if no commits exist yet
+  const history = USDA_PARSER.parseStatementLog(statementContent);
+  if (history.commits.size > 0) return;
+
+  const genesisId = `genesis_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  const logEntry = {
+    ID: genesisId,
+    Entry: 0,
+    Timestamp: new Date().toISOString(),
+    "USD Reference Path": "/",
+    "File Name": "statement.usda",
+    "Content Hash": sha256(statementContent),
+    "File Size": new Blob([statementContent]).size,
+    Type: "Genesis",
+    User: state.currentUser || "System",
+    Status: "Project initialised",
+    commitMessage: "Initial project state",
+    sourceStatus: "WIP",
+    targetStatus: "WIP",
+    stagedPrims: [],
+    parent: null, // genesis has no parent
+  };
+
+  actions.setHeadCommitId(genesisId);
+
+  const logPrimString = composeLogPrim(logEntry);
+  const newContent = USDA_PARSER.appendToUsdaFile(
+    statementContent,
+    logPrimString,
+    "ChangeLog"
+  );
+  actions.updateLoadedFile("statement.usda", newContent);
+  console.log("[GENESIS] Genesis commit written:", genesisId);
+}

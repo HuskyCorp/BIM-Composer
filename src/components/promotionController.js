@@ -21,6 +21,29 @@ import {
   collectPrimsForLayer,
 } from "../utils/qualityGates.js";
 
+/** ISO 19650 status maturity order (lowest → highest) */
+const STATUS_ORDER = ["WIP", "Shared", "Published", "Archived"];
+
+/**
+ * TASK 3.2: Collect all descendant prims whose status is higher than targetStatus.
+ * Used to warn the user before overwriting with a lower-maturity promotion.
+ */
+function collectHigherStatusChildren(prim, targetStatus) {
+  const targetIdx = STATUS_ORDER.indexOf(targetStatus);
+  const higher = [];
+
+  function traverse(p) {
+    if (!p.children) return;
+    for (const child of p.children) {
+      const childIdx = STATUS_ORDER.indexOf(child.properties?.status);
+      if (childIdx > targetIdx) higher.push(child);
+      traverse(child);
+    }
+  }
+  traverse(prim);
+  return higher;
+}
+
 export function initPromotionController(updateView) {
   const modal = document.getElementById("promotion-modal");
   const eligibleList = document.getElementById("eligible-layers-list");
@@ -608,6 +631,24 @@ export function initPromotionController(updateView) {
             if (!obj.properties) obj.properties = {};
             obj.properties.status = currentTargetStatus;
             updateParentStatus(obj.path, currentTargetStatus);
+
+            // TASK 3.2: Warn if any children have a higher maturity status
+            const higherChildren = collectHigherStatusChildren(
+              obj,
+              currentTargetStatus
+            );
+            if (higherChildren.length > 0) {
+              const names = higherChildren
+                .map((c) => `${c.path} (${c.properties?.status})`)
+                .join("\n  ");
+              if (
+                !confirm(
+                  `Warning: ${higherChildren.length} child prim(s) have a higher status than "${currentTargetStatus}":\n\n  ${names}\n\nDowngrading them may lose maturity. Continue?`
+                )
+              ) {
+                return;
+              }
+            }
             updateChildrenStatus(obj.path, currentTargetStatus);
             successCount++;
           });

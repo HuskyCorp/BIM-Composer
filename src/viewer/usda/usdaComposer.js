@@ -229,6 +229,12 @@ export function composeLogPrim(logEntry) {
     stagedPrimsField = `\n        custom string[] stagedPrims = [${primPathsString}]`;
   }
 
+  const commitMessage = (
+    logEntry.commitMessage ||
+    logEntry.Status ||
+    ""
+  ).replace(/"/g, '\\"');
+
   return `
     def "Log_${logEntry.ID}"
     {
@@ -241,7 +247,7 @@ export function composeLogPrim(logEntry) {
         custom int fileSize = ${logEntry["File Size"]}
         custom string type = "${logEntry.Type}"
         custom string user = "${logEntry.User}"
-        custom string status = "${logEntry.Status}"${extraFields}${stagedPrimsField}
+        custom string commitMessage = "${commitMessage}"${extraFields}${stagedPrimsField}
 
 
     }
