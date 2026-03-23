@@ -37,6 +37,11 @@ vi.mock("js-sha256", () => ({
   sha256: vi.fn(() => "mockedHash"),
 }));
 
+vi.mock("../../../../components/sidebar/layerStackController.js", () => ({
+  renderLayerStack: vi.fn(),
+  recomposeStage: vi.fn(),
+}));
+
 import { stagePrims } from "../../../../components/staging/primStaging.js";
 import { store } from "../../../../core/index.js";
 import { actions } from "../../../../state/actions.js";

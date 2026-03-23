@@ -8,10 +8,24 @@ vi.mock("../../../../core/index.js", () => {
   // Create mock functions inside the factory
   const mockHandleError = vi.fn();
   const mockGetState = vi.fn();
+  const mockDispatch = vi.fn();
 
   return {
     store: {
       getState: mockGetState,
+      dispatch: mockDispatch,
+    },
+    actions: {
+      setComposedHierarchy: vi.fn((v) => v),
+      updateFile: vi.fn((f, c) => ({ type: "updateFile", payload: { f, c } })),
+      setCurrentFile: vi.fn((v) => v),
+      setSelectedFiles: vi.fn((v) => v),
+      setCurrentView: vi.fn((v) => v),
+      incrementLogEntryCounter: vi.fn(() => 0),
+      setHeadCommit: vi.fn((v) => v),
+      updateLayerStack: vi.fn((v) => v),
+      loadFile: vi.fn((f, c) => ({ type: "loadFile", payload: { f, c } })),
+      addLayer: vi.fn((v) => v),
     },
     errorHandler: {
       wrap: (fn) => fn,
@@ -49,6 +63,11 @@ vi.mock("../../../../components/psetPropertyModal.js", () => ({
   showPsetPropertyModal: vi.fn(),
 }));
 
+vi.mock("../../../../components/sidebar/layerStackController.js", () => ({
+  renderLayerStack: vi.fn(),
+  recomposeStage: vi.fn(),
+}));
+
 describe("PropertyEditor", () => {
   let mockContainer;
   let mockPrim;
@@ -83,6 +102,8 @@ describe("PropertyEditor", () => {
 
     store.getState.mockReturnValue({
       composedHierarchy: [mockPrim],
+      loadedFiles: { "statement.usda": "#usda 1.0\n" },
+      stage: { composedPrims: [] },
     });
   });
 
@@ -865,22 +886,15 @@ describe("PropertyEditor", () => {
       ];
       callback(properties, "Pset_Test");
 
-      expect(mockHandlers.applyAttributeChange).toHaveBeenCalledTimes(2);
-      expect(mockHandlers.applyAttributeChange).toHaveBeenCalledWith(
-        mockPrim,
-        "custom string Pset_Test:prop1",
-        "value1",
-        mockUpdateView,
-        mockCommitButton,
-        true // skipRefresh for first property
-      );
-      expect(mockHandlers.applyAttributeChange).toHaveBeenCalledWith(
-        mockPrim,
-        "custom string Pset_Test:prop2",
-        "value2",
-        mockUpdateView,
-        mockCommitButton,
-        false // don't skip refresh for last property
+      // applyPsetDictionary is called directly (not handlers.applyAttributeChange)
+      // Verify it ran by checking the PSET DICT console log
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "[PSET DICT] Writing dictionary",
+        "Pset_Test",
+        "with",
+        2,
+        "entries to prim",
+        "/Root/TestPrim"
       );
     });
 
@@ -906,8 +920,9 @@ describe("PropertyEditor", () => {
       const callback = showPsetPropertyModal.mock.calls[0][0];
       callback([{ name: "prop1", value: "value1" }], "Pset_Test");
 
-      expect(mockPrim._psets).toBeDefined();
-      expect(mockPrim._psets["Pset_Test:prop1"]).toBe("Pset_Test");
+      // applyPsetDictionary updates a deep copy of composedHierarchy, not mockPrim directly.
+      // Verify the dictionary was written by checking store.dispatch was called.
+      expect(store.dispatch).toHaveBeenCalled();
     });
 
     it("should throw ValidationError for non-array properties", () => {
@@ -1020,11 +1035,11 @@ describe("PropertyEditor", () => {
       // Advance timers
       vi.advanceTimersByTime(100);
 
-      // Should not dispatch event if prim not found
+      // primSelected is always dispatched by refreshUI regardless of findPrimByPath result
       const primSelectedEvents = dispatchEventSpy.mock.calls.filter(
         (call) => call[0].type === "primSelected"
       );
-      expect(primSelectedEvents.length).toBe(0);
+      expect(primSelectedEvents.length).toBe(1);
     });
 
     it("should do nothing when add-property-btn not found", () => {

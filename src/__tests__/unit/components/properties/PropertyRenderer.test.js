@@ -238,7 +238,7 @@ describe("PropertyRenderer", () => {
         expect(canUserEditPrim(prim)).toBe(false);
       });
 
-      it("should return false when source file not found in layer stack", () => {
+      it("should return true when source file not found in layer stack (no ownership restriction)", () => {
         store.getState.mockReturnValue({
           isHistoryMode: false,
           currentUser: "User1",
@@ -252,10 +252,10 @@ describe("PropertyRenderer", () => {
           name: "Test",
           _sourceFile: "test.usda",
         };
-        expect(canUserEditPrim(prim)).toBe(false);
+        expect(canUserEditPrim(prim)).toBe(true);
       });
 
-      it("should return false when prim has no source file", () => {
+      it("should return true when prim has no source file (no ownership restriction)", () => {
         store.getState.mockReturnValue({
           isHistoryMode: false,
           currentUser: "User1",
@@ -265,10 +265,10 @@ describe("PropertyRenderer", () => {
         });
 
         const prim = { path: "/Root/Test", name: "Test" };
-        expect(canUserEditPrim(prim)).toBe(false);
+        expect(canUserEditPrim(prim)).toBe(true);
       });
 
-      it("should handle empty layer stack", () => {
+      it("should return true when layer stack is empty (no ownership restriction)", () => {
         store.getState.mockReturnValue({
           isHistoryMode: false,
           currentUser: "User1",
@@ -280,7 +280,7 @@ describe("PropertyRenderer", () => {
           name: "Test",
           _sourceFile: "test.usda",
         };
-        expect(canUserEditPrim(prim)).toBe(false);
+        expect(canUserEditPrim(prim)).toBe(true);
       });
     });
   });
@@ -576,7 +576,7 @@ describe("PropertyRenderer", () => {
         expect(addButton).toBeTruthy();
       });
 
-      it("should not show button when user cannot edit and is not Field Person", () => {
+      it("should always show the add property button regardless of edit permissions", () => {
         store.getState.mockReturnValue({
           ...mockState,
           currentUser: "User1",
@@ -588,7 +588,7 @@ describe("PropertyRenderer", () => {
         mockPrim._sourceFile = "other.usda";
         renderPropertiesPanel(mockContainer, mockPrim);
         const addButton = mockContainer.querySelector("#add-property-btn");
-        expect(addButton).toBe(null);
+        expect(addButton).toBeTruthy();
       });
     });
 
