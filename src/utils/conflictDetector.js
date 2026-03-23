@@ -135,7 +135,7 @@ function findPrimInHierarchy(hierarchy, path) {
  * @param {string} propertyName - Name of the property
  * @returns {Object} - { allowed: boolean, reason: string }
  */
-export function checkPermission(prim) {
+export function checkPermission(prim, propertyName) {
   const state = store.getState();
 
   // History Mode is Read-Only
@@ -156,12 +156,17 @@ export function checkPermission(prim) {
     return { allowed: true, reason: "Field Engineer has full permissions" };
   }
 
-  // Field Person cannot edit
+  // Field Person can add new attributes but cannot edit existing properties
   if (state.currentUser === "Field Person") {
-    return {
-      allowed: false,
-      reason: "Field Person role has read-only access",
-    };
+    const isExistingProperty =
+      propertyName && prim.properties && propertyName in prim.properties;
+    if (isExistingProperty) {
+      return {
+        allowed: false,
+        reason: "Field Person role cannot edit existing properties",
+      };
+    }
+    return { allowed: true, reason: "Field Person can add new attributes" };
   }
 
   // Check if prim has a source file

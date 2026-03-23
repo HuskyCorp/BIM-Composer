@@ -321,6 +321,12 @@ export function recomposeStage() {
                 ...targetPrim.properties,
                 ...resolvedPrim.properties,
               };
+              // Merge Pset grouping metadata so dictionary properties from the
+              // source file are shown grouped in the properties panel
+              resolvedPrim._psets = {
+                ...(targetPrim._psets || {}),
+                ...(resolvedPrim._psets || {}),
+              };
               resolvedPrim.children = targetPrim.children
                 ? JSON.parse(JSON.stringify(targetPrim.children))
                 : [];

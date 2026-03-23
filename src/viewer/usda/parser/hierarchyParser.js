@@ -59,6 +59,165 @@ function findPrimOpenBrace(str, start) {
   return -1;
 }
 
+// ---------------------------------------------------------------------------
+// Dictionary Parsing Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse flat key=value entries from a dictionary block's inner content.
+ * Handles string/token/asset/int/double/float/bool types.
+ */
+function parseFlatDictEntries(dictContent) {
+  const entries = {};
+  // Key can be either a quoted string ("Key Name") or an unquoted identifier (KeyName)
+  const strRe =
+    /(?:string|token|asset)\s+(?:"([^"]+)"|([\w.]+))\s*=\s*"([^"]*)"/g;
+  const numRe =
+    /(?:int|double|float|bool)\s+(?:"([^"]+)"|([\w.]+))\s*=\s*([^\s\n,}]+)/g;
+  let m;
+  while ((m = strRe.exec(dictContent)) !== null) {
+    const key = m[1] !== undefined ? m[1] : m[2];
+    entries[key] = m[3];
+  }
+  while ((m = numRe.exec(dictContent)) !== null) {
+    const key = m[1] !== undefined ? m[1] : m[2];
+    entries[key] = m[3];
+  }
+  return entries;
+}
+
+/**
+ * Find all top-level `dictionary Name = { ... }` blocks in text and
+ * parse their flat entries. Returns { dictName: { key: value } }.
+ */
+function parseDictsAtTopLevel(text) {
+  const result = {};
+  // Dict name can be quoted ("IFC-Classifier") or unquoted (PropertySets)
+  const dictRe = /dictionary\s+(?:"([^"]+)"|(\w+))\s*=\s*\{/g;
+  let m;
+  while ((m = dictRe.exec(text)) !== null) {
+    const dictName = m[1] !== undefined ? m[1] : m[2];
+    const openBrace = m.index + m[0].length - 1;
+    const closeBrace = findMatchingBrace(text, openBrace);
+    if (closeBrace === -1) {
+      dictRe.lastIndex = openBrace + 1;
+      continue;
+    }
+    const entries = parseFlatDictEntries(text.slice(openBrace + 1, closeBrace));
+    if (Object.keys(entries).length > 0) {
+      result[dictName] = entries;
+    }
+    dictRe.lastIndex = closeBrace + 1;
+  }
+  return result;
+}
+
+/**
+ * Parse `customData = { ... }` from prim metadata (the `(...)` section).
+ * Handles the IFC pattern:
+ *   customData = { dictionary PropertySets = { dictionary PsetName = { ... } } }
+ * Returns { psetName: { key: value } }.
+ */
+function parseCustomDataDicts(metadata) {
+  const result = {};
+  const cdMatch = metadata.match(/customData\s*=\s*\{/);
+  if (!cdMatch) return result;
+  const cdOpen = cdMatch.index + cdMatch[0].length - 1;
+  const cdClose = findMatchingBrace(metadata, cdOpen);
+  if (cdClose === -1) return result;
+  const cdContent = metadata.slice(cdOpen + 1, cdClose);
+
+  // IFC pattern: nested PropertySets container
+  const psMatch = cdContent.match(/dictionary\s+PropertySets\s*=\s*\{/);
+  if (psMatch) {
+    const psOpen = psMatch.index + psMatch[0].length - 1;
+    const psClose = findMatchingBrace(cdContent, psOpen);
+    if (psClose !== -1) {
+      Object.assign(
+        result,
+        parseDictsAtTopLevel(cdContent.slice(psOpen + 1, psClose))
+      );
+    }
+  }
+
+  // Also parse other direct dictionaries (e.g. "ifc", "Relationships")
+  const directDicts = parseDictsAtTopLevel(cdContent);
+  for (const [name, entries] of Object.entries(directDicts)) {
+    if (name !== "PropertySets" && !result[name]) {
+      result[name] = entries;
+    }
+  }
+  return result;
+}
+
+/**
+ * Parse `dictionary Name = { ... }` attribute blocks at depth 0 within a
+ * prim body (`innerContent`). Returns { dictName: { key: value } }.
+ *
+ * Tracks both brace depth `{}` and paren depth `()` to correctly skip over
+ * child-prim metadata blocks like `def Foo "X" ( customData = { ... } ) { }`.
+ */
+function parsePrimBodyDicts(innerContent) {
+  const result = {};
+  let braceDepth = 0;
+  let parenDepth = 0;
+  let i = 0;
+  const n = innerContent.length;
+  while (i < n) {
+    const ch = innerContent[i];
+    if (ch === "(") {
+      parenDepth++;
+      i++;
+      continue;
+    }
+    if (ch === ")") {
+      if (parenDepth > 0) parenDepth--;
+      i++;
+      continue;
+    }
+    if (ch === "{") {
+      // Only count braces outside paren blocks (prim body braces, not metadata)
+      if (parenDepth === 0) braceDepth++;
+      i++;
+      continue;
+    }
+    if (ch === "}") {
+      if (parenDepth === 0) braceDepth--;
+      i++;
+      continue;
+    }
+    if (
+      braceDepth === 0 &&
+      parenDepth === 0 &&
+      ch === "d" &&
+      innerContent.startsWith("dictionary", i) &&
+      (i === 0 || /[\s\n]/.test(innerContent[i - 1]))
+    ) {
+      const rest = innerContent.slice(i);
+      const hm = rest.match(/^dictionary\s+(?:"([^"]+)"|(\w+))\s*=\s*\{/);
+      if (hm) {
+        const dictName = hm[1] !== undefined ? hm[1] : hm[2];
+        const openBrace = i + hm[0].length - 1;
+        const closeBrace = findMatchingBrace(innerContent, openBrace);
+        if (closeBrace !== -1) {
+          const entries = parseFlatDictEntries(
+            innerContent.slice(openBrace + 1, closeBrace)
+          );
+          if (Object.keys(entries).length > 0) {
+            result[dictName] = entries;
+          }
+          i = closeBrace + 1;
+          continue;
+        }
+      }
+    }
+    i++;
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+
 export function parsePrimTree(usdaContent, pathPrefix = "") {
   const prims = [];
   // Match only the prim header: `def Type "Name"` — the optional `(...)` metadata
@@ -188,6 +347,28 @@ export function parsePrimTree(usdaContent, pathPrefix = "") {
           prim.payload = payloadMatch[1];
         }
       }
+
+      // --- Dictionary Parsing ---
+      // 1. Parse dictionaries from customData in the prim metadata block
+      const customDataPsets = parseCustomDataDicts(metadata);
+      for (const [psetName, props] of Object.entries(customDataPsets)) {
+        if (!prim._psets) prim._psets = {};
+        for (const [key, value] of Object.entries(props)) {
+          prim.properties[key] = value;
+          prim._psets[key] = psetName;
+        }
+      }
+
+      // 2. Parse dictionary attribute blocks directly in the prim body
+      const bodyDicts = parsePrimBodyDicts(innerContent);
+      for (const [psetName, props] of Object.entries(bodyDicts)) {
+        if (!prim._psets) prim._psets = {};
+        for (const [key, value] of Object.entries(props)) {
+          prim.properties[key] = value;
+          prim._psets[key] = psetName;
+        }
+      }
+      // -------------------------
 
       prim.children = parsePrimTree(innerContent, currentPath);
       prims.push(prim);

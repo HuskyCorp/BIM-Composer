@@ -5,6 +5,8 @@
 import { store, errorHandler, ValidationError } from "../../core/index.js";
 import { validatePrimName, findPrimByPath } from "../../utils/primHelpers.js";
 import { showPsetPropertyModal } from "../psetPropertyModal.js";
+import { actions } from "../../state/actions.js";
+import { applyPsetDictionary } from "./AttributeUpdater.js";
 
 /**
  * Attaches all event listeners to the properties panel
@@ -438,55 +440,23 @@ function attachAddPropertyListener(
           }
 
           console.log(
-            "[PSET] Adding",
-            properties.length,
-            "properties from",
+            "[PSET] Writing dictionary",
             psetName,
-            "to prim"
+            "with",
+            properties.length,
+            "entries to prim",
+            prim.path
           );
 
-          // Store Pset name in prim metadata
-          if (!prim._psets) {
-            prim._psets = {};
-          }
-
-          const originalPath = prim.path;
-
-          // Add all properties
-          properties.forEach((prop, index) => {
-            const fullPropertyName = `custom string ${psetName}:${prop.name}`;
-            const isLastProperty = index === properties.length - 1;
-
-            // Skip refresh for all but the last property
-            applyAttributeChange(
-              prim,
-              fullPropertyName,
-              prop.value,
-              updateView,
-              commitButton,
-              !isLastProperty
-            );
-
-            // Track which Pset this property belongs to
-            prim._psets[`${psetName}:${prop.name}`] = psetName;
-          });
-
-          // Manually refresh properties panel after all properties are added
-          console.log("✅ All properties added, refreshing panel");
-          setTimeout(() => {
-            const updatedPrim = findPrimByPath(
-              store.getState().composedHierarchy,
-              originalPath
-            );
-            if (updatedPrim) {
-              // Trigger prim selection to refresh the panel
-              document.dispatchEvent(
-                new CustomEvent("primSelected", {
-                  detail: { primPath: originalPath },
-                })
-              );
-            }
-          }, 100);
+          // Delegate to applyPsetDictionary which writes `dictionary PsetName = { ... }`
+          // blocks to statement.usda and updates in-memory hierarchy with _psets
+          applyPsetDictionary(
+            prim,
+            psetName,
+            properties,
+            updateView,
+            commitButton
+          );
         } catch (error) {
           if (error instanceof ValidationError) {
             errorHandler.handleError(error);

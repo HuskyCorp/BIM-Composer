@@ -7,6 +7,7 @@ import {
   composePrimsFromHierarchy,
 } from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
+import { recomposeStage } from "../sidebar/layerStackController.js";
 
 function logToStatement(details) {
   const {
@@ -335,8 +336,10 @@ export function stagePrims(primInput, options = {}) {
             name: prim.name,
             path: prim.path,
             properties: {
+              ...prim.properties, // preserve IFC customData / dictionary properties
               entityType: "Real Element",
             },
+            _psets: prim._psets, // preserve Pset grouping metadata
             children: [],
           };
 
@@ -364,8 +367,10 @@ export function stagePrims(primInput, options = {}) {
           name: prim.name,
           path: prim.path,
           properties: {
+            ...prim.properties, // preserve IFC customData / dictionary properties
             entityType: "Real Element",
           },
+          _psets: prim._psets, // preserve Pset grouping metadata
           references: `${sourceFile}@<${prim.path}>`, // Use specific sourceFile
           children: [],
         };
@@ -436,7 +441,7 @@ export function stagePrims(primInput, options = {}) {
   });
 
   actions.setComposedPrims(mergedHierarchy);
-  actions.setComposedHierarchy(mergedHierarchy); // Un-commented to ensure render tree update
+  recomposeStage(); // resolve references → merge _psets + properties from source files
 
   // Generate serialized prims for history log
   const serializedPrims = composePrimsFromHierarchy(allNewlyStagedPrims);

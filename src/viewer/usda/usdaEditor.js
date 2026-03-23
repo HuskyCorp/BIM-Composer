@@ -1,5 +1,16 @@
 import { USDA_PARSER } from "./usdaParser.js";
 
+// Local brace-matcher (findMatchingBrace is not exported from the parser)
+function findMatchingBrace(str, start) {
+  let depth = 1;
+  for (let i = start + 1; i < str.length; i++) {
+    if (str[i] === "{") depth++;
+    else if (str[i] === "}") depth--;
+    if (depth === 0) return i;
+  }
+  return -1;
+}
+
 /**
  * Inserts a prim definition text into a USDA file content at the specified parent path.
  * Effectively handles creating missing 'over' hierarchy if the parent path doesn't fully exist.
@@ -354,6 +365,147 @@ export function updatePropertyInFile(
 
   console.log("[UPDATE PROPERTY] Property update complete");
   return result;
+}
+
+/**
+ * Creates or updates a `dictionary psetName = { ... }` block inside a prim.
+ * If the dictionary already exists, adds or updates the specified key.
+ * If the prim does not exist in fileContent, creates an `over` block at root.
+ *
+ * @param {string} fileContent   - USDA file content to modify
+ * @param {string} primPath      - Absolute prim path (e.g. "/World/Wall")
+ * @param {string} psetName      - Dictionary / Pset name (e.g. "Pset_WallCommon")
+ * @param {string} key           - Property key within the dictionary
+ * @param {string} value         - Property value
+ * @param {string} [valueType]   - USD type for the value (default "string")
+ * @returns {string} Modified file content
+ */
+export function updateDictionaryInFile(
+  fileContent,
+  primPath,
+  psetName,
+  key,
+  value,
+  valueType = "string"
+) {
+  console.log(
+    "[UPDATE DICT] prim:",
+    primPath,
+    "pset:",
+    psetName,
+    "key:",
+    key,
+    "=",
+    value
+  );
+
+  const hierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
+
+  const findNode = (nodes, path) => {
+    for (const node of nodes) {
+      if (node.path === path) return node;
+      if (node.children) {
+        const f = findNode(node.children, path);
+        if (f) return f;
+      }
+    }
+    return null;
+  };
+
+  let prim = findNode(hierarchy, primPath);
+
+  // Fallback: search by last path segment name
+  if (!prim || typeof prim.startIndex !== "number") {
+    const primName = primPath.split("/").filter(Boolean).pop();
+    const findByName = (nodes, name) => {
+      for (const n of nodes) {
+        if (n.name === name) return n;
+        if (n.children) {
+          const f = findByName(n.children, name);
+          if (f) return f;
+        }
+      }
+      return null;
+    };
+    prim = findByName(hierarchy, primName);
+  }
+
+  // If prim not found, create an `over` block at the end of the file
+  if (!prim || typeof prim.startIndex !== "number") {
+    console.log("[UPDATE DICT] Prim not found, creating over block");
+    const primName = primPath.split("/").filter(Boolean).pop();
+    const newBlock =
+      `\nover "${primName}" {\n` +
+      `    dictionary ${psetName} = {\n` +
+      `        ${valueType} ${key} = "${value}"\n` +
+      `    }\n` +
+      `}\n`;
+    return fileContent + newBlock;
+  }
+
+  const primText = fileContent.slice(prim.startIndex, prim.endIndex + 1);
+
+  // Detect indentation from existing attributes
+  let indent = "    ";
+  const indentMatch = primText.match(/\n(\s+)(?:custom |dictionary |\w+ )/);
+  if (indentMatch) indent = indentMatch[1];
+  const innerIndent = indent + "    ";
+
+  // Check whether the dictionary block already exists
+  const dictSearchStr = `dictionary ${psetName} = {`;
+  const dictIdx = primText.indexOf(dictSearchStr);
+
+  let updatedPrimText;
+  if (dictIdx !== -1) {
+    const openBrace = primText.indexOf("{", dictIdx + dictSearchStr.length - 1);
+    const closeBrace = findMatchingBrace(primText, openBrace);
+    if (closeBrace !== -1) {
+      const dictContent = primText.slice(openBrace + 1, closeBrace);
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const keyRe = new RegExp(
+        `(\\s*\\w+\\s+${escapedKey}\\s*=\\s*)"([^"]*)"`,
+        "m"
+      );
+      if (keyRe.test(dictContent)) {
+        // Update existing key
+        updatedPrimText =
+          primText.slice(0, openBrace + 1) +
+          dictContent.replace(keyRe, `$1"${value}"`) +
+          primText.slice(closeBrace);
+      } else {
+        // Add new key before dictionary's closing brace
+        updatedPrimText =
+          primText.slice(0, closeBrace) +
+          `\n${innerIndent}${valueType} ${key} = "${value}"` +
+          primText.slice(closeBrace);
+      }
+    } else {
+      return fileContent; // Malformed
+    }
+  } else {
+    // Create new dictionary block before the prim's closing brace
+    const closingBrace = primText.lastIndexOf("}");
+    if (closingBrace === -1) {
+      console.warn("[UPDATE DICT] No closing brace found in prim text");
+      return fileContent;
+    }
+    const newBlock =
+      `\n${indent}dictionary ${psetName} = {\n` +
+      `${innerIndent}${valueType} ${key} = "${value}"\n` +
+      `${indent}}`;
+    updatedPrimText =
+      primText.slice(0, closingBrace) +
+      newBlock +
+      "\n" +
+      primText.slice(closingBrace);
+  }
+
+  console.log("[UPDATE DICT] Dictionary update complete");
+  return (
+    fileContent.slice(0, prim.startIndex) +
+    updatedPrimText +
+    fileContent.slice(prim.endIndex + 1)
+  );
 }
 
 /**

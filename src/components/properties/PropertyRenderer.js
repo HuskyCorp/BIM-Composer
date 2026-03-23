@@ -46,18 +46,24 @@ export const canUserEditPrim = errorHandler.wrap((prim) => {
   if (state.currentUser === "Field Engineer") {
     return true;
   }
-  // Field Person cannot edit
+  // Field Person cannot edit existing properties (but can add new ones via the button)
   if (state.currentUser === "Field Person") {
     return false;
   }
+  // No source file = no ownership restriction, allow editing
+  if (!prim._sourceFile) {
+    return true;
+  }
   // Original owner of the source file can edit
-  if (prim._sourceFile) {
-    const sourceLayer = state.stage.layerStack.find(
-      (l) => l.filePath === prim._sourceFile
-    );
-    if (sourceLayer && sourceLayer.owner === state.currentUser) {
-      return true;
-    }
+  const sourceLayer = state.stage.layerStack.find(
+    (l) => l.filePath === prim._sourceFile
+  );
+  // No matching layer in stack = no ownership restriction, allow editing
+  if (!sourceLayer) {
+    return true;
+  }
+  if (sourceLayer.owner === state.currentUser) {
+    return true;
   }
   return false;
 });
@@ -141,12 +147,11 @@ export const renderPropertiesPanel = errorHandler.wrap((container, prim) => {
   // Render custom properties grouped by Pset
   propertiesHTML += renderCustomProperties(prim);
 
-  // Show "Add Custom Property" button for users who can edit OR for Field Person
-  const showAddPropertyBtn =
-    canEdit || store.getState().currentUser === "Field Person";
-  if (showAddPropertyBtn) {
-    propertiesHTML += `<button id="add-property-btn" class="add-property-btn">Add Custom Attribute</button>`;
-  }
+  // "Add Custom Attribute" is always available regardless of source-file ownership —
+  // new Pset entries are written to statement.usda (the current user's own file),
+  // not back to the read-only source layer.  Only existing-property inputs use
+  // canEdit to decide whether to render as disabled.
+  propertiesHTML += `<button id="add-property-btn" class="add-property-btn">Add Custom Attribute</button>`;
 
   container.innerHTML = propertiesHTML;
 

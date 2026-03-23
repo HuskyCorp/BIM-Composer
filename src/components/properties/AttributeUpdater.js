@@ -4,7 +4,10 @@
 
 import { store, errorHandler, ValidationError } from "../../core/index.js";
 import { actions } from "../../state/actions.js";
-import { updatePropertyInFile } from "../../viewer/usda/usdaEditor.js";
+import {
+  updatePropertyInFile,
+  updateDictionaryInFile,
+} from "../../viewer/usda/usdaEditor.js";
 import {
   composeLogPrim,
   composePrimsFromHierarchy,
@@ -584,3 +587,113 @@ function refreshUI(primPath, updateView) {
     );
   }, 100);
 }
+
+/**
+ * Applies a full Pset dictionary to a prim, writing it as a
+ * `dictionary PsetName = { ... }` block in statement.usda (and the source
+ * file when available).  Updates in-memory hierarchy with `_psets` metadata.
+ *
+ * @param {Object}   prim        - The prim being edited
+ * @param {string}   psetName    - Dictionary / Pset name
+ * @param {Array}    properties  - [{ name, value }] list of entries
+ * @param {Function} updateView  - Callback to refresh the view
+ * @param {HTMLElement} commitButton - Commit button element
+ */
+export const applyPsetDictionary = errorHandler.wrap(
+  (prim, psetName, properties, updateView, commitButton) => {
+    if (!prim || !prim.path) {
+      throw new ValidationError("Prim is missing or invalid", "prim", prim);
+    }
+    if (!psetName) {
+      throw new ValidationError("Pset name is required", "psetName", psetName);
+    }
+    if (!Array.isArray(properties) || properties.length === 0) {
+      throw new ValidationError(
+        "Properties must be a non-empty array",
+        "properties",
+        properties
+      );
+    }
+
+    console.log(
+      "[PSET DICT] Writing dictionary",
+      psetName,
+      "with",
+      properties.length,
+      "entries to prim",
+      prim.path
+    );
+
+    // Mark commit button dirty
+    if (commitButton) commitButton.classList.add("has-changes");
+
+    // Write each entry to statement.usda as dictionary entries
+    const state = store.getState();
+    let statementContent = state.loadedFiles["statement.usda"] || "#usda 1.0\n";
+
+    for (const prop of properties) {
+      statementContent = updateDictionaryInFile(
+        statementContent,
+        prim.path,
+        psetName,
+        prop.name,
+        prop.value,
+        "string"
+      );
+    }
+    actions.updateLoadedFile("statement.usda", statementContent);
+
+    // Also write to source file when the prim has a resolvable source path
+    if (prim._sourceFile && prim._sourcePath) {
+      const sourceContent = state.loadedFiles[prim._sourceFile];
+      if (sourceContent) {
+        let updatedSource = sourceContent;
+        for (const prop of properties) {
+          updatedSource = updateDictionaryInFile(
+            updatedSource,
+            prim._sourcePath,
+            psetName,
+            prop.name,
+            prop.value,
+            "string"
+          );
+        }
+        actions.updateLoadedFile(prim._sourceFile, updatedSource);
+      }
+    }
+
+    // Update in-memory hierarchy with new properties and _psets metadata
+    const updateInMemory = (prims, targetPath) => {
+      for (const p of prims) {
+        if (p.path === targetPath) {
+          if (!p._psets) p._psets = {};
+          if (!p.properties) p.properties = {};
+          for (const prop of properties) {
+            p.properties[prop.name] = prop.value;
+            p._psets[prop.name] = psetName;
+          }
+          return true;
+        }
+        if (p.children && updateInMemory(p.children, targetPath)) return true;
+      }
+      return false;
+    };
+
+    const composedHierarchy = JSON.parse(
+      JSON.stringify(store.getState().composedHierarchy || [])
+    );
+    updateInMemory(composedHierarchy, prim.path);
+    actions.setComposedHierarchy(composedHierarchy);
+
+    const composedPrims = JSON.parse(
+      JSON.stringify(store.getState().stage.composedPrims || [])
+    );
+    updateInMemory(composedPrims, prim.path);
+    actions.setComposedPrims(composedPrims);
+
+    // Refresh UI
+    refreshUI(prim.path, updateView);
+
+    console.log("[PSET DICT] Dictionary write complete");
+  }
+);

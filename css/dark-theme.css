@@ -272,3 +272,65 @@ body.dark-theme .save-options-modal .modal-footer button:not(.primary) {
 body.dark-theme .save-options-modal .modal-footer button:not(.primary):hover {
   background: #666;
 }
+
+/* PROPERTIES CSS OVERRIDES */
+body.dark-theme .property-group label {
+  color: #a0a0a0;
+}
+
+body.dark-theme .property-group input,
+body.dark-theme .property-group select {
+  background: #252525;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #ddd;
+}
+
+body.dark-theme .property-group select {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%23ffffff%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%27%2F%3E%3C%2Fsvg%3E");
+}
+
+body.dark-theme .property-group select:disabled {
+  background-color: #1a1a1a;
+  color: #888;
+}
+
+body.dark-theme .property-group input:disabled {
+  background-color: #1a1a1a;
+  color: #888;
+}
+
+body.dark-theme .add-property-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+body.dark-theme .add-property-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-theme .pset-group {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1a1a1a;
+}
+
+body.dark-theme .pset-header {
+  background: #252525;
+  color: #e0e0e0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .pset-header:hover {
+  background: #2a2a2a;
+}
+
+body.dark-theme .pset-header .pset-name {
+  color: #e0e0e0;
+}
+
+body.dark-theme .pset-header .toggle-icon {
+  color: #888;
+}
+
+body.dark-theme .pset-properties {
+  background: #1e1e1e;
+}
