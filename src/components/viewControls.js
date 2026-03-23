@@ -215,6 +215,41 @@ export function initViewControls(
     updateView();
   });
 
+  // ---- Live USDA editor: debounced sync + inline validation ----
+  let editorSyncTimer = null;
+  const editorErrorBadge = (() => {
+    const badge = document.createElement("div");
+    badge.id = "usda-editor-error";
+    badge.style.cssText =
+      "display:none;position:absolute;bottom:8px;left:8px;right:8px;" +
+      "background:rgba(220,50,50,0.9);color:#fff;font-size:11px;padding:4px 8px;" +
+      "border-radius:4px;z-index:10;pointer-events:none";
+    editor.parentElement?.appendChild(badge);
+    return badge;
+  })();
+
+  editor.addEventListener("input", () => {
+    clearTimeout(editorSyncTimer);
+    editorSyncTimer = setTimeout(() => {
+      const state = store.getState();
+      // Only save to the single file being edited in file view
+      if (state.currentView === "file" && state.currentFile) {
+        const content = editor.value;
+        // Validate basic USDA syntax
+        const { valid, errors } = validateUsdaSyntax(content);
+        if (!valid) {
+          editorErrorBadge.textContent = `⚠ ${errors[0]}`;
+          editorErrorBadge.style.display = "block";
+          editor.style.outline = "2px solid rgba(220,50,50,0.6)";
+        } else {
+          editorErrorBadge.style.display = "none";
+          editor.style.outline = "";
+          actions.updateLoadedFile(state.currentFile, content);
+        }
+      }
+    }, 600);
+  });
+
   if (saveButton) {
     // Open save options modal instead of immediate save
     saveButton.addEventListener("click", () => {

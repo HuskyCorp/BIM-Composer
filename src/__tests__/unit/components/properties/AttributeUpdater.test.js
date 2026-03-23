@@ -217,12 +217,15 @@ describe("AttributeUpdater", () => {
         mockCommitButton
       );
 
-      expect(actions.addStagedChange).toHaveBeenCalledWith({
-        type: "setAttribute",
-        targetPath: "/Root/TestPrim",
-        attributeName: "custom string primvars:displayName",
-        attributeValue: "NewName",
-      });
+      expect(actions.addStagedChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "propertyEdit",
+          targetPath: "/Root/TestPrim",
+          attributeName: "custom string primvars:displayName",
+          attributeValue: "NewName",
+          propertyName: "displayName",
+        })
+      );
     });
 
     it("should add has-changes class to commit button", () => {
@@ -464,8 +467,12 @@ describe("AttributeUpdater", () => {
     });
   });
 
-  describe("Logging to statement.usda", () => {
-    it("should increment log entry counter", () => {
+  describe("Staged change metadata", () => {
+    // Logging to statement.usda now happens at commit time (stagingPanelController),
+    // not immediately during applyAttributeChange. These tests verify the enriched
+    // staged change object carries the data needed for deferred logging.
+
+    it("should not write to statement.usda immediately", () => {
       applyAttributeChange(
         mockPrim,
         "custom string primvars:displayName",
@@ -474,10 +481,13 @@ describe("AttributeUpdater", () => {
         mockCommitButton
       );
 
-      expect(actions.incrementLogEntryCounter).toHaveBeenCalled();
+      expect(USDA_PARSER.appendToUsdaFile).not.toHaveBeenCalled();
+      expect(actions.incrementLogEntryCounter).not.toHaveBeenCalled();
+      expect(composeLogPrim).not.toHaveBeenCalled();
+      expect(actions.setHeadCommitId).not.toHaveBeenCalled();
     });
 
-    it("should compose log prim", () => {
+    it("should capture old value in staged change", () => {
       applyAttributeChange(
         mockPrim,
         "custom string primvars:displayName",
@@ -486,48 +496,15 @@ describe("AttributeUpdater", () => {
         mockCommitButton
       );
 
-      expect(composeLogPrim).toHaveBeenCalledWith(
+      expect(actions.addStagedChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          "Property Name": "displayName",
-          "New Value": "NewName",
-          Type: "Property Change",
+          oldValue: "Test Prim",
+          propertyName: "displayName",
         })
       );
     });
 
-    it("should set log type to Promotion for status changes", () => {
-      applyAttributeChange(
-        mockPrim,
-        "custom string primvars:status",
-        "Active",
-        mockUpdateView,
-        mockCommitButton
-      );
-
-      expect(composeLogPrim).toHaveBeenCalledWith(
-        expect.objectContaining({
-          Type: "Promotion",
-        })
-      );
-    });
-
-    it("should capture old value for property", () => {
-      applyAttributeChange(
-        mockPrim,
-        "custom string primvars:displayName",
-        "NewName",
-        mockUpdateView,
-        mockCommitButton
-      );
-
-      expect(composeLogPrim).toHaveBeenCalledWith(
-        expect.objectContaining({
-          "Old Value": "Test Prim",
-        })
-      );
-    });
-
-    it("should use null for missing old value", () => {
+    it("should capture undefined old value for missing property", () => {
       applyAttributeChange(
         mockPrim,
         "custom string primvars:newProp",
@@ -536,14 +513,14 @@ describe("AttributeUpdater", () => {
         mockCommitButton
       );
 
-      expect(composeLogPrim).toHaveBeenCalledWith(
+      expect(actions.addStagedChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          "Old Value": "null",
+          oldValue: undefined,
         })
       );
     });
 
-    it("should append to statement.usda", () => {
+    it("should include source metadata in staged change", () => {
       applyAttributeChange(
         mockPrim,
         "custom string primvars:displayName",
@@ -552,34 +529,12 @@ describe("AttributeUpdater", () => {
         mockCommitButton
       );
 
-      expect(USDA_PARSER.appendToUsdaFile).toHaveBeenCalled();
-    });
-
-    it("should update statement.usda in loaded files", () => {
-      applyAttributeChange(
-        mockPrim,
-        "custom string primvars:displayName",
-        "NewName",
-        mockUpdateView,
-        mockCommitButton
+      expect(actions.addStagedChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourceFile: "test.usda",
+          sourceStatus: "WIP",
+        })
       );
-
-      expect(actions.updateLoadedFile).toHaveBeenCalledWith(
-        "statement.usda",
-        expect.any(String)
-      );
-    });
-
-    it("should set new head commit ID", () => {
-      applyAttributeChange(
-        mockPrim,
-        "custom string primvars:displayName",
-        "NewName",
-        mockUpdateView,
-        mockCommitButton
-      );
-
-      expect(actions.setHeadCommitId).toHaveBeenCalledWith(expect.any(String));
     });
   });
 
@@ -1106,9 +1061,8 @@ describe("AttributeUpdater", () => {
       );
 
       // Verify all steps executed
+      // Note: logging (incrementLogEntryCounter, composeLogPrim) is deferred to commit time
       expect(actions.addStagedChange).toHaveBeenCalled();
-      expect(actions.incrementLogEntryCounter).toHaveBeenCalled();
-      expect(composeLogPrim).toHaveBeenCalled();
       expect(updatePropertyInFile).toHaveBeenCalled();
       expect(actions.setComposedHierarchy).toHaveBeenCalled();
       expect(actions.setComposedPrims).toHaveBeenCalled();

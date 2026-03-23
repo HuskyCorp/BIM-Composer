@@ -59,12 +59,21 @@ export const applyAttributeChange = errorHandler.wrap(
     console.log("[PROPERTY CHANGE] Attribute:", attrName, "=", attrValue);
     console.log("[PROPERTY CHANGE] skipRefresh:", skipRefresh);
 
-    // 1. Log to staged changes
+    // 1. Stage the change (deferred — not yet written to statement.usda)
+    const { propertyName: stagedPropName } = parseAttributeName(attrName);
     const change = {
-      type: "setAttribute",
+      type: stagedPropName === "status" ? "propertyEdit" : "propertyEdit",
       targetPath: prim.path,
       attributeName: attrName,
       attributeValue: attrValue,
+      propertyName: stagedPropName,
+      oldValue: prim.properties ? prim.properties[stagedPropName] : undefined,
+      sourceFile: prim._sourceFile || "unknown",
+      sourceOwner: prim._sourceOwner || "unknown",
+      user: store.getState().currentUser,
+      timestamp: new Date().toISOString(),
+      sourceStatus: prim.properties?.status || "WIP",
+      targetStatus: prim.properties?.status || "WIP",
     };
     actions.addStagedChange(change);
     if (commitButton) {
@@ -184,13 +193,10 @@ function applyAttributeChangeInternal(
   console.log("[PROPERTY CHANGE] Applying change internally");
   console.log("[PROPERTY CHANGE] skipRefresh:", skipRefresh);
 
-  // 1. Log to statement.usda
-  logPropertyChangeToStatement(prim, propertyName, attrValue);
-
-  // 2. Detect or use source file
+  // 1. Detect or use source file (logging deferred to explicit commit)
   detectSourceFile(prim);
 
-  // 3. Update source file if prim has a source
+  // 2. Update source file if prim has a source
   if (prim._sourceFile && prim._sourcePath) {
     updateSourceFile(prim, propertyName, attrValue, propertyType);
   } else {
@@ -199,16 +205,16 @@ function applyAttributeChangeInternal(
     );
   }
 
-  // 4. Update in-memory hierarchy
+  // 3. Update in-memory hierarchy
   updateInMemoryHierarchy(prim.path, propertyName, attrValue);
 
-  // 5. For status changes, update parent prim's status AND Layer Stack
+  // 4. For status changes, update parent prim's status AND Layer Stack
   if (propertyName === "status") {
     updateParentStatus(prim.path, attrValue);
     updateLayerStackStatus(prim._sourceFile, attrValue);
   }
 
-  // 6. Refresh UI if not skipped
+  // 5. Refresh UI if not skipped
   if (!skipRefresh) {
     refreshUI(prim.path, updateView);
   }

@@ -20,6 +20,7 @@ import { initDataInspector } from "./components/dataInspector.js";
 import { initPromotionController } from "./components/promotionController.js";
 import { initUserController } from "./components/userController.js";
 import { initConflictModal } from "./components/conflictModal.js";
+import { initStagingPanel } from "./components/staging/stagingPanelController.js";
 import { loadingIndicator } from "./components/loadingIndicator.js";
 
 function initSidebarResizing() {
@@ -118,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initPropertiesController(updateView);
   initDataInspector();
   initConflictModal();
+  initStagingPanel(updateView);
   initSidebarResizing();
 
   document.getElementById("sampleSceneItem").textContent =

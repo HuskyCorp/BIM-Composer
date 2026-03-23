@@ -84,7 +84,117 @@
   gap: 8px;
 }
 
-/* Drag-to-reorder */
+/* ---- Staged Changes Panel ---- */
+.staged-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.staged-badge:not(:empty):not([value="0"]) {
+  background: #ffd700;
+  color: #000;
+}
+
+.commit-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.commit-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.commit-btn.has-changes {
+  background: #ffd700;
+  color: #000;
+  border-color: #ffd700;
+  font-weight: 600;
+}
+
+.staged-change-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+}
+
+.staged-change-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.staged-change-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ddd;
+}
+
+.staged-dot-propertyEdit {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffd700;
+  flex-shrink: 0;
+}
+
+.staged-dot-entityStaging {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8fff8f;
+  flex-shrink: 0;
+}
+
+.staged-dot-rename {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #7aacff;
+  flex-shrink: 0;
+}
+
+.unstage-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.unstage-btn:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+/* ---- Drag-to-reorder ---- */
 #layersPanel li[draggable="true"] {
   cursor: grab;
 }

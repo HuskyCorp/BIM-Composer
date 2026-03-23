@@ -142,7 +142,17 @@ export function renderStageView(threeScene, state) {
           return null;
         };
 
-        if (entityType === "placeholder") {
+        // Check if this prim has pending (uncommitted) staged changes
+        const stagedPaths = new Set(
+          (state.stagedChanges || []).map((c) => c.targetPath)
+        );
+        const hasStagedChange = stagedPaths.has(prim.path);
+
+        if (hasStagedChange) {
+          finalColor = new THREE.Color(0xffd700); // Gold — pending change
+          opacity = 0.85;
+          isWireframe = false;
+        } else if (entityType === "placeholder") {
           finalColor = new THREE.Color(0x8fff8f); // Light Green
           opacity = 0.1;
           isWireframe = false;
