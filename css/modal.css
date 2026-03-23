@@ -269,3 +269,81 @@
 .modal-footer button.primary:hover {
   background: #0056b3;
 }
+
+/* ── Quality Gate Modal ───────────────────────────────────────────────── */
+.quality-gate-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.quality-gate-list .qg-prim {
+  margin-bottom: 12px;
+}
+
+.quality-gate-list .qg-prim-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.quality-gate-list .qg-gate {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+}
+
+.quality-gate-list .qg-gate.pass {
+  background: #eafaf1;
+  color: #1a7a3a;
+}
+
+.quality-gate-list .qg-gate.fail {
+  background: #fdf0f0;
+  color: #c0392b;
+}
+
+.quality-gate-list .qg-gate-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.quality-gate-list .qg-issues {
+  font-size: 11px;
+  color: #a93226;
+  margin-top: 2px;
+}
+
+.danger-btn {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.danger-btn:hover {
+  background: #a93226;
+}
+
+/* ── Permission-denied banner (shown inside promotion modal) ─────────── */
+.permission-denied-banner {
+  background: #fdf0f0;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #c0392b;
+  margin-bottom: 12px;
+  white-space: pre-line;
+}

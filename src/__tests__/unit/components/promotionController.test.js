@@ -60,6 +60,12 @@ vi.mock("../../../components/properties/AttributeUpdater.js", () => ({
   updateChildrenStatus: vi.fn(),
 }));
 
+vi.mock("../../../utils/rolePermissions.js", () => ({
+  canUserPromote: vi.fn(() => true),
+  canUserDemote: vi.fn(() => true),
+  getPermissionError: vi.fn(() => "Permission denied"),
+}));
+
 describe("PromotionController", () => {
   let mockUpdateView;
   let modal, eligibleList, promoteList, targetStatusLabel;

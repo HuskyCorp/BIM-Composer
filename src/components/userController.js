@@ -8,6 +8,7 @@ import {
   ValidationError,
 } from "../core/index.js";
 import { renderLayerStack } from "./sidebar/layerStackController.js";
+import { getRoleLabel, getRoleColor } from "../utils/rolePermissions.js";
 
 const USER_STORAGE_KEY = "usda_composer_current_user";
 
@@ -96,6 +97,14 @@ export function initUserController(updateView) {
   function updateUserUI() {
     const currentUser = store.getState().currentUser;
     currentUserName.textContent = currentUser;
+
+    // Update role badge
+    const roleBadge = document.getElementById("userRoleBadge");
+    if (roleBadge) {
+      roleBadge.textContent = getRoleLabel(currentUser);
+      roleBadge.style.background = getRoleColor(currentUser) + "55"; // translucent tint
+      roleBadge.style.color = "#fff";
+    }
 
     // Update selected state in dropdown
     userOptions.forEach((option) => {

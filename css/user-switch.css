@@ -112,3 +112,18 @@
 .user-option.selected .check-icon {
   opacity: 1;
 }
+
+/* ── Role badge (shown inside the user-switch button) ─────────────────── */
+.user-role-badge {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}

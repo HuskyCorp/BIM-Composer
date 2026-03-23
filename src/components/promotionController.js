@@ -11,6 +11,15 @@ import {
   updateParentStatus,
   updateChildrenStatus,
 } from "./properties/AttributeUpdater.js";
+import {
+  canUserPromote,
+  canUserDemote,
+  getPermissionError,
+} from "../utils/rolePermissions.js";
+import {
+  runQualityGatesForPrims,
+  collectPrimsForLayer,
+} from "../utils/qualityGates.js";
 
 export function initPromotionController(updateView) {
   const modal = document.getElementById("promotion-modal");
@@ -28,6 +37,109 @@ export function initPromotionController(updateView) {
     "remove-all-layers-from-promote"
   );
 
+  // ── Quality Gate Modal wiring ────────────────────────────────────────────
+  const qgModal = document.getElementById("quality-gate-modal");
+  const qgSummary = document.getElementById("quality-gate-summary");
+  const qgList = document.getElementById("quality-gate-list");
+  const qgForceBtn = document.getElementById("quality-gate-force-btn");
+  const qgCancelBtn = document.getElementById("quality-gate-cancel-btn");
+
+  /** @type {Function|null}  Callback to invoke when the user chooses Force Proceed */
+  let _qgProceedCallback = null;
+
+  if (qgForceBtn) {
+    qgForceBtn.addEventListener("click", () => {
+      qgModal.style.display = "none";
+      if (typeof _qgProceedCallback === "function") _qgProceedCallback();
+      _qgProceedCallback = null;
+    });
+  }
+  if (qgCancelBtn) {
+    qgCancelBtn.addEventListener("click", () => {
+      qgModal.style.display = "none";
+      _qgProceedCallback = null;
+    });
+  }
+
+  /**
+   * Show the quality-gate results modal.
+   * @param {Array<{prim, results}>} failures  — output of runQualityGatesForPrims
+   * @param {Function} onForceProceed          — called if user overrides
+   */
+  function showQualityGateModal(failures, onForceProceed) {
+    if (!qgModal) return;
+    qgSummary.textContent = `${failures.length} prim(s) failed quality gates. Review before proceeding.`;
+    qgList.innerHTML = "";
+    failures.forEach(({ prim, results }) => {
+      const primLi = document.createElement("li");
+      primLi.className = "qg-prim";
+
+      const nameDiv = document.createElement("div");
+      nameDiv.className = "qg-prim-name";
+      nameDiv.textContent = `${prim.name || prim.path} (${prim.path})`;
+      primLi.appendChild(nameDiv);
+
+      results.forEach((r) => {
+        const gateLi = document.createElement("div");
+        gateLi.className = `qg-gate ${r.passed ? "pass" : "fail"}`;
+
+        const icon = document.createElement("span");
+        icon.className = "qg-gate-icon";
+        icon.textContent = r.passed ? "✓" : "✗";
+
+        const text = document.createElement("div");
+        text.innerHTML = `<strong>${r.label}</strong>`;
+        if (!r.passed && r.issues.length) {
+          const issues = document.createElement("div");
+          issues.className = "qg-issues";
+          issues.textContent = r.issues.join(" · ");
+          text.appendChild(issues);
+        }
+
+        gateLi.appendChild(icon);
+        gateLi.appendChild(text);
+        primLi.appendChild(gateLi);
+      });
+
+      qgList.appendChild(primLi);
+    });
+
+    _qgProceedCallback = onForceProceed;
+    qgModal.style.display = "flex";
+  }
+
+  // ── Permission-denied banner helper ──────────────────────────────────────
+  /**
+   * Show or hide a permission-denied banner inside the promotion modal.
+   * @param {string|null} message — pass null to hide
+   */
+  function setPermissionBanner(message) {
+    let banner = modal.querySelector(".permission-denied-banner");
+    if (!message) {
+      if (banner) banner.remove();
+      return;
+    }
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.className = "permission-denied-banner";
+      const modalBody = modal.querySelector(".modal-body");
+      if (modalBody) {
+        modalBody.before(banner);
+      } else {
+        modal.prepend(banner);
+      }
+    }
+    banner.textContent = message;
+    confirmButton.disabled = true;
+  }
+
+  function clearPermissionBanner() {
+    const banner = modal.querySelector(".permission-denied-banner");
+    if (banner) banner.remove();
+    confirmButton.disabled = false;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   let currentTargetStatus = null;
   let currentSourceStatus = null;
   let promotionMode = "layer"; // "layer" or "object"
@@ -132,6 +244,26 @@ export function initPromotionController(updateView) {
           }
         }
 
+        // ── ROLE CHECK (object mode) ────────────────────────────────────
+        {
+          const state = store.getState();
+          const user = state.currentUser;
+          const permitted =
+            promotionDirection === "demote"
+              ? canUserDemote(user, currentSourceStatus)
+              : canUserPromote(user, currentSourceStatus);
+          if (!permitted) {
+            const msg = getPermissionError(
+              user,
+              promotionDirection,
+              currentSourceStatus
+            );
+            setPermissionBanner(msg);
+          } else {
+            clearPermissionBanner();
+          }
+        }
+
         const objCountText =
           objectsToPromote.length > 1
             ? `${objectsToPromote.length} Objects`
@@ -224,6 +356,23 @@ export function initPromotionController(updateView) {
       }
 
       targetStatusLabel.textContent = `${actionTextPresent} Layers (${currentSourceStatus} ${actionArrow} ${currentTargetStatus})`;
+
+      // ── ROLE CHECK (layer mode) ─────────────────────────────────────────
+      {
+        const state = store.getState();
+        const user = state.currentUser;
+        const permitted =
+          promotionDirection === "demote"
+            ? canUserDemote(user, currentSourceStatus)
+            : canUserPromote(user, currentSourceStatus);
+        if (!permitted) {
+          setPermissionBanner(
+            getPermissionError(user, promotionDirection, currentSourceStatus)
+          );
+        } else {
+          clearPermissionBanner();
+        }
+      }
 
       // Find all layers of this status owned by current user
       const state = store.getState();
@@ -399,8 +548,25 @@ export function initPromotionController(updateView) {
       const actionText = promotionDirection === "demote" ? "Demote" : "Promote";
       const actionTextPresent =
         promotionDirection === "demote" ? "Demoting" : "Promoting";
-      const actionArrow = promotionDirection === "demote" ? "→" : "→";
+      const actionArrow = "→";
 
+      // ── Role guard — refuse if button somehow clicked while denied ──────
+      {
+        const state = store.getState();
+        const user = state.currentUser;
+        const permitted =
+          promotionDirection === "demote"
+            ? canUserDemote(user, currentSourceStatus)
+            : canUserPromote(user, currentSourceStatus);
+        if (!permitted) {
+          alert(
+            getPermissionError(user, promotionDirection, currentSourceStatus)
+          );
+          return;
+        }
+      }
+
+      // ── Object mode ─────────────────────────────────────────────────────
       if (promotionMode === "object" && objectsToPromote.length > 0) {
         if (!currentTargetStatus) {
           throw new ValidationError(
@@ -410,25 +576,21 @@ export function initPromotionController(updateView) {
           );
         }
 
-        if (
-          confirm(
-            `${actionText} ${objectsToPromote.length} object(s) to ${currentTargetStatus}?`
-          )
-        ) {
+        const doObjectPromotion = () => {
+          if (
+            !confirm(
+              `${actionText} ${objectsToPromote.length} object(s) to ${currentTargetStatus}?`
+            )
+          ) {
+            modal.style.display = "none";
+            return;
+          }
           let successCount = 0;
           objectsToPromote.forEach((obj) => {
-            // ... per object logic ...
-            // Logic:
-            // 1. Validate info
-            // 2. Log
-            // 3. Update Status
-
             if (!obj.name || !obj._sourceFile || !obj.path) {
               console.warn("Skipping invalid object:", obj);
               return;
             }
-
-            // Log
             try {
               logPromotionToStatement({
                 layerPath: obj._sourceFile,
@@ -443,31 +605,34 @@ export function initPromotionController(updateView) {
             } catch (err) {
               console.warn("Log failed for", obj.name, err);
             }
-
-            // Update Runtime
             if (!obj.properties) obj.properties = {};
             obj.properties.status = currentTargetStatus;
-
-            // Update parent status to match child
             updateParentStatus(obj.path, currentTargetStatus);
-
-            // Update all children status to match parent
             updateChildrenStatus(obj.path, currentTargetStatus);
-
             successCount++;
           });
-
           recomposeStage();
           updateView();
-
           alert(
             `${actionText}d ${successCount} object(s) to ${currentTargetStatus}.`
           );
+          modal.style.display = "none";
+        };
+
+        // ── Quality gates (object mode) ──────────────────────────────────
+        const { passed, failures } = runQualityGatesForPrims(
+          objectsToPromote,
+          currentTargetStatus
+        );
+        if (!passed) {
+          showQualityGateModal(failures, doObjectPromotion);
+          return;
         }
-        modal.style.display = "none";
+        doObjectPromotion();
         return;
       }
 
+      // ── Layer mode ───────────────────────────────────────────────────────
       const itemsToPromote = Array.from(promoteList.children);
       if (itemsToPromote.length === 0) {
         console.log("No layers selected for promotion");
@@ -483,43 +648,38 @@ export function initPromotionController(updateView) {
         );
       }
 
-      if (
-        confirm(
-          `${actionText} ${itemsToPromote.length} layers to ${currentTargetStatus}?`
-        )
-      ) {
+      const doLayerPromotion = () => {
+        if (
+          !confirm(
+            `${actionText} ${itemsToPromote.length} layers to ${currentTargetStatus}?`
+          )
+        ) {
+          modal.style.display = "none";
+          return;
+        }
         const state = store.getState();
         let promotedCount = 0;
 
         itemsToPromote.forEach((li) => {
           const layerId = li.dataset.layerId;
-
           if (!layerId) {
             console.warn("Layer item missing layerId, skipping");
             return;
           }
-
           const layer = state.stage.layerStack.find((l) => l.id === layerId);
-
           if (!layer) {
             console.warn(`Layer not found: ${layerId}, skipping`);
             return;
           }
-
           if (layer.status !== currentSourceStatus) {
             console.warn(
               `Layer status mismatch (expected ${currentSourceStatus}, got ${layer.status}), skipping`
             );
             return;
           }
-
           try {
-            // Update layer via action
             actions.updateLayer(layerId, { status: currentTargetStatus });
-
-            // Construct updated layer object for sync and log
             const updatedLayer = { ...layer, status: currentTargetStatus };
-
             syncPrimStatusFromLayer(updatedLayer);
             logPromotionToStatement({
               layerPath: layer.filePath,
@@ -527,15 +687,13 @@ export function initPromotionController(updateView) {
               targetStatus: currentTargetStatus,
               type: promotionDirection === "demote" ? "Demotion" : "Promotion",
             });
-
             promotedCount++;
           } catch (err) {
             console.error(`Failed to promote layer ${layer.filePath}:`, err);
-            // Continue with other layers
           }
         });
 
-        renderLayerStack(); // Renders from store now
+        renderLayerStack();
         recomposeStage();
         updateView();
 
@@ -544,8 +702,30 @@ export function initPromotionController(updateView) {
             itemsToPromote.length
           } layers (${currentSourceStatus} ${actionArrow} ${currentTargetStatus})`
         );
+        modal.style.display = "none";
+      };
+
+      // ── Quality gates (layer mode) ───────────────────────────────────────
+      const state = store.getState();
+      const layerPrims = itemsToPromote.flatMap((li) => {
+        const layerId = li.dataset.layerId;
+        const layer = state.stage.layerStack.find((l) => l.id === layerId);
+        if (!layer) return [];
+        return collectPrimsForLayer(
+          state.stage.composedHierarchy || [],
+          layer.filePath
+        );
+      });
+
+      const { passed, failures } = runQualityGatesForPrims(
+        layerPrims,
+        currentTargetStatus
+      );
+      if (!passed) {
+        showQualityGateModal(failures, doLayerPromotion);
+        return;
       }
-      modal.style.display = "none";
+      doLayerPromotion();
     } catch (error) {
       if (error instanceof ValidationError) {
         errorHandler.handleError(error);
