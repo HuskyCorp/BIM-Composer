@@ -44,116 +44,40 @@ export async function showPsetPropertyModal(onAdd) {
   overlay.style.display = "flex";
 
   overlay.innerHTML = `
-    <div class="modal-content" style="
-      max-width: 900px;
-      width: 95%;
-      max-height: 80vh;
-      background: #1e1e1e;
-      border: 1px solid #3a3a3a;
-    ">
-      <div class="modal-header" style="
-        background: #3a3a3a;
-        color: white;
-        padding: 20px 24px;
-        border-radius: 8px 8px 0 0;
-        margin: -1px -1px 0 -1px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      ">
-        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Add Properties from Pset</h2>
+    <div class="modal-content pset-modal-content">
+      <div class="modal-header pset-modal-header">
+        <h2>Add Properties from Pset</h2>
       </div>
-      <div class="modal-body" style="padding: 0; display: flex; height: 500px;">
+      <div class="modal-body pset-modal-body">
         <!-- Left Column: Pset Selection -->
-        <div style="
-          width: 350px;
-          border-right: 2px solid #3a3a3a;
-          padding: 24px;
-          overflow-y: auto;
-          background: #252525;
-        ">
-          <div style="position: sticky; top: 0; background: #252525; padding-bottom: 16px; z-index: 10;">
-            <label style="
-              display: block;
-              margin-bottom: 8px;
-              font-weight: 600;
-              color: #e0e0e0;
-              font-size: 14px;
-            ">Select Property Set</label>
-            <input 
-              type="text" 
-              id="pset-search-input" 
-              style="
-                width: 100%;
-                padding: 12px 16px;
-                border: 2px solid #3a3a3a;
-                border-radius: 8px;
-                font-size: 14px;
-                transition: all 0.2s;
-                box-sizing: border-box;
-                background: #1e1e1e;
-                color: #e0e0e0;
-              " 
+        <div class="pset-modal-left">
+          <div class="pset-modal-search-sticky">
+            <label class="pset-modal-search-label">Select Property Set</label>
+            <input
+              type="text"
+              id="pset-search-input"
+              class="pset-modal-search-input"
               placeholder="Search Psets (e.g., Pset_Wall)..."
               autocomplete="off"
             />
           </div>
-          <div id="pset-list" style="margin-top: 12px;"></div>
+          <div id="pset-list"></div>
         </div>
-        
+
         <!-- Right Column: Attributes Form -->
-        <div style="
-          flex: 1;
-          padding: 24px;
-          overflow-y: auto;
-          background: #1e1e1e;
-        ">
+        <div class="pset-modal-right">
           <div id="attributes-form">
-            <div style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100%;
-              color: #888;
-              font-size: 14px;
-            ">
+            <div class="pset-modal-placeholder">
               Select a Property Set to view its attributes
             </div>
           </div>
         </div>
       </div>
-      <div class="modal-footer" style="
-        padding: 16px 24px;
-        background: #252525;
-        border-top: 2px solid #3a3a3a;
-        border-radius: 0 0 8px 8px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      ">
-        <div id="selected-pset-name" style="font-weight: 500; color: #888; font-size: 14px;"></div>
-        <div style="display: flex; gap: 12px;">
-          <button id="pset-cancel-button" style="
-            padding: 10px 20px;
-            border: 2px solid #3a3a3a;
-            background: #1e1e1e;
-            color: #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-          ">Cancel</button>
-          <button id="pset-add-button" disabled style="
-            padding: 10px 20px;
-            border: none;
-            background: #007aff;
-            color: white;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            opacity: 0.5;
-          ">Add Properties</button>
+      <div class="modal-footer pset-modal-footer">
+        <div id="selected-pset-name" class="pset-selected-name"></div>
+        <div class="pset-modal-footer-buttons">
+          <button id="pset-cancel-button" class="pset-cancel-btn">Cancel</button>
+          <button id="pset-add-button" class="pset-add-btn" disabled>Add Properties</button>
         </div>
       </div>
     </div>
@@ -190,19 +114,9 @@ export async function showPsetPropertyModal(onAdd) {
     psetList.innerHTML = filtered
       .map(
         (pset) => `
-      <div class="pset-item" data-pset="${pset}" style="
-        padding: 12px 16px;
-        margin-bottom: 6px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.15s;
-        background: #1e1e1e;
-        border: 2px solid transparent;
-      ">
-        <div style="font-weight: 500; color: #e0e0e0; font-size: 14px;">${pset}</div>
-        <div style="font-size: 12px; color: #888; margin-top: 2px;">
-          ${Object.keys(definitions[pset]).length} attributes
-        </div>
+      <div class="pset-item" data-pset="${pset}">
+        <div class="pset-item-name">${pset}</div>
+        <div class="pset-item-count">${Object.keys(definitions[pset]).length} attributes</div>
       </div>
     `
       )
@@ -210,16 +124,6 @@ export async function showPsetPropertyModal(onAdd) {
 
     // Add click handlers
     psetList.querySelectorAll(".pset-item").forEach((item) => {
-      item.addEventListener("mouseenter", () => {
-        if (item.dataset.pset !== currentPset) {
-          item.style.background = "#2a2a2a";
-        }
-      });
-      item.addEventListener("mouseleave", () => {
-        if (item.dataset.pset !== currentPset) {
-          item.style.background = "#1e1e1e";
-        }
-      });
       item.addEventListener("click", () => {
         selectPset(item.dataset.pset);
       });
@@ -233,13 +137,7 @@ export async function showPsetPropertyModal(onAdd) {
 
     // Update visual selection
     psetList.querySelectorAll(".pset-item").forEach((item) => {
-      if (item.dataset.pset === psetName) {
-        item.style.background = "#2d2d4a";
-        item.style.borderColor = "#007aff";
-      } else {
-        item.style.background = "#1e1e1e";
-        item.style.borderColor = "transparent";
-      }
+      item.classList.toggle("selected", item.dataset.pset === psetName);
     });
 
     // Render attributes form
@@ -247,39 +145,18 @@ export async function showPsetPropertyModal(onAdd) {
     const attributeNames = Object.keys(attributes).sort();
 
     attributesForm.innerHTML = `
-      <div style="margin-bottom: 16px;">
-        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #e0e0e0;">
-          ${psetName}
-        </h3>
-        <p style="margin: 0; font-size: 13px; color: #888;">
-          Fill in values for the attributes you want to add (leave blank to skip)
-        </p>
+      <div class="pset-form-header">
+        <h3>${psetName}</h3>
+        <p>Fill in values for the attributes you want to add (leave blank to skip)</p>
       </div>
       ${attributeNames
         .map(
           (attr) => `
-        <div class="attribute-input-group" style="margin-bottom: 16px;">
-          <label style="
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            color: #b0b0b0;
-            font-size: 13px;
-          ">${attr}</label>
-          <input 
-            type="text" 
+        <div class="attribute-input-group">
+          <label>${attr}</label>
+          <input
+            type="text"
             data-attribute="${attr}"
-            style="
-              width: 100%;
-              padding: 10px 14px;
-              border: 2px solid #3a3a3a;
-              border-radius: 6px;
-              font-size: 13px;
-              transition: all 0.2s;
-              box-sizing: border-box;
-              background: #252525;
-              color: #e0e0e0;
-            " 
             placeholder="Enter value (optional)..."
           />
         </div>
@@ -288,36 +165,13 @@ export async function showPsetPropertyModal(onAdd) {
         .join("")}
     `;
 
-    // Add focus effects to inputs
-    attributesForm.querySelectorAll("input").forEach((input) => {
-      input.addEventListener("focus", () => {
-        input.style.borderColor = "#007aff";
-        input.style.boxShadow = "0 0 0 3px rgba(0, 122, 255, 0.2)";
-      });
-      input.addEventListener("blur", () => {
-        input.style.borderColor = "#3a3a3a";
-        input.style.boxShadow = "none";
-      });
-    });
-
     // Enable add button
     addButton.disabled = false;
-    addButton.style.opacity = "1";
-    addButton.style.cursor = "pointer";
   }
 
   // Handle search
   searchInput.addEventListener("input", () => {
     renderPsetList(searchInput.value);
-  });
-
-  searchInput.addEventListener("focus", () => {
-    searchInput.style.borderColor = "#007aff";
-    searchInput.style.boxShadow = "0 0 0 3px rgba(0, 122, 255, 0.2)";
-  });
-  searchInput.addEventListener("blur", () => {
-    searchInput.style.borderColor = "#3a3a3a";
-    searchInput.style.boxShadow = "none";
   });
 
   // Handle Enter key on search
@@ -370,27 +224,6 @@ export async function showPsetPropertyModal(onAdd) {
     if (onAdd) {
       onAdd(propertiesToAdd, currentPset);
     }
-  });
-
-  // Button hover effects
-  cancelButton.addEventListener("mouseenter", () => {
-    cancelButton.style.background = "#2a2a2a";
-    cancelButton.style.borderColor = "#4a4a4a";
-  });
-  cancelButton.addEventListener("mouseleave", () => {
-    cancelButton.style.background = "#1e1e1e";
-    cancelButton.style.borderColor = "#3a3a3a";
-  });
-
-  addButton.addEventListener("mouseenter", () => {
-    if (!addButton.disabled) {
-      addButton.style.transform = "translateY(-1px)";
-      addButton.style.boxShadow = "0 4px 12px rgba(0, 122, 255, 0.4)";
-    }
-  });
-  addButton.addEventListener("mouseleave", () => {
-    addButton.style.transform = "translateY(0)";
-    addButton.style.boxShadow = "none";
   });
 
   // Handle cancel button

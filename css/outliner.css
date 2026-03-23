@@ -89,3 +89,19 @@ li:not(.collapsed) .outliner-toggler {
   width: 20px;
   height: 20px;
 }
+
+/* ── Drag-and-drop ───────────────────────────────────────────────────────── */
+li.prim-item[draggable="true"] {
+  cursor: grab;
+}
+
+li.prim-item.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+li.prim-item.drag-over > .outliner-row {
+  background-color: rgba(0, 122, 255, 0.2);
+  outline: 1px dashed #007aff;
+  border-radius: 4px;
+}

@@ -1,0 +1,365 @@
+/* css/pset-modal.css — Pset Property Modal, light-mode defaults + dark overrides */
+
+/* ── Container ───────────────────────────────────────────────────────────── */
+.pset-modal-content {
+  max-width: 900px;
+  width: 95%;
+  max-height: 80vh;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  padding: 0; /* override base .modal-content padding */
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.pset-modal-header {
+  background: #f5f5f5;
+  color: #222;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pset-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  padding: 0;
+}
+
+/* ── Body: two-column layout ─────────────────────────────────────────────── */
+.pset-modal-body {
+  display: flex;
+  height: 500px;
+  padding: 0; /* override .modal-body */
+  justify-content: flex-start;
+}
+
+/* Left — pset list */
+.pset-modal-left {
+  width: 330px;
+  flex-shrink: 0;
+  border-right: 1px solid #e0e0e0;
+  padding: 20px;
+  overflow-y: auto;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+}
+
+.pset-modal-search-sticky {
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  padding-bottom: 12px;
+  z-index: 10;
+}
+
+.pset-modal-search-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #444;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pset-modal-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  font-size: 13px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  box-sizing: border-box;
+  background: #fff;
+  color: #333;
+}
+
+.pset-modal-search-input:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+#pset-list {
+  margin-top: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.pset-item {
+  padding: 10px 14px;
+  margin-bottom: 4px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s;
+  background: #ffffff;
+  border: 1px solid transparent;
+}
+
+.pset-item:hover {
+  background: #f0f0f0;
+}
+
+.pset-item.selected {
+  background: rgba(0, 122, 255, 0.08);
+  border-color: #007aff;
+}
+
+.pset-item-name {
+  font-weight: 500;
+  color: #222;
+  font-size: 13px;
+}
+
+.pset-item-count {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Right — attributes form */
+.pset-modal-right {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.pset-modal-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.pset-form-header {
+  margin-bottom: 18px;
+}
+
+.pset-form-header h3 {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+  border: none;
+  padding: 0;
+}
+
+.pset-form-header p {
+  margin: 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.attribute-input-group {
+  margin-bottom: 14px;
+}
+
+.attribute-input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+  font-size: 12px;
+}
+
+.attribute-input-group input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  box-sizing: border-box;
+  background: #fff;
+  color: #333;
+}
+
+.attribute-input-group input:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.pset-modal-footer {
+  padding: 14px 20px;
+  background: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pset-selected-name {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+
+.pset-modal-footer-buttons {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pset-cancel-btn {
+  padding: 9px 18px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #444;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.pset-cancel-btn:hover {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.pset-add-btn {
+  padding: 9px 18px;
+  border: none;
+  background: #007aff;
+  color: #fff;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s,
+    opacity 0.15s;
+}
+
+.pset-add-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35);
+}
+
+.pset-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Dark theme overrides ────────────────────────────────────────────────── */
+body.dark-theme .pset-modal-content {
+  background: #1e1e1e;
+  border-color: #3a3a3a;
+}
+
+body.dark-theme .pset-modal-header {
+  background: #2c2c2c;
+  color: #f0f0f0;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme .pset-modal-header h2 {
+  color: #f0f0f0;
+}
+
+body.dark-theme .pset-modal-left {
+  background: #252525;
+  border-right-color: #3a3a3a;
+}
+
+body.dark-theme .pset-modal-search-sticky {
+  background: #252525;
+}
+
+body.dark-theme .pset-modal-search-label {
+  color: #aaa;
+}
+
+body.dark-theme .pset-modal-search-input {
+  background: #1e1e1e;
+  border-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+body.dark-theme .pset-item {
+  background: #1e1e1e;
+  border-color: transparent;
+}
+
+body.dark-theme .pset-item:hover {
+  background: #2a2a2a;
+}
+
+body.dark-theme .pset-item.selected {
+  background: #2d2d4a;
+  border-color: #007aff;
+}
+
+body.dark-theme .pset-item-name {
+  color: #e0e0e0;
+}
+
+body.dark-theme .pset-item-count {
+  color: #777;
+}
+
+body.dark-theme .pset-modal-right {
+  background: #1e1e1e;
+}
+
+body.dark-theme .pset-modal-placeholder {
+  color: #666;
+}
+
+body.dark-theme .pset-form-header h3 {
+  color: #e0e0e0;
+}
+
+body.dark-theme .pset-form-header p {
+  color: #777;
+}
+
+body.dark-theme .attribute-input-group label {
+  color: #aaa;
+}
+
+body.dark-theme .attribute-input-group input {
+  background: #252525;
+  border-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+body.dark-theme .pset-modal-footer {
+  background: #252525;
+  border-top-color: #3a3a3a;
+}
+
+body.dark-theme .pset-selected-name {
+  color: #888;
+}
+
+body.dark-theme .pset-cancel-btn {
+  background: #1e1e1e;
+  border-color: #3a3a3a;
+  color: #ccc;
+}
+
+body.dark-theme .pset-cancel-btn:hover {
+  background: #2a2a2a;
+  border-color: #555;
+}

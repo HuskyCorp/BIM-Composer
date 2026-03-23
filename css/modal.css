@@ -347,3 +347,143 @@
   margin-bottom: 12px;
   white-space: pre-line;
 }
+
+/* ── Record Changes Modal ─────────────────────────────────────────────────── */
+.commit-modal-content {
+  max-width: 540px;
+  width: 95%;
+  padding: 0;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.commit-modal-content .modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.commit-modal-content .modal-body {
+  padding: 20px 24px;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.commit-modal-content .modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid #e8e8e8;
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.commit-author-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.commit-author-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.commit-author-input {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 13px;
+}
+
+.commit-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.commit-preview-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 7px;
+  background: #fafafa;
+}
+
+.commit-preview-list li {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #555;
+  font-family: -apple-system, system-ui, monospace;
+}
+
+.commit-preview-list li:last-child {
+  border-bottom: none;
+}
+
+.commit-message-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 1.55;
+  resize: vertical;
+  box-sizing: border-box;
+  color: #333;
+  background: #fff;
+  min-height: 120px;
+}
+
+.commit-message-textarea:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* Dark-mode overrides for commit modal */
+body.dark-theme .commit-modal-content {
+  background: #1e1e1e;
+}
+
+body.dark-theme .commit-modal-content .modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme .commit-modal-content .modal-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme .commit-author-input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #bbb;
+}
+
+body.dark-theme .commit-preview-list {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme .commit-preview-list li {
+  color: #bbb;
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .commit-message-textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e8e8e8;
+}

@@ -3,7 +3,271 @@ import { actions } from "../../state/actions.js";
 import { recomposeStage } from "./layerStackController.js";
 import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
 import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
+import {
+  removePrimFromFile,
+  insertPrimIntoFile,
+} from "../../viewer/usda/usdaEditor.js";
 import { sha256 } from "js-sha256";
+
+// ── Drag-and-drop reparenting ─────────────────────────────────────────────
+
+function initDragAndDrop(outliner, updateView) {
+  let dragSourcePath = null;
+
+  // Make existing items draggable and watch for newly rendered items
+  function makeItemsDraggable() {
+    outliner
+      .querySelectorAll("li.prim-item:not([draggable])")
+      .forEach((li) => li.setAttribute("draggable", "true"));
+  }
+
+  makeItemsDraggable();
+
+  const observer = new MutationObserver(makeItemsDraggable);
+  observer.observe(outliner, { childList: true, subtree: true });
+
+  outliner.addEventListener("dragstart", (e) => {
+    const li = e.target.closest("li.prim-item");
+    if (!li) return;
+    dragSourcePath = li.dataset.primPath;
+    e.dataTransfer.setData("text/plain", dragSourcePath);
+    e.dataTransfer.effectAllowed = "move";
+    // Defer so the browser snapshot isn't taken while opacity is 0
+    setTimeout(() => li.classList.add("dragging"), 0);
+  });
+
+  outliner.addEventListener("dragend", (e) => {
+    const li = e.target.closest("li.prim-item");
+    if (li) li.classList.remove("dragging");
+    outliner
+      .querySelectorAll(".drag-over")
+      .forEach((el) => el.classList.remove("drag-over"));
+    dragSourcePath = null;
+  });
+
+  outliner.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const li = e.target.closest("li.prim-item");
+    if (!li || li.dataset.primPath === dragSourcePath) return;
+    outliner
+      .querySelectorAll(".drag-over")
+      .forEach((el) => el.classList.remove("drag-over"));
+    li.classList.add("drag-over");
+  });
+
+  outliner.addEventListener("dragleave", (e) => {
+    // Only clear if we're leaving the li entirely (not a child element)
+    const li = e.target.closest("li.prim-item");
+    if (li && !li.contains(e.relatedTarget)) {
+      li.classList.remove("drag-over");
+    }
+  });
+
+  outliner.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const targetLi = e.target.closest("li.prim-item");
+    if (!targetLi) return;
+    targetLi.classList.remove("drag-over");
+
+    const sourcePath = e.dataTransfer.getData("text/plain");
+    const targetPath = targetLi.dataset.primPath;
+
+    if (!sourcePath || sourcePath === targetPath) return;
+    // Prevent dropping onto own descendant
+    if (targetPath.startsWith(sourcePath + "/")) return;
+    // Prevent same-parent no-op
+    const currentParent = sourcePath.substring(0, sourcePath.lastIndexOf("/"));
+    if (currentParent === targetPath) return;
+
+    // Move the DOM node immediately for visual feedback
+    const sourceLi = outliner.querySelector(
+      `li.prim-item[data-prim-path="${CSS.escape(sourcePath)}"]`
+    );
+    if (sourceLi) {
+      let targetUl = targetLi.querySelector(":scope > ul");
+      if (!targetUl) {
+        targetUl = document.createElement("ul");
+        targetLi.appendChild(targetUl);
+      }
+      targetUl.appendChild(sourceLi);
+      // Expand target if it was collapsed
+      targetLi.classList.remove("collapsed");
+      targetUl.style.display = "block";
+    }
+
+    reparentPrim(sourcePath, targetPath, updateView);
+  });
+}
+
+function reparentPrim(sourcePath, newParentPath, updateView) {
+  const state = store.getState();
+  if (state.isHistoryMode) return;
+
+  const primName = sourcePath.split("/").pop();
+  const newPath = newParentPath + "/" + primName;
+
+  // Find a prim node by path in any nested tree
+  const findInTree = (list, path) => {
+    if (!list) return null;
+    for (const p of list) {
+      if (p.path === path) return p;
+      if (p.children) {
+        const found = findInTree(p.children, path);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const hierarchy = state.composedHierarchy || [];
+  const sourceNode = findInTree(hierarchy, sourcePath);
+  const targetNode = findInTree(hierarchy, newParentPath);
+
+  // 1. Log staged change for the record
+  actions.addStagedChange({
+    type: "reparent",
+    targetPath: newPath,
+    oldPath: sourcePath,
+    primName,
+    sourceFile: sourceNode?._sourceFile || "unknown",
+    user: state.currentUser,
+    timestamp: new Date().toISOString(),
+    sourceStatus: sourceNode?.properties?.status || "WIP",
+    targetStatus: sourceNode?.properties?.status || "WIP",
+  });
+
+  // 2. Modify the USDA file(s) to move the prim block
+  const sourceFile = sourceNode?._sourceFile;
+  const targetFile = targetNode?._sourceFile || sourceFile;
+
+  if (sourceFile && state.loadedFiles[sourceFile]) {
+    const sourcePrimPath = sourceNode._sourcePath || sourcePath;
+    const fileContent = state.loadedFiles[sourceFile];
+
+    // Find the prim in the file's own hierarchy to get its raw text
+    const fileHierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
+    const findFileNode = (nodes, path) => {
+      for (const n of nodes) {
+        if (n.path === path) return n;
+        if (n.children) {
+          const found = findFileNode(n.children, path);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    const fileNode = findFileNode(fileHierarchy, sourcePrimPath);
+
+    if (
+      fileNode &&
+      typeof fileNode.startIndex === "number" &&
+      typeof fileNode.endIndex === "number"
+    ) {
+      // Extract the prim's raw text block
+      const primText = fileContent.slice(
+        fileNode.startIndex,
+        fileNode.endIndex + 1
+      );
+
+      // Remove from old position in source file
+      const contentWithoutPrim = removePrimFromFile(
+        fileContent,
+        sourcePrimPath
+      );
+
+      if (targetFile === sourceFile) {
+        // Same file: re-insert under the new parent
+        const targetParentInFile =
+          (targetNode && targetNode._sourcePath) || newParentPath;
+        const newFileContent = insertPrimIntoFile(
+          contentWithoutPrim,
+          targetParentInFile,
+          primText
+        );
+        actions.updateLoadedFile(sourceFile, newFileContent);
+      } else {
+        // Different files: update both
+        actions.updateLoadedFile(sourceFile, contentWithoutPrim);
+        if (state.loadedFiles[targetFile]) {
+          const targetParentInFile =
+            (targetNode && targetNode._sourcePath) || newParentPath;
+          const newTargetContent = insertPrimIntoFile(
+            state.loadedFiles[targetFile],
+            targetParentInFile,
+            primText
+          );
+          actions.updateLoadedFile(targetFile, newTargetContent);
+        }
+      }
+    } else {
+      console.warn(
+        "[REPARENT] Could not find prim in source file:",
+        sourcePrimPath
+      );
+    }
+  }
+
+  // 3. Update composedPrims in-memory tree to match the new hierarchy
+  if (state.stage.composedPrims) {
+    const composedPrims = JSON.parse(JSON.stringify(state.stage.composedPrims));
+
+    // Remove the source node from wherever it currently lives
+    let reparentedNode = null;
+    const removeFromTree = (list) => {
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].path === sourcePath) {
+          reparentedNode = list.splice(i, 1)[0];
+          return true;
+        }
+        if (list[i].children && removeFromTree(list[i].children)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    removeFromTree(composedPrims);
+
+    if (reparentedNode) {
+      // Update the path of the moved node and all its descendants
+      const replacePaths = (node) => {
+        if (node.path === sourcePath) {
+          node.path = newPath;
+        } else if (node.path.startsWith(sourcePath + "/")) {
+          node.path = newPath + node.path.slice(sourcePath.length);
+        }
+        if (node.children) node.children.forEach(replacePaths);
+      };
+      replacePaths(reparentedNode);
+
+      // Attach to the target parent in the tree
+      const findParent = (list, path) => {
+        for (const n of list) {
+          if (n.path === path) return n;
+          if (n.children) {
+            const found = findParent(n.children, path);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const targetParent = findParent(composedPrims, newParentPath);
+      if (targetParent) {
+        if (!targetParent.children) targetParent.children = [];
+        targetParent.children.push(reparentedNode);
+      } else {
+        // Fallback: push to root if target not found
+        composedPrims.push(reparentedNode);
+      }
+
+      actions.setComposedPrims(composedPrims);
+    }
+  }
+
+  // 4. Rebuild the composed hierarchy and refresh the view
+  recomposeStage();
+  if (typeof updateView === "function") updateView();
+}
 
 // Function to log deletion to statement.usda
 function logDeletionToStatement(primNode, allRemainingPaths) {
@@ -223,6 +487,9 @@ export function initHierarchyPanel(updateView) {
       alert("Failed to remove prim: " + e.message);
     }
   });
+
+  // Enable drag-and-drop reparenting
+  initDragAndDrop(outliner, updateView);
 
   expandAllButton.addEventListener("click", () => {
     const collapsibleItems = outliner.querySelectorAll(".collapsible");

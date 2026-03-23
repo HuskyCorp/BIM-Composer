@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="css/action-buttons.css" />
     <link rel="stylesheet" href="css/timeline.css" />
     <link rel="stylesheet" href="css/modal.css" />
+    <link rel="stylesheet" href="css/pset-modal.css" />
     <link rel="stylesheet" href="css/save-modal.css" />
     <link rel="stylesheet" href="css/loading-modal.css" />
     <link rel="stylesheet" href="css/data-inspector.css" />
@@ -165,16 +166,16 @@
         <div class="panel" id="staged-changes-panel">
           <div class="panel-header">
             <h3>
-              Staged Changes
+              Pending Changes
               <span id="staged-count-badge" class="staged-badge">0</span>
             </h3>
             <button
               id="commitButton"
               class="commit-btn"
               disabled
-              title="Commit staged changes"
+              title="Record pending changes"
             >
-              Commit
+              Record
             </button>
           </div>
           <div class="panel-content">
@@ -522,93 +523,44 @@
       </div>
     </div>
 
-    <!-- Commit Modal -->
+    <!-- Record Changes Modal -->
     <div id="commit-modal" class="modal-overlay" style="display: none">
-      <div class="modal-content">
+      <div class="modal-content commit-modal-content">
         <div class="modal-header">
-          <h2>Commit Staged Changes</h2>
+          <h2>Record Pending Changes</h2>
         </div>
-        <div class="modal-body">
-          <div class="input-group" style="margin-bottom: 12px">
-            <label
-              for="commit-user-display"
-              style="
-                display: block;
-                margin-bottom: 4px;
-                color: #aaa;
-                font-size: 12px;
-              "
-              >Author</label
-            >
+        <div class="modal-body column-layout">
+          <div class="commit-author-row">
+            <span class="commit-author-icon">👤</span>
             <input
               type="text"
               id="commit-user-display"
+              class="commit-author-input"
               readonly
-              style="
-                width: 100%;
-                padding: 6px 8px;
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                border-radius: 6px;
-                color: #ccc;
-                font-size: 13px;
-              "
             />
           </div>
-          <div class="input-group" style="margin-bottom: 12px">
-            <label
-              for="commit-message-input"
-              style="
-                display: block;
-                margin-bottom: 4px;
-                color: #aaa;
-                font-size: 12px;
-              "
-              >Commit message</label
+          <div>
+            <label class="commit-section-label">
+              Pending Changes (<span id="commit-change-count">0</span>)
+            </label>
+            <ul id="commit-preview-list" class="commit-preview-list"></ul>
+          </div>
+          <div>
+            <label for="commit-message-input" class="commit-section-label"
+              >Revision Note</label
             >
             <textarea
               id="commit-message-input"
-              rows="3"
-              placeholder="Describe what changed and why…"
-              style="
-                width: 100%;
-                padding: 6px 8px;
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                border-radius: 6px;
-                color: #fff;
-                font-size: 13px;
-                resize: vertical;
-              "
+              class="commit-message-textarea"
+              placeholder="Describe what changed and why (optional)…"
             ></textarea>
-          </div>
-          <div>
-            <label
-              style="
-                display: block;
-                margin-bottom: 4px;
-                color: #aaa;
-                font-size: 12px;
-              "
-              >Changes (<span id="commit-change-count">0</span>)</label
-            >
-            <ul
-              id="commit-preview-list"
-              style="
-                list-style: none;
-                padding: 0;
-                margin: 0;
-                max-height: 160px;
-                overflow-y: auto;
-                font-size: 12px;
-                color: #ccc;
-              "
-            ></ul>
           </div>
         </div>
         <div class="modal-footer">
           <button id="commit-cancel-button">Cancel</button>
-          <button id="commit-confirm-button" class="primary">Commit</button>
+          <button id="commit-confirm-button" class="primary">
+            Record Changes
+          </button>
         </div>
       </div>
     </div>
