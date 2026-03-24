@@ -3,8 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Layer Management", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    // Wait for app to fully load
-    await page.waitForTimeout(2000);
+    await page.waitForSelector("#layerStackList", { timeout: 5000 });
   });
 
   test("should display layer stack list", async ({ page }) => {
