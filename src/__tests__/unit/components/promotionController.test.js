@@ -961,9 +961,11 @@ describe("PromotionController", () => {
 
       expect(actions.updateLayer).toHaveBeenCalledWith("layer1", {
         status: "Shared",
+        packageId: null,
       });
       expect(actions.updateLayer).toHaveBeenCalledWith("layer2", {
         status: "Shared",
+        packageId: null,
       });
     });
 

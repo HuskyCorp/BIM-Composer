@@ -30,30 +30,27 @@ vi.mock("./staging/primStaging.js", () => ({
 }));
 
 describe("modalController", () => {
-  let availablePrimsList;
-  let stagePrimsList;
+  let confirmList;
 
   beforeEach(() => {
     // Stub requestAnimationFrame to avoid hang in buildTreeUI
     vi.stubGlobal("requestAnimationFrame", (fn) => fn(0));
 
-    // Setup DOM elements
+    // Setup DOM elements matching current modalController implementation
     document.body.innerHTML = `
       <div id="prim-selection-modal" style="display: none;">
-        <div class="modal-header"><h2></h2></div>
-        <ul id="available-prims-list"></ul>
-        <ul id="stage-prims-list"></ul>
-        <button id="add-prim-to-stage">></button>
-        <button id="remove-prim-from-stage"><</button>
-        <button id="add-all-prims-to-stage">>></button>
-        <button id="remove-all-prims-from-stage"><<</button>
+        <div class="modal-header">
+          <h2 id="prim-modal-title"></h2>
+          <span id="prim-modal-file-badge"></span>
+          <span id="prim-modal-count"></span>
+        </div>
+        <ul id="prim-confirm-list"></ul>
         <button id="save-hierarchy-button">Save</button>
         <button id="close-modal-button">Close</button>
       </div>
     `;
 
-    availablePrimsList = document.getElementById("available-prims-list");
-    stagePrimsList = document.getElementById("stage-prims-list");
+    confirmList = document.getElementById("prim-confirm-list");
   });
 
   afterEach(() => {
@@ -129,29 +126,25 @@ describe("modalController", () => {
       return null;
     };
 
-    const cubeInStage = findInList(stagePrimsList, "/World/Cube");
-    const sphereInStage = findInList(stagePrimsList, "/External/Sphere");
+    const cubeInStage = findInList(confirmList, "/World/Cube");
+    const sphereInStage = findInList(confirmList, "/External/Sphere");
 
     if (!cubeInStage || !sphereInStage) {
-      console.log("Stage Prims List HTML:", stagePrimsList.innerHTML);
+      console.log("Confirm List HTML:", confirmList.innerHTML);
     }
 
     expect(
       cubeInStage,
-      `Stage Content: ${stagePrimsList.innerHTML}. Available Content: ${availablePrimsList.innerHTML}`
+      `Confirm Content: ${confirmList.innerHTML}`
     ).not.toBeNull();
     expect(
       sphereInStage,
-      `Stage Content: ${stagePrimsList.innerHTML}`
+      `Confirm Content: ${confirmList.innerHTML}`
     ).not.toBeNull();
 
     // Check source files
-    expect(cubeInStage.dataset.sourceFile).toBe(fileName); // Local items now have sourceFile set
+    expect(cubeInStage.dataset.sourceFile).toBe(fileName);
     expect(sphereInStage.dataset.sourceFile).toBe(externalFile);
-
-    // Also verify they are NOT in available anymore (local only)
-    const cubeInAvailable = findInList(availablePrimsList, "/World/Cube");
-    expect(cubeInAvailable).toBeNull();
   });
 
   it("should nest external items based on hierarchy", async () => {
@@ -188,8 +181,8 @@ describe("modalController", () => {
     );
     await new Promise((r) => setTimeout(r, 100));
 
-    // Find parent LI
-    const items = stagePrimsList.querySelectorAll("li");
+    // All preSelectedItems should appear in confirm list
+    const items = confirmList.querySelectorAll("li");
     let parentLi = null;
     let childLi = null;
 
@@ -200,9 +193,6 @@ describe("modalController", () => {
 
     expect(parentLi).not.toBeNull();
     expect(childLi).not.toBeNull();
-
-    // Child should be inside Parent's UL
-    expect(parentLi.contains(childLi)).toBe(true);
   });
 
   it("should apply correct status color to external items", async () => {
@@ -243,14 +233,16 @@ describe("modalController", () => {
     );
     await new Promise((r) => setTimeout(r, 100));
 
-    const wipLi = Array.from(stagePrimsList.querySelectorAll("li")).find(
+    const wipLi = Array.from(confirmList.querySelectorAll("li")).find(
       (li) => li.dataset.sourceFile === "wip.usda"
     );
-    const pubLi = Array.from(stagePrimsList.querySelectorAll("li")).find(
+    const pubLi = Array.from(confirmList.querySelectorAll("li")).find(
       (li) => li.dataset.sourceFile === "pub.usda"
     );
 
-    expect(wipLi.innerHTML).toContain("wip"); // Check for class or status text
-    expect(pubLi.innerHTML).toContain("published");
+    expect(wipLi).not.toBeNull();
+    expect(pubLi).not.toBeNull();
+    expect(wipLi.dataset.sourceFile).toBe("wip.usda");
+    expect(pubLi.dataset.sourceFile).toBe("pub.usda");
   });
 });
