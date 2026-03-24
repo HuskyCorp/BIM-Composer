@@ -198,6 +198,38 @@ export function generateStageUsda(sceneName, composedHierarchy) {
   return `#usda 1.0\n(\n    defaultPrim = "${validPrimName}"\n    metersPerUnit = 1.0\n    upAxis = "Z"\n)\n\ndef Xform "${validPrimName}" (\n    kind = "assembly"\n)\n{\n${definitions}\n}\n`;
 }
 
+/**
+ * Writes (or updates) the Design Package registry into the customLayerData block
+ * of a statement.usda file header, and returns the updated content string.
+ *
+ * @param {string} content - Current statement.usda content
+ * @param {Array<{id, name, color}>} packages - Current package list
+ * @returns {string} Updated file content
+ */
+export function writePackageRegistryToStatement(content, packages) {
+  const ids = packages.map((p) => `"${p.id}"`).join(", ");
+  const names = packages
+    .map((p) => `"${p.name.replace(/"/g, '\\"')}"`)
+    .join(", ");
+  const colors = packages.map((p) => `"${p.color}"`).join(", ");
+
+  const block =
+    `    customLayerData = {\n` +
+    `        string[] packageIds = [${ids}]\n` +
+    `        string[] packageNames = [${names}]\n` +
+    `        string[] packageColors = [${colors}]\n` +
+    `    }`;
+
+  if (/customLayerData\s*=\s*\{/.test(content)) {
+    // Replace the existing block (we control the format so \n    } is unambiguous)
+    return content.replace(/ {4}customLayerData = \{[\s\S]*?\n {4}\}/, block);
+  }
+
+  // Insert before the closing ) of the header metadata block.
+  // Use a regex to handle varying amounts of whitespace between ) and def "ChangeLog".
+  return content.replace(/(\n\))\n+(def "ChangeLog")/, `\n${block}$1\n\n$2`);
+}
+
 export function composeLogPrim(logEntry) {
   let extraFields = "";
 
@@ -219,6 +251,11 @@ export function composeLogPrim(logEntry) {
   // Add branch field (Phase C discipline branch model)
   if (logEntry.branch) {
     extraFields += `\n        custom string branch = "${logEntry.branch}"`;
+  }
+
+  // Add packageId field (Design Package assignment)
+  if (logEntry.packageId) {
+    extraFields += `\n        custom string packageId = "${logEntry.packageId}"`;
   }
 
   // Add parent field if exists

@@ -174,9 +174,25 @@ body.dark-theme .prim-list-container.outliner-clone .outliner-row:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-body.dark-theme .prim-transfer-buttons button {
-  background: #555;
-  color: white;
+body.dark-theme .prim-confirm-list {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .prim-confirm-item {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-theme .prim-confirm-name {
+  color: #e0e0e0;
+}
+
+body.dark-theme .prim-confirm-source {
+  color: #666;
+}
+
+body.dark-theme .prim-modal-file-badge {
+  background: rgba(0, 122, 255, 0.15);
+  border-color: rgba(0, 122, 255, 0.35);
 }
 
 body.dark-theme .modal-footer button {
@@ -333,4 +349,59 @@ body.dark-theme .pset-header .toggle-icon {
 
 body.dark-theme .pset-properties {
   background: #1e1e1e;
+}
+
+/* DESIGN PACKAGES PANEL OVERRIDES */
+body.dark-theme #packagesPanel li {
+  color: #e0e0e0;
+}
+
+body.dark-theme #packagesPanel li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-theme #packagesPanel li.active {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+body.dark-theme .package-swatch {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-theme .package-name {
+  color: #e0e0e0;
+}
+
+body.dark-theme .package-empty {
+  color: #666;
+}
+
+body.dark-theme .package-name-input {
+  background: #2e2e2e;
+  border: none;
+  outline: 1px solid #007aff;
+  color: #e0e0e0;
+}
+
+body.dark-theme .package-controls button,
+body.dark-theme .file-controls button,
+body.dark-theme .hierarchy-controls button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+}
+
+/* PROMOTION MODAL PACKAGE ROW OVERRIDES */
+body.dark-theme .promotion-package-row {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme .promotion-package-label {
+  color: #ccc;
+}
+
+body.dark-theme #promotion-package-select {
+  background: #2e2e2e;
+  border-color: #555;
+  color: #e0e0e0;
 }

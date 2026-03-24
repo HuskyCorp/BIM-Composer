@@ -22,6 +22,10 @@ import { initUserController } from "./components/userController.js";
 import { initConflictModal } from "./components/conflictModal.js";
 import { initStagingPanel } from "./components/staging/stagingPanelController.js";
 import { initGenesisCommit } from "./components/staging/primStaging.js";
+import {
+  initPackageController,
+  bootstrapPackages,
+} from "./components/packages/packageController.js";
 import { loadingIndicator } from "./components/loadingIndicator.js";
 
 function initSidebarResizing() {
@@ -121,10 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
   initDataInspector();
   initConflictModal();
   initStagingPanel(updateView);
+  initPackageController(updateView);
   initSidebarResizing();
 
   document.getElementById("sampleSceneItem").textContent =
     store.getState().sceneName;
   updateView();
   initGenesisCommit(); // TASK 6.1: anchor the commit graph on first load
+  bootstrapPackages(); // Sync package registry with loaded statement.usda
 });

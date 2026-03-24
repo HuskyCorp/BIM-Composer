@@ -1,6 +1,48 @@
 // src/viewer/usda/parser/logParser.js
 
 /**
+ * Reads the Design Package registry from the customLayerData block in a
+ * statement.usda file header.
+ *
+ * @param {string} content - statement.usda file content
+ * @returns {Array<{id, name, color, createdAt, createdBy}>} Parsed packages (empty array if none found)
+ */
+export function readPackageRegistryFromStatement(content) {
+  if (!content || !content.includes("customLayerData")) return [];
+
+  const blockMatch = content.match(
+    /customLayerData\s*=\s*\{([\s\S]*?)\n {4}\}/
+  );
+  if (!blockMatch) return [];
+
+  const block = blockMatch[1];
+
+  const parseStringArray = (fieldName) => {
+    const pattern = new RegExp(`string\\[\\] ${fieldName} = \\[([^\\]]*)\\]`);
+    const m = block.match(pattern);
+    if (!m || !m[1].trim()) return [];
+    return m[1]
+      .split(",")
+      .map((s) => s.trim().replace(/^"|"$/g, ""))
+      .filter(Boolean);
+  };
+
+  const ids = parseStringArray("packageIds");
+  const names = parseStringArray("packageNames");
+  const colors = parseStringArray("packageColors");
+
+  if (ids.length === 0) return [];
+
+  return ids.map((id, i) => ({
+    id,
+    name: names[i] || id,
+    color: colors[i] || "#607d8b",
+    createdAt: new Date().toISOString(),
+    createdBy: "System",
+  }));
+}
+
+/**
  * Parses the Statement.usda file to extract commit history and serialized prims.
  * Uses a brace-counting approach to handle nested structures correctly.
  */
@@ -97,6 +139,11 @@ export function parseStatementLog(statementContent) {
     try {
       const branchMatch = logBody.match(/custom string branch = "([^"]+)"/);
       if (branchMatch) commit.branch = branchMatch[1];
+
+      const packageIdMatch = logBody.match(
+        /custom string packageId = "([^"]+)"/
+      );
+      if (packageIdMatch) commit.packageId = packageIdMatch[1];
 
       const parentMatch = logBody.match(/custom string parent = "([^"]+)"/);
       if (parentMatch) commit.parent = parentMatch[1];

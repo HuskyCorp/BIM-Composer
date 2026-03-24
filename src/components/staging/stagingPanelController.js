@@ -94,6 +94,7 @@ function writeCommitToStatement(changes, message) {
     Type: commitType,
     User: state.currentUser || "Unknown",
     branch,
+    packageId: state.activePackageId || null,
     commitMessage: message,
     sourceStatus: firstChange.sourceStatus || "WIP",
     targetStatus: firstChange.targetStatus || "WIP",
@@ -125,6 +126,7 @@ export function initStagingPanel(updateView) {
   const commitMessageInput = document.getElementById("commit-message-input");
   const commitUserDisplay = document.getElementById("commit-user-display");
   const commitBranchBadge = document.getElementById("commit-branch-badge");
+  const commitPackageBadge = document.getElementById("commit-package-badge");
   const commitConfirmBtn = document.getElementById("commit-confirm-button");
   const commitCancelBtn = document.getElementById("commit-cancel-button");
   const changeCountEl = document.getElementById("commit-change-count");
@@ -153,6 +155,16 @@ export function initStagingPanel(updateView) {
       commitBranchBadge.style.backgroundColor = cfg.color + "33"; // 20% opacity
       commitBranchBadge.style.borderColor = cfg.color;
       commitBranchBadge.style.color = cfg.color;
+    }
+    if (commitPackageBadge) {
+      const pkg = (state.packages || []).find(
+        (p) => p.id === state.activePackageId
+      );
+      const pkgColor = pkg?.color || "#607d8b";
+      commitPackageBadge.textContent = pkg?.name || "General";
+      commitPackageBadge.style.backgroundColor = pkgColor + "33";
+      commitPackageBadge.style.borderColor = pkgColor;
+      commitPackageBadge.style.color = pkgColor;
     }
     if (changeCountEl) changeCountEl.textContent = changes.length;
     populateCommitPreview(changes);
@@ -242,6 +254,7 @@ function renderStagingPanel() {
         reparent: "Reparent",
         propertyEdit: "Edit",
         setAttribute: "Edit",
+        psetEdit: "Edit Pset",
         primAdded: "Add",
         primUpdate: "Update",
         primRemoved: "Remove",
@@ -276,6 +289,8 @@ function populateCommitPreview(changes) {
       li.textContent = `Remove: ${c.primName}  (${c.targetPath})`;
     } else if (c.type === "primStaging" || c.type === "entityStaging") {
       li.textContent = `Mark: ${c.targetPath}`;
+    } else if (c.type === "psetEdit") {
+      li.textContent = `Edit Pset: ${c.psetName} (${c.propertyCount} props)  ·  ${c.targetPath}`;
     } else if (c.type === "reparent") {
       li.textContent = `Reparent: ${c.oldPath} → ${c.targetPath}`;
     } else if (c.type === "primAdded") {

@@ -45,7 +45,7 @@ export function renderLayerStack() {
   if (!store.getState().stage || !store.getState().stage.layerStack) return;
 
   const state = store.getState();
-  const filteredLayers = state.stage.layerStack.filter((layer) => {
+  let filteredLayers = state.stage.layerStack.filter((layer) => {
     if (state.currentUser === "Project Manager") {
       // fallthrough to status filter
     } else if (layer.owner && layer.owner !== state.currentUser) {
@@ -54,6 +54,16 @@ export function renderLayerStack() {
     if (state.stage.activeFilter === "All") return true;
     return layer.status === state.stage.activeFilter;
   });
+
+  // Apply package filter (only when at least one layer has a packageId assigned)
+  const pkgFilter = state.stage.activePackageFilter;
+  if (
+    pkgFilter &&
+    pkgFilter !== "All" &&
+    filteredLayers.some((l) => l.packageId)
+  ) {
+    filteredLayers = filteredLayers.filter((l) => l.packageId === pkgFilter);
+  }
 
   // Group layers by discipline (derived from layer.owner)
   const disciplineGroups = {};
@@ -206,7 +216,8 @@ function handleLayerSelection(li, updateView) {
 }
 
 export function logPromotionToStatement(details) {
-  const { layerPath, sourceStatus, targetStatus, objectPath, type } = details;
+  const { layerPath, sourceStatus, targetStatus, objectPath, type, packageId } =
+    details;
   const entryNumber = store.dispatch(coreActions.incrementLogEntryCounter());
   const state = store.getState();
   const fileContent = state.loadedFiles[layerPath];
@@ -237,6 +248,7 @@ export function logPromotionToStatement(details) {
     Type: type || "Promotion",
     User: state.currentUser,
     branch: promotionBranch,
+    packageId: packageId || state.activePackageId || null,
     Status: "New",
     SourceStatus: sourceStatus,
     TargetStatus: targetStatus,
@@ -1039,6 +1051,22 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   });
 
   layerFilterControls.addEventListener("click", handleLayerFilter);
+
+  // ==================== Package Filter Controls ====================
+  const packageFilterControls = document.getElementById(
+    "package-filter-controls"
+  );
+  if (packageFilterControls) {
+    packageFilterControls.addEventListener("click", (e) => {
+      const btn = e.target.closest(".pkg-filter-btn");
+      if (!btn) return;
+      const pkgId = btn.dataset.pkgFilter;
+      if (!pkgId) return;
+      store.dispatch(coreActions.setPackageFilter(pkgId));
+      renderLayerStack();
+      if (store.getState().currentView === "stage") updateView();
+    });
+  }
 
   // ==================== Drag-to-Reorder ====================
   let dragSrcEl = null;

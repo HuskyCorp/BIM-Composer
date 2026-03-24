@@ -112,7 +112,8 @@
 /* Controls positioning */
 .scene-controls,
 .file-controls,
-.hierarchy-controls {
+.hierarchy-controls,
+.package-controls {
   position: relative;
   margin-left: auto;
   display: flex;

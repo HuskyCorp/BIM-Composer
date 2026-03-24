@@ -116,12 +116,16 @@
               <button class="filter-btn active" data-filter="All">All</button>
               <button class="filter-btn" data-filter="WIP">WIP</button>
               <button class="filter-btn" data-filter="Shared">Shared</button>
+
               <button class="filter-btn" data-filter="Published">
                 Published
               </button>
               <button class="filter-btn" data-filter="Archived">
                 Archived
               </button>
+            </div>
+            <div class="panel-controls" id="package-filter-controls">
+              <!-- Package filter buttons populated dynamically -->
             </div>
             <ul id="layerStackList"></ul>
             <input
@@ -183,6 +187,21 @@
           </div>
         </div>
 
+        <div class="panel" id="packagesPanel">
+          <div class="panel-header">
+            <h3>Design Packages</h3>
+            <div class="package-controls">
+              <button id="add-package-button" title="New Package">+</button>
+              <button id="remove-package-button" title="Remove Package">
+                −
+              </button>
+            </div>
+          </div>
+          <div class="panel-content">
+            <ul id="packages-list"></ul>
+          </div>
+        </div>
+
         <div class="sidebar-spacer"></div>
 
         <div class="sidebar-resizer"></div>
@@ -200,6 +219,12 @@
           <div id="history-overlay" class="history-overlay">
             <div class="history-header">
               <span>Project Statement</span>
+              <select
+                id="timeline-package-filter"
+                class="timeline-package-filter"
+              >
+                <option value="All">All Packages</option>
+              </select>
               <button
                 id="close-history-overlay"
                 style="
@@ -235,33 +260,23 @@
     </div>
 
     <div id="prim-selection-modal" class="modal-overlay" style="display: none">
-      <div class="modal-content">
+      <div class="modal-content confirm-staging-modal">
         <div class="modal-header">
-          <h2>Select Prims for Stage</h2>
+          <h2 id="prim-modal-title">Mark as Real Elements</h2>
         </div>
-        <div class="modal-body">
-          <div class="prim-list-container outliner-clone">
-            <ul id="available-prims-list" class="blender-outliner"></ul>
+        <div class="modal-body confirm-staging-body">
+          <div class="prim-modal-meta">
+            <span
+              id="prim-modal-file-badge"
+              class="prim-modal-file-badge"
+            ></span>
+            <span id="prim-modal-count" class="prim-modal-count"></span>
           </div>
-          <div class="prim-transfer-buttons">
-            <button id="add-all-prims-to-stage" title="Add All">
-              &gt;&gt;
-            </button>
-            <button id="add-prim-to-stage" title="Add Selected">&gt;</button>
-            <button id="remove-prim-from-stage" title="Remove Selected">
-              &lt;
-            </button>
-            <button id="remove-all-prims-from-stage" title="Remove All">
-              &lt;&lt;
-            </button>
-          </div>
-          <div class="prim-list-container outliner-clone">
-            <ul id="stage-prims-list" class="blender-outliner"></ul>
-          </div>
+          <ul id="prim-confirm-list" class="prim-confirm-list"></ul>
         </div>
         <div class="modal-footer">
-          <button id="save-hierarchy-button">Save Hierarchy</button>
-          <button id="close-modal-button">Close</button>
+          <button id="close-modal-button">Cancel</button>
+          <button id="save-hierarchy-button" class="primary">Confirm</button>
         </div>
       </div>
     </div>
@@ -318,6 +333,12 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2>Batch Promote Layers</h2>
+        </div>
+        <div id="promotion-package-row" class="promotion-package-row">
+          <label class="promotion-package-label">
+            Assign to Package <span class="required-star">*</span>
+          </label>
+          <select id="promotion-package-select"></select>
         </div>
         <div class="modal-body">
           <div class="prim-list-container">
@@ -542,6 +563,11 @@
               id="commit-branch-badge"
               class="commit-branch-badge modal-branch-badge"
               >WIP/...</span
+            >
+            <span
+              id="commit-package-badge"
+              class="commit-package-badge modal-package-badge"
+              >General</span
             >
           </div>
           <div>

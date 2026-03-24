@@ -23,6 +23,17 @@ def "ChangeLog"
 `,
   },
 
+  packages: [
+    {
+      id: "pkg-default",
+      name: "General",
+      color: "#607d8b",
+      createdAt: new Date().toISOString(),
+      createdBy: "System",
+    },
+  ],
+  activePackageId: "pkg-default",
+
   stage: {
     layerStack: [
       {
@@ -36,6 +47,7 @@ def "ChangeLog"
     ],
     composedPrims: null,
     activeFilter: "All",
+    activePackageFilter: "All",
     colorizeByStatus: true,
     saveStatusFilter: ["WIP", "Shared", "Published"], // Default: exclude Archived
   },

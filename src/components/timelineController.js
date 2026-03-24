@@ -128,6 +128,24 @@ export function initTimelineController(historyThreeScene) {
     // Build path translation registry (kept for external consumers / debug)
     pathTranslationRegistry = buildPathTranslationRegistry(history.commits);
 
+    // Populate package filter dropdown
+    const pkgFilterEl = document.getElementById("timeline-package-filter");
+    if (pkgFilterEl) {
+      const currentVal = pkgFilterEl.value;
+      pkgFilterEl.innerHTML = `<option value="All">All Packages</option>`;
+      (store.getState().packages || []).forEach((pkg) => {
+        const opt = document.createElement("option");
+        opt.value = pkg.id;
+        opt.textContent = pkg.name;
+        pkgFilterEl.appendChild(opt);
+      });
+      // Restore selection if still valid
+      if ([...pkgFilterEl.options].some((o) => o.value === currentVal)) {
+        pkgFilterEl.value = currentVal;
+      }
+      pkgFilterEl.onchange = () => renderGraph();
+    }
+
     renderGraph();
   }
 
@@ -179,12 +197,25 @@ export function initTimelineController(historyThreeScene) {
         ? history.commits
         : new Map(Object.entries(history.commits));
 
-    const commits = Array.from(commitsMap.values()).sort(
+    const allCommits = Array.from(commitsMap.values()).sort(
       (a, b) => a.entry - b.entry // chronological order left→right
     );
 
+    // Apply package filter
+    const pkgFilterEl = document.getElementById("timeline-package-filter");
+    const pkgFilter = pkgFilterEl?.value || "All";
+    const commits =
+      pkgFilter === "All"
+        ? allCommits
+        : allCommits.filter((c) => c.packageId === pkgFilter);
+
     if (commits.length === 0) {
-      showEmptyState("No commits to display");
+      showEmptyState(
+        pkgFilter === "All"
+          ? "No commits to display"
+          : "No commits for this package"
+      );
+      renderStatementList(allCommits);
       return;
     }
 
@@ -326,6 +357,11 @@ export function initTimelineController(historyThreeScene) {
     renderStatementList(commits);
   }
 
+  function getPackageForCommit(commit) {
+    const packages = store.getState().packages || [];
+    return packages.find((p) => p.id === commit.packageId) || null;
+  }
+
   function renderStatementList(commits) {
     historyList.innerHTML = "";
 
@@ -346,6 +382,11 @@ export function initTimelineController(historyThreeScene) {
       const branchCfg = getDisciplineConfig(branchDiscipline);
       const branchBadgeStyle = `background:${branchCfg.color}22;border:1px solid ${branchCfg.color}88;color:${branchCfg.color};`;
 
+      const pkg = getPackageForCommit(commit);
+      const pkgBadge = pkg
+        ? `<span class="commit-package-badge history-pkg-badge" style="background:${pkg.color}22;border:1px solid ${pkg.color}88;color:${pkg.color};">${pkg.name}</span>`
+        : "";
+
       li.innerHTML = `
             <div class="history-item-header">
                 <span>${dateStr} ${timeStr}</span>
@@ -354,6 +395,7 @@ export function initTimelineController(historyThreeScene) {
             <div class="history-item-title">
               ${commit.type}
               <span class="commit-branch-badge" style="${branchBadgeStyle}">${commitBranch}</span>
+              ${pkgBadge}
             </div>
             ${commit.commitMessage ? `<div class="history-item-details" style="font-style:italic;color:#aaa;">${commit.commitMessage}</div>` : ""}
             <div class="history-item-details">Ref: ${commit.id.substring(0, 8)}...</div>
@@ -406,6 +448,16 @@ export function initTimelineController(historyThreeScene) {
               <span class="commit-branch-badge" style="background:${infoBoxCfg.color}22;border:1px solid ${infoBoxCfg.color}88;color:${infoBoxCfg.color};">${infoBoxBranch}</span>
             </span>
         </div>
+        ${(() => {
+          const pkg = getPackageForCommit(commit);
+          if (!pkg) return "";
+          return `<div class="info-box-row">
+            <span class="info-box-label">Package</span>
+            <span class="info-box-value">
+              <span class="commit-package-badge" style="background:${pkg.color}22;border:1px solid ${pkg.color}88;color:${pkg.color};">${pkg.name}</span>
+            </span>
+          </div>`;
+        })()}
         <div class="info-box-row">
             <span class="info-box-label">Type</span>
             <span class="info-box-value" style="color:${typeColor};font-weight:bold;">${commit.type}</span>

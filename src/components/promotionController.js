@@ -49,6 +49,7 @@ export function initPromotionController(updateView) {
   const eligibleList = document.getElementById("eligible-layers-list");
   const promoteList = document.getElementById("promote-layers-list");
   const targetStatusLabel = document.getElementById("promotion-target-status");
+  const packageSelect = document.getElementById("promotion-package-select");
 
   const closeButton = document.getElementById("close-promotion-modal-button");
   const confirmButton = document.getElementById("confirm-promotion-button");
@@ -162,6 +163,31 @@ export function initPromotionController(updateView) {
     confirmButton.disabled = false;
   }
 
+  // ── Package selector helper ───────────────────────────────────────────────
+  function populatePackageSelect() {
+    if (!packageSelect) return;
+    const state = store.getState();
+    const packages = state.packages || [];
+    const activeId = state.activePackageId;
+
+    packageSelect.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Select Package --";
+    packageSelect.appendChild(placeholder);
+
+    packages.forEach((pkg) => {
+      const opt = document.createElement("option");
+      opt.value = pkg.id;
+      opt.textContent = pkg.name;
+      packageSelect.appendChild(opt);
+    });
+
+    // Pre-select the active package
+    if (activeId) packageSelect.value = activeId;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   let currentTargetStatus = null;
   let currentSourceStatus = null;
@@ -180,6 +206,9 @@ export function initPromotionController(updateView) {
         direction = "promote",
       } = e.detail;
       promotionDirection = direction;
+
+      // Populate the Design Package selector
+      populatePackageSelect();
 
       const actionText = direction === "demote" ? "Demote" : "Promote";
       const actionTextPresent =
@@ -573,6 +602,13 @@ export function initPromotionController(updateView) {
         promotionDirection === "demote" ? "Demoting" : "Promoting";
       const actionArrow = "→";
 
+      // ── Package guard — require a Design Package selection ──────────────
+      if (packageSelect && !packageSelect.value) {
+        setPermissionBanner("Please select a Design Package before promoting.");
+        packageSelect.focus();
+        return;
+      }
+
       // ── Role guard — refuse if button somehow clicked while denied ──────
       {
         const state = store.getState();
@@ -620,6 +656,7 @@ export function initPromotionController(updateView) {
                 sourceStatus: currentSourceStatus,
                 targetStatus: currentTargetStatus,
                 objectPath: obj.path,
+                packageId: packageSelect?.value || null,
                 type:
                   promotionDirection === "demote"
                     ? "Object Demotion"
@@ -719,13 +756,18 @@ export function initPromotionController(updateView) {
             return;
           }
           try {
-            actions.updateLayer(layerId, { status: currentTargetStatus });
+            const selectedPackageId = packageSelect?.value || null;
+            actions.updateLayer(layerId, {
+              status: currentTargetStatus,
+              packageId: selectedPackageId,
+            });
             const updatedLayer = { ...layer, status: currentTargetStatus };
             syncPrimStatusFromLayer(updatedLayer);
             logPromotionToStatement({
               layerPath: layer.filePath,
               sourceStatus: currentSourceStatus,
               targetStatus: currentTargetStatus,
+              packageId: selectedPackageId,
               type: promotionDirection === "demote" ? "Demotion" : "Promotion",
             });
             promotedCount++;

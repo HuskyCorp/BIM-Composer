@@ -272,4 +272,47 @@ export const actions = {
   clearFileFromHashRegistry(fileName) {
     store.dispatch(coreActions.clearFileFromHashRegistry(fileName));
   },
+
+  // ==================== Package Actions ====================
+
+  /**
+   * Add a new design package
+   * @param {Object} pkg - Package object { id, name, color, createdAt, createdBy }
+   */
+  addPackage(pkg) {
+    store.dispatch(coreActions.addPackage(pkg));
+  },
+
+  /**
+   * Remove a design package by ID
+   * @param {string} packageId - Package ID to remove
+   */
+  removePackage(packageId) {
+    store.dispatch(coreActions.removePackage(packageId));
+  },
+
+  /**
+   * Update properties of an existing design package
+   * @param {string} packageId - Package ID to update
+   * @param {Object} updates - Partial package fields to merge
+   */
+  updatePackage(packageId, updates) {
+    store.dispatch(coreActions.updatePackage(packageId, updates));
+  },
+
+  /**
+   * Set the active design package
+   * @param {string} packageId - Package ID to activate
+   */
+  setActivePackage(packageId) {
+    store.dispatch(coreActions.setActivePackage(packageId));
+  },
+
+  /**
+   * Set the layer stack package filter
+   * @param {string} packageId - Package ID to filter by, or "All"
+   */
+  setPackageFilter(packageId) {
+    store.dispatch(coreActions.setPackageFilter(packageId));
+  },
 };

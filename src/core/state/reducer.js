@@ -368,6 +368,55 @@ export function reducer(state, action) {
       return { primHashRegistry: updated };
     }
 
+    // ==================== Package Actions ====================
+    case "ADD_PACKAGE": {
+      const currentPackages = state.packages || [];
+      const newPackages = [...currentPackages, payload.pkg];
+      const newActiveId =
+        currentPackages.length === 0 ? payload.pkg.id : state.activePackageId;
+      return {
+        packages: newPackages,
+        activePackageId: newActiveId,
+      };
+    }
+
+    case "REMOVE_PACKAGE": {
+      const currentPackages = state.packages || [];
+      const filtered = currentPackages.filter(
+        (p) => p.id !== payload.packageId
+      );
+      const newActiveId =
+        state.activePackageId === payload.packageId
+          ? filtered[0]?.id || null
+          : state.activePackageId;
+      return {
+        packages: filtered,
+        activePackageId: newActiveId,
+      };
+    }
+
+    case "UPDATE_PACKAGE": {
+      const currentPackages = state.packages || [];
+      return {
+        packages: currentPackages.map((p) =>
+          p.id === payload.packageId ? { ...p, ...payload.updates } : p
+        ),
+      };
+    }
+
+    case "SET_ACTIVE_PACKAGE":
+      return {
+        activePackageId: payload.packageId,
+      };
+
+    case "SET_PACKAGE_FILTER":
+      return {
+        stage: {
+          ...state.stage,
+          activePackageFilter: payload.packageId,
+        },
+      };
+
     // ==================== Unknown Action ====================
     default:
       console.warn(`Unknown action type: ${type}`);

@@ -321,6 +321,50 @@ export const hashRegistryActions = {
   }),
 };
 
+// ==================== Package Actions ====================
+
+export const packageActions = {
+  /**
+   * Add a new design package
+   */
+  addPackage: (pkg) => ({
+    type: "ADD_PACKAGE",
+    payload: { pkg },
+  }),
+
+  /**
+   * Remove a design package by ID
+   */
+  removePackage: (packageId) => ({
+    type: "REMOVE_PACKAGE",
+    payload: { packageId },
+  }),
+
+  /**
+   * Update properties of an existing design package
+   */
+  updatePackage: (packageId, updates) => ({
+    type: "UPDATE_PACKAGE",
+    payload: { packageId, updates },
+  }),
+
+  /**
+   * Set the active design package
+   */
+  setActivePackage: (packageId) => ({
+    type: "SET_ACTIVE_PACKAGE",
+    payload: { packageId },
+  }),
+
+  /**
+   * Set the stage package filter ("All" or a package ID)
+   */
+  setPackageFilter: (packageId) => ({
+    type: "SET_PACKAGE_FILTER",
+    payload: { packageId },
+  }),
+};
+
 // ==================== Combined Actions ====================
 
 /**
@@ -335,6 +379,7 @@ export const actions = {
   ...viewActions,
   ...fileActions,
   ...hashRegistryActions,
+  ...packageActions,
 };
 
 /**
@@ -392,4 +437,11 @@ export const ActionTypes = {
   // Hash Registry
   UPDATE_PRIM_HASH_REGISTRY: "UPDATE_PRIM_HASH_REGISTRY",
   CLEAR_FILE_FROM_HASH_REGISTRY: "CLEAR_FILE_FROM_HASH_REGISTRY",
+
+  // Packages
+  ADD_PACKAGE: "ADD_PACKAGE",
+  REMOVE_PACKAGE: "REMOVE_PACKAGE",
+  UPDATE_PACKAGE: "UPDATE_PACKAGE",
+  SET_ACTIVE_PACKAGE: "SET_ACTIVE_PACKAGE",
+  SET_PACKAGE_FILTER: "SET_PACKAGE_FILTER",
 };
