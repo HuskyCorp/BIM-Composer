@@ -31,7 +31,12 @@ export function renderStageView(threeScene, state) {
 
   clearScene(threeScene);
 
-  const finalHierarchy = state.composedHierarchy;
+  // Use recordedHierarchy (committed state) if available; fall back to composedHierarchy
+  // for history-mode tempState objects which set composedHierarchy directly.
+  const finalHierarchy =
+    "recordedHierarchy" in state
+      ? state.recordedHierarchy
+      : state.composedHierarchy;
 
   // Initialize Spatial Hash
   const spatialHash = new SpatialHash(5.0);

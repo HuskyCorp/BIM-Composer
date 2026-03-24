@@ -1,6 +1,7 @@
 // src/utils/conflictDetector.js
 import { store } from "../core/index.js";
 import { USDA_PARSER } from "../viewer/usda/usdaParser.js";
+import { getDisciplineForUser, hasAuthority } from "./precedenceMatrix.js";
 
 /**
  * Detect if a property change will create a conflict
@@ -176,15 +177,22 @@ export function checkPermission(prim, propertyName) {
     );
 
     if (sourceLayer) {
-      // User can only edit their own layers
       if (sourceLayer.owner === state.currentUser) {
         return { allowed: true, reason: "User owns this layer" };
-      } else {
+      }
+      // Discipline-based authority: higher-precedence discipline can override
+      const callerDiscipline = getDisciplineForUser(state.currentUser);
+      const ownerDiscipline = getDisciplineForUser(sourceLayer.owner || "");
+      if (hasAuthority(callerDiscipline, ownerDiscipline, propertyName)) {
         return {
-          allowed: false,
-          reason: `This property is owned by ${sourceLayer.owner}. Only the owner or Project Manager can modify it.`,
+          allowed: true,
+          reason: `${callerDiscipline} has disciplinary authority over ${ownerDiscipline} for this property.`,
         };
       }
+      return {
+        allowed: false,
+        reason: `This property is owned by ${sourceLayer.owner}. Only the owner or Project Manager can edit it.`,
+      };
     }
   }
 

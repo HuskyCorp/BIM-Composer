@@ -160,6 +160,9 @@ export function reducer(state, action) {
         },
       };
 
+    case "SET_RECORDED_HIERARCHY":
+      return { recordedHierarchy: payload.recordedHierarchy };
+
     case "UPDATE_PRIM": {
       const { primPath, updates } = payload;
       return {
@@ -347,6 +350,23 @@ export function reducer(state, action) {
       return {
         selectedFiles: payload.selectedFiles,
       };
+
+    // ==================== Hash Registry Actions ====================
+    case "UPDATE_PRIM_HASH_REGISTRY": {
+      const current = state.primHashRegistry || {};
+      return {
+        primHashRegistry: { ...current, ...payload.entries },
+      };
+    }
+
+    case "CLEAR_FILE_FROM_HASH_REGISTRY": {
+      const current = state.primHashRegistry || {};
+      const updated = {};
+      Object.entries(current).forEach(([path, val]) => {
+        if (val.sourceFile !== payload.fileName) updated[path] = val;
+      });
+      return { primHashRegistry: updated };
+    }
 
     // ==================== Unknown Action ====================
     default:

@@ -2,12 +2,10 @@ import { store } from "../../core/index.js";
 import { actions } from "../../state/actions.js";
 import { recomposeStage } from "./layerStackController.js";
 import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
-import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
 import {
   removePrimFromFile,
   insertPrimIntoFile,
 } from "../../viewer/usda/usdaEditor.js";
-import { sha256 } from "js-sha256";
 
 // ── Drag-and-drop reparenting ─────────────────────────────────────────────
 
@@ -137,75 +135,90 @@ function reparentPrim(sourcePath, newParentPath, updateView) {
     targetStatus: sourceNode?.properties?.status || "WIP",
   });
 
-  // 2. Modify the USDA file(s) to move the prim block
-  const sourceFile = sourceNode?._sourceFile;
-  const targetFile = targetNode?._sourceFile || sourceFile;
+  // 2. Modify the USDA layer file(s) to move the prim block.
+  //
+  // IMPORTANT: after recomposeStage(), composedHierarchy._sourceFile is
+  // overwritten with the GEOMETRY file (the resolved reference target), not the
+  // staging layer file where the def/references block actually lives.
+  // We must search the layer stack directly to find the correct layer file.
 
-  if (sourceFile && state.loadedFiles[sourceFile]) {
-    const sourcePrimPath = sourceNode._sourcePath || sourcePath;
-    const fileContent = state.loadedFiles[sourceFile];
+  const findPrimInLayerFiles = (primPath) => {
+    // Build set of geometry/referenced files to skip — these files are targets
+    // of `references` on staged prims and must NOT be modified during reparenting.
+    const referencedFiles = new Set();
+    const collectRefs = (prims) => {
+      if (!prims) return;
+      prims.forEach((p) => {
+        if (p.references) {
+          const refMatch = p.references.match(/@([^@<>\s]+)@/);
+          if (refMatch) referencedFiles.add(refMatch[1]);
+        }
+        if (p.children) collectRefs(p.children);
+      });
+    };
+    collectRefs(state.stage.composedPrims || []);
 
-    // Find the prim in the file's own hierarchy to get its raw text
-    const fileHierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
-    const findFileNode = (nodes, path) => {
+    const findNode = (nodes, path) => {
       for (const n of nodes) {
         if (n.path === path) return n;
         if (n.children) {
-          const found = findFileNode(n.children, path);
+          const found = findNode(n.children, path);
           if (found) return found;
         }
       }
       return null;
     };
-    const fileNode = findFileNode(fileHierarchy, sourcePrimPath);
+    for (const layer of state.stage.layerStack) {
+      if (layer.filePath === "statement.usda") continue;
+      if (referencedFiles.has(layer.filePath)) continue; // skip geometry files
+      const content = state.loadedFiles[layer.filePath];
+      if (!content) continue;
+      const fh = USDA_PARSER.getPrimHierarchy(content);
+      const node = findNode(fh, primPath);
+      if (node && typeof node.startIndex === "number") {
+        return { layerFile: layer.filePath, fileNode: node };
+      }
+    }
+    return null;
+  };
 
-    if (
-      fileNode &&
-      typeof fileNode.startIndex === "number" &&
-      typeof fileNode.endIndex === "number"
-    ) {
-      // Extract the prim's raw text block
-      const primText = fileContent.slice(
-        fileNode.startIndex,
-        fileNode.endIndex + 1
+  const sourceLayerInfo = findPrimInLayerFiles(sourcePath);
+  const targetLayerInfo = findPrimInLayerFiles(newParentPath);
+
+  if (sourceLayerInfo) {
+    const { layerFile: sourceFile, fileNode } = sourceLayerInfo;
+    const fileContent = state.loadedFiles[sourceFile];
+    const primText = fileContent.slice(
+      fileNode.startIndex,
+      fileNode.endIndex + 1
+    );
+    const contentWithoutPrim = removePrimFromFile(fileContent, sourcePath);
+
+    const targetLayerFile = targetLayerInfo?.layerFile || sourceFile;
+
+    if (targetLayerFile === sourceFile) {
+      const newFileContent = insertPrimIntoFile(
+        contentWithoutPrim,
+        newParentPath,
+        primText
       );
-
-      // Remove from old position in source file
-      const contentWithoutPrim = removePrimFromFile(
-        fileContent,
-        sourcePrimPath
-      );
-
-      if (targetFile === sourceFile) {
-        // Same file: re-insert under the new parent
-        const targetParentInFile =
-          (targetNode && targetNode._sourcePath) || newParentPath;
-        const newFileContent = insertPrimIntoFile(
-          contentWithoutPrim,
-          targetParentInFile,
+      actions.updateLoadedFile(sourceFile, newFileContent);
+    } else {
+      actions.updateLoadedFile(sourceFile, contentWithoutPrim);
+      if (state.loadedFiles[targetLayerFile]) {
+        const newTargetContent = insertPrimIntoFile(
+          state.loadedFiles[targetLayerFile],
+          newParentPath,
           primText
         );
-        actions.updateLoadedFile(sourceFile, newFileContent);
-      } else {
-        // Different files: update both
-        actions.updateLoadedFile(sourceFile, contentWithoutPrim);
-        if (state.loadedFiles[targetFile]) {
-          const targetParentInFile =
-            (targetNode && targetNode._sourcePath) || newParentPath;
-          const newTargetContent = insertPrimIntoFile(
-            state.loadedFiles[targetFile],
-            targetParentInFile,
-            primText
-          );
-          actions.updateLoadedFile(targetFile, newTargetContent);
-        }
+        actions.updateLoadedFile(targetLayerFile, newTargetContent);
       }
-    } else {
-      console.warn(
-        "[REPARENT] Could not find prim in source file:",
-        sourcePrimPath
-      );
     }
+  } else {
+    console.warn(
+      "[REPARENT] Could not find prim in any layer file:",
+      sourcePath
+    );
   }
 
   // 3. Update composedPrims in-memory tree to match the new hierarchy
@@ -229,12 +242,20 @@ function reparentPrim(sourcePath, newParentPath, updateView) {
     removeFromTree(composedPrims);
 
     if (reparentedNode) {
-      // Update the path of the moved node and all its descendants
+      // Update path (and _sourcePath for inline prims) of the moved subtree.
+      // Reference prims keep their _sourcePath pointing into the referenced file —
+      // recomposeStage() re-stamps those after resolving the reference.
+      // Inline prims (no references) have _sourcePath === their file path, so we
+      // must update it here so the geometry cache lookup still matches.
       const replacePaths = (node) => {
+        const oldNodePath = node.path;
         if (node.path === sourcePath) {
           node.path = newPath;
         } else if (node.path.startsWith(sourcePath + "/")) {
           node.path = newPath + node.path.slice(sourcePath.length);
+        }
+        if (!node.references && node._sourcePath === oldNodePath) {
+          node._sourcePath = node.path;
         }
         if (node.children) node.children.forEach(replacePaths);
       };
@@ -267,48 +288,6 @@ function reparentPrim(sourcePath, newParentPath, updateView) {
   // 4. Rebuild the composed hierarchy and refresh the view
   recomposeStage();
   if (typeof updateView === "function") updateView();
-}
-
-// Function to log deletion to statement.usda
-function logDeletionToStatement(primNode, allRemainingPaths) {
-  const entryNumber = actions.incrementLogEntryCounter();
-  const state = store.getState();
-
-  const fileContent = state.loadedFiles["statement.usda"] || "";
-  const fileSize = new Blob([fileContent]).size;
-  const contentHash = sha256(fileContent);
-  const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  const entityType = primNode.properties?.entityType || "Real Element";
-
-  const logEntry = {
-    ID: newId,
-    Entry: entryNumber,
-    Timestamp: new Date().toISOString(),
-    "USD Reference Path": primNode.path,
-    "File Name": primNode._sourceFile || "unknown",
-    "Content Hash": contentHash,
-    "File Size": fileSize,
-    Type: "Deletion",
-    User: state.currentUser,
-    Status: "New",
-    primName: primNode.name, // Add prim name for consistent log structure
-    entityType: entityType,
-    stagedPrims: allRemainingPaths,
-    sourceStatus: primNode.properties?.status || "null",
-    targetStatus: "null", // Deletion has no target status
-    parent: state.headCommitId,
-  };
-
-  actions.setHeadCommitId(newId);
-
-  const logPrimString = composeLogPrim(logEntry);
-  const newContent = USDA_PARSER.appendToUsdaFile(
-    state.loadedFiles["statement.usda"],
-    logPrimString,
-    "ChangeLog"
-  );
-  actions.updateLoadedFile("statement.usda", newContent);
 }
 
 export function initHierarchyPanel(updateView) {
@@ -451,9 +430,17 @@ export function initHierarchyPanel(updateView) {
       };
       collectPaths(state.stage.composedPrims || []);
 
-      // Log the deletion to statement.usda
-      console.log("[REMOVE PRIM] Logging deletion to statement...");
-      logDeletionToStatement(primNode, allRemainingPaths);
+      // Stage the deletion — written to statement.usda only on Record Changes
+      console.log("[REMOVE PRIM] Staging deletion...");
+      actions.addStagedChange({
+        type: "deletion",
+        targetPath: primPath,
+        primName: primNode.name,
+        sourceFile: primNode._sourceFile || "unknown",
+        sourceStatus: primNode.properties?.status || "WIP",
+        user: store.getState().currentUser,
+        timestamp: new Date().toISOString(),
+      });
 
       // Remove from composedPrims
       const newComposedPrims = removePrimFromComposed(

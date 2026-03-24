@@ -8,10 +8,7 @@ import {
   updatePropertyInFile,
   updateDictionaryInFile,
 } from "../../viewer/usda/usdaEditor.js";
-import {
-  composeLogPrim,
-  composePrimsFromHierarchy,
-} from "../../viewer/usda/usdaComposer.js";
+import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
 
 import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
 import {
@@ -632,6 +629,19 @@ export const applyPsetDictionary = errorHandler.wrap(
 
     // Mark commit button dirty
     if (commitButton) commitButton.classList.add("has-changes");
+
+    // Add to staged changes so the Pending Changes panel reflects this edit
+    actions.addStagedChange({
+      type: "psetEdit",
+      targetPath: prim.path,
+      psetName,
+      propertyCount: properties.length,
+      sourceFile: prim._sourceFile || "unknown",
+      user: store.getState().currentUser,
+      timestamp: new Date().toISOString(),
+      sourceStatus: prim.properties?.status || "WIP",
+      targetStatus: prim.properties?.status || "WIP",
+    });
 
     // Write each entry to statement.usda as dictionary entries
     const state = store.getState();

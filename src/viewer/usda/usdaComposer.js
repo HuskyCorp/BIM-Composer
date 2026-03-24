@@ -216,6 +216,11 @@ export function composeLogPrim(logEntry) {
   const targetStatus = logEntry.targetStatus || logEntry.TargetStatus || "null";
   extraFields += `\n        custom string sourceStatus = "${sourceStatus}"\n        custom string targetStatus = "${targetStatus}"`;
 
+  // Add branch field (Phase C discipline branch model)
+  if (logEntry.branch) {
+    extraFields += `\n        custom string branch = "${logEntry.branch}"`;
+  }
+
   // Add parent field if exists
   if (logEntry.parent) {
     extraFields += `\n        custom string parent = "${logEntry.parent}"`;
@@ -227,6 +232,18 @@ export function composeLogPrim(logEntry) {
       .map((p) => `"${p}"`)
       .join(", ");
     stagedPrimsField = `\n        custom string[] stagedPrims = [${primPathsString}]`;
+  }
+
+  // Phase D: per-commit diff arrays
+  let diffFields = "";
+  if (logEntry.addedPrims?.length) {
+    diffFields += `\n        custom string[] addedPrims = [${logEntry.addedPrims.map((p) => `"${p}"`).join(", ")}]`;
+  }
+  if (logEntry.removedPrims?.length) {
+    diffFields += `\n        custom string[] removedPrims = [${logEntry.removedPrims.map((p) => `"${p}"`).join(", ")}]`;
+  }
+  if (logEntry.modifiedPrims?.length) {
+    diffFields += `\n        custom string[] modifiedPrims = [${logEntry.modifiedPrims.map((p) => `"${p}"`).join(", ")}]`;
   }
 
   const commitMessage = (
@@ -247,7 +264,7 @@ export function composeLogPrim(logEntry) {
         custom int fileSize = ${logEntry["File Size"]}
         custom string type = "${logEntry.Type}"
         custom string user = "${logEntry.User}"
-        custom string commitMessage = "${commitMessage}"${extraFields}${stagedPrimsField}
+        custom string commitMessage = "${commitMessage}"${extraFields}${stagedPrimsField}${diffFields}
 
 
     }

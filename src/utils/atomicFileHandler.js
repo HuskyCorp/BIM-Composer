@@ -1,5 +1,6 @@
 // src/utils/atomicFileHandler.js
 import { USDA_PARSER } from "../viewer/usda/usdaParser.js";
+import { sha256 } from "js-sha256";
 
 export function explodeUsda(fileContent, originalFileName) {
   // Fast pre-check: if the file has a top-level Scope prim (e.g. `_Materials`,
@@ -100,6 +101,31 @@ ${contentBody}
   });
 
   return atomicFiles;
+}
+
+/**
+ * Computes a per-prim SHA-256 hash map for an entire file hierarchy.
+ * Returns a flat object keyed by prim path: { [primPath]: { hash, sourceFile } }
+ * Used by Phase B re-upload diffing.
+ */
+export function computePrimHashes(fileContent, fileName) {
+  const hierarchy = USDA_PARSER.getPrimHierarchy(fileContent);
+  const hashMap = {};
+
+  function traverse(prims) {
+    prims.forEach((prim) => {
+      if (prim.rawText) {
+        hashMap[prim.path] = {
+          hash: sha256(prim.rawText),
+          sourceFile: fileName,
+        };
+      }
+      if (prim.children?.length) traverse(prim.children);
+    });
+  }
+
+  traverse(hierarchy);
+  return hashMap;
 }
 
 /**

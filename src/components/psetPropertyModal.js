@@ -104,7 +104,7 @@ export async function showPsetPropertyModal(onAdd) {
 
     if (filtered.length === 0) {
       psetList.innerHTML = `
-        <div style="padding: 16px; text-align: center; color: #666; font-size: 14px;">
+        <div class="pset-no-results">
           No Psets found matching "${filter}"
         </div>
       `;

@@ -34,6 +34,9 @@ export function initPropertiesController(updateView) {
 
   // Listen for prim selection events
   const handlePrimSelected = errorHandler.wrap((e) => {
+    // Guard: don't render properties while in Record Log (history) mode
+    if (store.getState().isHistoryMode) return;
+
     const { primPath } = e.detail;
 
     // No prim selected

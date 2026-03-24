@@ -10,14 +10,6 @@
   flex-shrink: 0;
 }
 
-.timeline-slider-container {
-  flex-grow: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: 20px;
-}
-
 .timeline-controls input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -55,14 +47,6 @@
 
 #timeline-ticks {
   display: none;
-}
-
-.timeline-tick {
-  width: 8px;
-  height: 8px;
-  background-color: #888;
-  border-radius: 50%;
-  transform: translateX(-50%);
 }
 
 .timeline-controls span {
@@ -124,4 +108,48 @@
 .timeline-node.active {
   background-color: #007aff !important;
   border-color: #007aff;
+}
+
+/* ── Swimlane layout ─────────────────────────────────────────────── */
+.timeline-swimlane {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 28px;
+}
+
+.timeline-swimlane-label {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: right;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.timeline-swimlane-track {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  overflow-x: auto;
+  padding: 4px 2px;
+}
+
+/* Phase C — branch badge in history list */
+.history-item-title .commit-branch-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }

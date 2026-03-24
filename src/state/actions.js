@@ -256,4 +256,20 @@ export const actions = {
     console.log("[ACTION] setSceneName:", name);
     store.dispatch(coreActions.setSceneName(name));
   },
+
+  /**
+   * Merges new prim hash entries into the registry
+   * @param {Object} entries - Map of primPath → { hash, sourceFile }
+   */
+  updatePrimHashRegistry(entries) {
+    store.dispatch(coreActions.updatePrimHashRegistry(entries));
+  },
+
+  /**
+   * Removes all entries from a given source file from the hash registry
+   * @param {string} fileName - The source file name
+   */
+  clearFileFromHashRegistry(fileName) {
+    store.dispatch(coreActions.clearFileFromHashRegistry(fileName));
+  },
 };

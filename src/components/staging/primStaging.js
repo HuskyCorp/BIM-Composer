@@ -2,88 +2,9 @@
 import { store } from "../../core/index.js";
 import { actions } from "../../state/actions.js";
 import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
-import {
-  composeLogPrim,
-  composePrimsFromHierarchy,
-} from "../../viewer/usda/usdaComposer.js";
+import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
 import { recomposeStage } from "../sidebar/layerStackController.js";
-
-function logToStatement(details) {
-  const {
-    primPath,
-    type,
-    allStagedPaths,
-    sourceStatus,
-    entityType,
-    serializedPrims,
-  } = details;
-
-  console.log("[PRIM_STAGING] Logging to statement.usda");
-  console.log("[PRIM_STAGING] Type:", type);
-  console.log("[PRIM_STAGING] Prim path:", primPath);
-  console.log("[PRIM_STAGING] All staged paths:", allStagedPaths);
-  console.log("[PRIM_STAGING] Source status:", sourceStatus);
-  console.log("[PRIM_STAGING] Entity type:", entityType);
-
-  console.log("[PRIM_STAGING] Entity type:", entityType);
-
-  const entryNumber = actions.incrementLogEntryCounter();
-  const state = store.getState();
-  const fileName = state.currentFile;
-  const fileContent = state.loadedFiles[fileName];
-  if (!fileContent) {
-    console.warn("[PRIM_STAGING] No file content found for:", fileName);
-    return;
-  }
-
-  const fileSize = new Blob([fileContent]).size;
-  const contentHash = sha256(fileContent);
-  const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  // Extract prim name from path
-  const pathParts = primPath.split("/").filter(Boolean);
-  const primName = pathParts[pathParts.length - 1] || "";
-
-  const logEntry = {
-    ID: newId,
-    Entry: entryNumber,
-    Timestamp: new Date().toISOString(),
-    "USD Reference Path": primPath,
-    "File Name": fileName,
-    "Content Hash": contentHash,
-    "File Size": fileSize,
-    Type: type,
-    User: state.currentUser,
-    Status: "New",
-    primName: primName, // Add prim name for consistent log structure
-    stagedPrims: allStagedPaths,
-    sourceStatus: sourceStatus,
-    targetStatus: sourceStatus, // For prim selection, target = source
-    entityType: entityType,
-    serializedPrims: serializedPrims, // Include serialized prims for history
-    parent: state.headCommitId, // Link to current HEAD
-  };
-
-  console.log("[PRIM_STAGING] Log entry created:", logEntry);
-
-  state.headCommitId = newId; // Update HEAD
-  console.log("[PRIM_STAGING] Updated HEAD to:", newId);
-
-  const logPrimString = composeLogPrim(logEntry);
-  const newContent = USDA_PARSER.appendToUsdaFile(
-    state.loadedFiles["statement.usda"],
-    logPrimString,
-    "ChangeLog"
-  );
-  actions.updateLoadedFile("statement.usda", newContent);
-
-  console.log(
-    "[PRIM_STAGING] Written to statement.usda (now",
-    state.loadedFiles["statement.usda"].length,
-    "characters)"
-  );
-}
 
 function applySourceFileToHierarchy(prims, sourceFile, layerStatus) {
   prims.forEach((prim) => {
@@ -443,16 +364,15 @@ export function stagePrims(primInput, options = {}) {
   actions.setComposedPrims(mergedHierarchy);
   recomposeStage(); // resolve references → merge _psets + properties from source files
 
-  // Generate serialized prims for history log
-  const serializedPrims = composePrimsFromHierarchy(allNewlyStagedPrims);
-
-  logToStatement({
-    primPath: primsToProcess[0].path, // Representative path
-    type: isEntity ? "Entity Placeholder" : "Prim Selection",
-    allStagedPaths: allStagedPathsComplete,
+  actions.addStagedChange({
+    type: isEntity ? "entityStaging" : "primStaging",
+    targetPath: primsToProcess[0].path,
+    allPaths: allStagedPathsComplete,
+    sourceFile: primsToProcess[0].sourceFile,
     sourceStatus: layerStatusAtEvent,
     entityType: isEntity ? "placeholder" : "Real Element",
-    serializedPrims: serializedPrims,
+    user: store.getState().currentUser,
+    timestamp: new Date().toISOString(),
   });
 }
 

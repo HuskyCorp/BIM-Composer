@@ -21,3 +21,101 @@
   background: transparent;
   z-index: 10;
 }
+
+/* ── Discipline Group Headers (Layer Stack) ───────────────────────── */
+li.discipline-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  margin: 6px 0 2px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  cursor: default;
+  user-select: none;
+  list-style: none;
+}
+
+.discipline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.discipline-label {
+  flex: 1;
+}
+
+.discipline-code {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.discipline-count {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.discipline-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  color: #888;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.discipline-toggle-btn:hover {
+  color: #333;
+}
+
+ul.discipline-layer-group {
+  list-style: none;
+  padding: 0 0 0 10px;
+  margin: 0 0 4px 0;
+}
+
+/* Dark theme */
+body.dark-theme li.discipline-group-header {
+  background: rgba(255, 255, 255, 0.06);
+  color: #aaa;
+}
+
+body.dark-theme .discipline-count {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .discipline-toggle-btn {
+  color: #666;
+}
+
+body.dark-theme .discipline-toggle-btn:hover {
+  color: #ccc;
+}
+
+/* Phase C — layer branch badge */
+.layer-branch-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid #888;
+  color: #888;
+  background: transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 4px;
+}

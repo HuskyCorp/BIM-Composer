@@ -363,3 +363,15 @@ body.dark-theme .pset-cancel-btn:hover {
   background: #2a2a2a;
   border-color: #555;
 }
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.pset-no-results {
+  padding: 16px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+body.dark-theme .pset-no-results {
+  color: #666;
+}

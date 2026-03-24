@@ -122,6 +122,11 @@ export const primActions = {
     payload: { composedHierarchy: hierarchy },
   }),
 
+  setRecordedHierarchy: (hierarchy) => ({
+    type: "SET_RECORDED_HIERARCHY",
+    payload: { recordedHierarchy: hierarchy },
+  }),
+
   /**
    * Update prim in hierarchy
    */
@@ -302,6 +307,20 @@ export const fileActions = {
   }),
 };
 
+// ==================== Hash Registry Actions ====================
+
+export const hashRegistryActions = {
+  updatePrimHashRegistry: (entries) => ({
+    type: "UPDATE_PRIM_HASH_REGISTRY",
+    payload: { entries },
+  }),
+
+  clearFileFromHashRegistry: (fileName) => ({
+    type: "CLEAR_FILE_FROM_HASH_REGISTRY",
+    payload: { fileName },
+  }),
+};
+
 // ==================== Combined Actions ====================
 
 /**
@@ -315,6 +334,7 @@ export const actions = {
   ...historyActions,
   ...viewActions,
   ...fileActions,
+  ...hashRegistryActions,
 };
 
 /**
@@ -368,4 +388,8 @@ export const ActionTypes = {
   UPDATE_FILE: "UPDATE_FILE",
   SET_CURRENT_FILE: "SET_CURRENT_FILE",
   SET_SELECTED_FILES: "SET_SELECTED_FILES",
+
+  // Hash Registry
+  UPDATE_PRIM_HASH_REGISTRY: "UPDATE_PRIM_HASH_REGISTRY",
+  CLEAR_FILE_FROM_HASH_REGISTRY: "CLEAR_FILE_FROM_HASH_REGISTRY",
 };

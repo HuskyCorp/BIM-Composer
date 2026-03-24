@@ -5,6 +5,11 @@
 import { store, errorHandler, ValidationError } from "../../core/index.js";
 import { getAllPrimPaths } from "../../utils/primHelpers.js";
 import { resolvePrimStatus } from "../../utils/statusUtils.js";
+import {
+  getDisciplineForUser,
+  getDisciplineConfig,
+  hasAuthority,
+} from "../../utils/precedenceMatrix.js";
 
 /**
  * Renders a placeholder message in the properties panel
@@ -170,6 +175,14 @@ function renderCustomProperties(prim) {
   console.log("[PSET DEBUG] prim._psets:", prim._psets);
   console.log("[PSET DEBUG] prim.properties:", Object.keys(prim.properties));
 
+  const state = store.getState();
+  const sourceLayer = prim._sourceFile
+    ? state.stage.layerStack.find((l) => l.filePath === prim._sourceFile)
+    : null;
+  const ownerDiscipline = getDisciplineForUser(sourceLayer?.owner || "");
+  const ownerCfg = getDisciplineConfig(ownerDiscipline);
+  const callerDiscipline = getDisciplineForUser(state.currentUser);
+
   // Group properties by Pset
   for (const key in prim.properties) {
     // Skip system properties
@@ -188,24 +201,31 @@ function renderCustomProperties(prim) {
       // Create unique input ID for ungrouped properties
       const inputId = `ungrouped-input-${key.replace(/[^a-zA-Z0-9]/g, "-")}`;
 
-      let inputHtml = `<input 
-        type="text" 
+      const canEditPropUngrouped = hasAuthority(
+        callerDiscipline,
+        ownerDiscipline,
+        key
+      );
+
+      let inputHtml = `<input
+        type="text"
         id="${inputId}"
         class="ungrouped-property-input"
         data-property-key="${key}"
         value="${value}"
+        ${canEditPropUngrouped ? "" : "disabled"}
       />`;
 
       if (isLink) {
         inputHtml = `
           <div style="display:flex; gap:5px;">
-            <input 
-              type="text" 
+            <input
+              type="text"
               id="${inputId}"
               class="ungrouped-property-input"
               data-property-key="${key}"
-              value="${value}" 
-              style="flex:1;" 
+              value="${value}"
+              style="flex:1;"
             />
             <button class="data-link-btn" data-uri="${value}">Inspect</button>
           </div>
@@ -253,17 +273,26 @@ function renderCustomProperties(prim) {
 
     properties.forEach((prop) => {
       const inputId = `pset-input-${psetName.replace(/[^a-zA-Z0-9]/g, "-")}-${prop.key.replace(/[^a-zA-Z0-9]/g, "-")}`;
+      const canEditProp = hasAuthority(
+        callerDiscipline,
+        ownerDiscipline,
+        prop.key
+      );
 
       html += `
         <div class="property-group">
-          <label>${prop.key}</label>
-          <input 
-            type="text" 
+          <label>
+            ${prop.key}
+            <span class="authority-badge" style="background:${ownerCfg.color}20;color:${ownerCfg.color};border-color:${ownerCfg.color}40;" title="${ownerDiscipline} (precedence ${ownerCfg.precedence})">${ownerCfg.code} ↑${ownerCfg.precedence}</span>
+          </label>
+          <input
+            type="text"
             id="${inputId}"
             class="pset-property-input"
             data-property-key="${prop.key}"
             data-pset-name="${psetName}"
             value="${prop.value}"
+            ${canEditProp ? "" : "disabled"}
           />
         </div>
       `;
@@ -280,7 +309,10 @@ function renderCustomProperties(prim) {
     ungroupedProperties.forEach((prop) => {
       html += `
         <div class="property-group">
-          <label>${prop.key}</label>
+          <label>
+            ${prop.key}
+            <span class="authority-badge" style="background:${ownerCfg.color}20;color:${ownerCfg.color};border-color:${ownerCfg.color}40;" title="${ownerDiscipline} (precedence ${ownerCfg.precedence})">${ownerCfg.code} ↑${ownerCfg.precedence}</span>
+          </label>
           ${prop.inputHtml}
         </div>
       `;

@@ -15,6 +15,7 @@ vi.mock("../../../../state/actions.js", () => ({
     setComposedHierarchy: vi.fn(),
     incrementLogEntryCounter: vi.fn(() => 1),
     updateLoadedFile: vi.fn(),
+    addStagedChange: vi.fn(),
   },
 }));
 
@@ -103,18 +104,12 @@ describe("Prim Staging (History Integration)", () => {
 
     await stagePrims(inputPrims);
 
-    // Verify composePrimsFromHierarchy was called to serialize the new state
-    expect(usdaComposer.composePrimsFromHierarchy).toHaveBeenCalled();
-
-    // Verify that the serialized content is passed to composeLogPrim/logToStatement
-    // We can inspect the calls to composeLogPrim or appendToUsdaFile
-
-    // Specifically, logToStatement constructs an object with { serializedPrims: ... }
-    // and passes it to composeLogPrim.
-    expect(usdaComposer.composeLogPrim).toHaveBeenCalledWith(
+    expect(actions.addStagedChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        serializedPrims: 'def Scope "Serialized" {}',
-        entityType: "Real Element", // Default
+        type: "primStaging",
+        targetPath: "/TestPrim",
+        entityType: "Real Element",
+        sourceFile: "test.usda",
       })
     );
   });
@@ -124,30 +119,20 @@ describe("Prim Staging (History Integration)", () => {
       {
         path: "/Placeholder",
         sourceFile: "test.usda",
-        type: "Cube", // Entity usually has type
-        customData: { isWireframe: true }, // Markers of placeholder
+        type: "Cube",
+        customData: { isWireframe: true },
         properties: {},
       },
     ];
 
-    // stagePrims logic for 'isEntity' depends on valid input detection.
-    // Let's force proper detection by mocking input structure if needed.
-    // In stagePrims, isEntity is determined by checking if input list > 0 && isEntity flag/property?
-    // Actually, stagePrims defines `isEntity` variable?
-    // No, it's passed or inferred?
-    // Looking at source: `const isEntity = options?.isEntity || ...`
-    // (Assuming stagePrims has options arg or checks properties)
-
-    // Let's pass options as 3rd arg if supported, or rely on properties.
-    // Based on code: function stagePrims(sourcePrims, actionType, clearSelection = true, options = {})
-
     await stagePrims(inputEntity, { isEntity: true });
 
-    expect(usdaComposer.composeLogPrim).toHaveBeenCalledWith(
+    expect(actions.addStagedChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        Type: "Entity Placeholder",
+        type: "entityStaging",
+        targetPath: "/Placeholder",
         entityType: "placeholder",
-        serializedPrims: expect.any(String),
+        sourceFile: "test.usda",
       })
     );
   });

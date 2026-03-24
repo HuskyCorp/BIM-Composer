@@ -487,3 +487,26 @@ body.dark-theme .commit-message-textarea {
   border-color: rgba(255, 255, 255, 0.12);
   color: #e8e8e8;
 }
+
+/* Phase C — branch badge in commit modal */
+.commit-branch-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid #888;
+  color: #888;
+  background: transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.modal-branch-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+}

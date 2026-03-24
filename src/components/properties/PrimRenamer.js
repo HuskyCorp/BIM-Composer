@@ -10,14 +10,10 @@ import {
 } from "../../core/index.js";
 import { actions } from "../../state/actions.js";
 import { renamePrimInFile } from "../../viewer/usda/usdaEditor.js";
-import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
-import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
 import {
   renderLayerStack,
   recomposeStage,
 } from "../sidebar/layerStackController.js";
-import { sha256 } from "js-sha256";
-import { calculateNewPath } from "../../utils/primHelpers.js";
 
 /**
  * Applies a prim rename operation
@@ -49,16 +45,17 @@ export const applyPrimRename = errorHandler.wrap(
       targetPath: prim.path,
       oldName: prim.name,
       newName: newName,
+      sourceFile: prim._sourceFile || "unknown",
+      sourceStatus: prim.properties?.status || "WIP",
+      user: store.getState().currentUser,
+      timestamp: new Date().toISOString(),
     };
     actions.addStagedChange(change);
     if (commitButton) {
       commitButton.classList.add("has-changes");
     }
 
-    // 2. Log rename to statement.usda
-    logRenameToStatement(prim, newName);
-
-    // 3. Rename in source file if it exists
+    // 2. Rename in source file if it exists
     let newPath = prim.path;
 
     if (prim._sourceFile) {
@@ -138,63 +135,6 @@ export const applyPrimRename = errorHandler.wrap(
     );
   }
 );
-
-/**
- * Logs a rename operation to statement.usda
- * @param {Object} prim - The prim being renamed
- * @param {string} newName - The new name
- */
-function logRenameToStatement(prim, newName) {
-  console.log("[PRIM RENAME] Logging to statement.usda");
-  const newEntryNumber = actions.incrementLogEntryCounter();
-
-  const state = store.getState();
-  const fileContent = state.loadedFiles["statement.usda"] || "";
-  const fileSize = new Blob([fileContent]).size;
-  const contentHash = sha256(fileContent);
-  const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  const entityType = prim.properties?.entityType || "Real Element";
-
-  // Calculate old and new paths for path translation registry
-  const oldPath = prim.path;
-  const newPath = calculateNewPath(oldPath, newName);
-
-  // For rename operations, only include the renamed prim, not all staged prims
-  const stagedPaths = [oldPath];
-
-  const logEntry = {
-    ID: newId,
-    Entry: newEntryNumber,
-    Timestamp: new Date().toISOString(),
-    "USD Reference Path": prim.path,
-    "File Name": prim._sourceFile || "unknown",
-    "Content Hash": contentHash,
-    "File Size": fileSize,
-    Type: "Rename",
-    "Old Name": prim.name,
-    "New Name": newName,
-    oldPath: oldPath,
-    newPath: newPath,
-    User: state.currentUser,
-    Status: "New",
-    entityType: entityType,
-    stagedPrims: stagedPaths,
-    parent: state.headCommitId,
-  };
-
-  actions.setHeadCommitId(newId);
-
-  // Compose ONLY the log entry metadata (no USDA prim code)
-  const logPrimString = composeLogPrim(logEntry);
-  const newContent = USDA_PARSER.appendToUsdaFile(
-    state.loadedFiles["statement.usda"],
-    logPrimString,
-    "ChangeLog"
-  );
-  actions.updateLoadedFile("statement.usda", newContent);
-  console.log("[PRIM RENAME] Logged to statement.usda");
-}
 
 /**
  * Updates composed prims after a rename

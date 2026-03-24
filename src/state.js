@@ -31,6 +31,8 @@ def "ChangeLog"
         filePath: "statement.usda",
         active: false,
         visible: false,
+        owner: "Project Manager",
+        branch: "Archived/PM",
       },
     ],
     composedPrims: null,
@@ -40,6 +42,7 @@ def "ChangeLog"
   },
 
   composedHierarchy: [],
+  recordedHierarchy: [], // only updated on Record Changes; scene renders from this
 
   // --- Branching History Support ---
   isHistoryMode: false,

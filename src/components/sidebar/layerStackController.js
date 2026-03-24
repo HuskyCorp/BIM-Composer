@@ -10,11 +10,27 @@ import {
 import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
 import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
-import { explodeUsda } from "../../utils/atomicFileHandler.js";
+import {
+  explodeUsda,
+  computePrimHashes,
+} from "../../utils/atomicFileHandler.js";
 import { ifcConverterAPI } from "../../services/ifcConverterAPI.js";
 import { loadingIndicator } from "../loadingIndicator.js";
+import {
+  getDisciplineForUser,
+  getDisciplineConfig,
+  getDisciplineBranch,
+} from "../../utils/precedenceMatrix.js";
+import { actions } from "../../state/actions.js";
 
 const STATUS_ORDER = ["WIP", "Shared", "Published", "Archived"];
+
+/** Sync composedHierarchy → recordedHierarchy so the scene reflects the current layer state. */
+function syncRecordedHierarchy() {
+  store.dispatch(
+    coreActions.setRecordedHierarchy(store.getState().composedHierarchy)
+  );
+}
 
 // TODO: Future refactoring - Move business logic to LayerService:
 // - Layer filtering logic (lines 22-34)
@@ -30,29 +46,21 @@ export function renderLayerStack() {
 
   const state = store.getState();
   const filteredLayers = state.stage.layerStack.filter((layer) => {
-    // Project Manager sees all layers
     if (state.currentUser === "Project Manager") {
-      // Fallthrough to status filter
-    }
-    // Only show layers owned by current user
-    else if (layer.owner && layer.owner !== state.currentUser) {
+      // fallthrough to status filter
+    } else if (layer.owner && layer.owner !== state.currentUser) {
       return false;
     }
-    // Then apply status filter
     if (state.stage.activeFilter === "All") return true;
     return layer.status === state.stage.activeFilter;
   });
 
-  const groups = {};
-  const ungrouped = [];
-
+  // Group layers by discipline (derived from layer.owner)
+  const disciplineGroups = {};
   filteredLayers.forEach((layer) => {
-    if (layer.groupName) {
-      if (!groups[layer.groupName]) groups[layer.groupName] = [];
-      groups[layer.groupName].push(layer);
-    } else {
-      ungrouped.push(layer);
-    }
+    const discipline = getDisciplineForUser(layer.owner || "");
+    if (!disciplineGroups[discipline]) disciplineGroups[discipline] = [];
+    disciplineGroups[discipline].push(layer);
   });
 
   const createLayerItem = (layer, displayName) => {
@@ -61,18 +69,20 @@ export function renderLayerStack() {
     li.dataset.layerId = layer.id;
     li.dataset.filePath = layer.filePath;
 
-    const statusIndicator = `<span class="status-indicator ${layer.status.toLowerCase()}" title="Click to change status">${layer.status.charAt(
-      0
-    )}</span>`;
+    const statusIndicator = `<span class="status-indicator ${layer.status.toLowerCase()}" title="Click to change status">${layer.status.charAt(0)}</span>`;
     const nameStr = displayName || layer.filePath;
-    const visibilityToggle = `<span class="visibility-toggle ${
-      layer.visible ? "" : "hidden-item"
-    }">${layer.visible ? "👁️" : "➖"}</span>`;
+    const visibilityToggle = `<span class="visibility-toggle ${layer.visible ? "" : "hidden-item"}">${layer.visible ? "👁️" : "➖"}</span>`;
+    const layerBranch =
+      layer.branch ||
+      getDisciplineBranch(layer.owner || "", layer.status || "WIP");
+    const branchDiscipline = getDisciplineForUser(layer.owner || "");
+    const branchCfg = getDisciplineConfig(branchDiscipline);
+    const branchBadge = `<span class="layer-branch-badge" style="border-color:${branchCfg.color}88;color:${branchCfg.color};" title="Branch: ${layerBranch}">${layerBranch}</span>`;
 
     li.innerHTML = `
       ${statusIndicator}
       <span class="layer-name" style="flex: 1; word-break: break-word; line-height: 1.4;" title="${layer.filePath}">${nameStr}</span>
-      <div class="layer-item-controls">${visibilityToggle}</div>
+      <div class="layer-item-controls">${branchBadge}${visibilityToggle}</div>
     `;
 
     if (state.currentView === "file" && state.currentFile === layer.filePath) {
@@ -81,23 +91,87 @@ export function renderLayerStack() {
     return li;
   };
 
-  ungrouped.forEach((layer) => {
-    layerStackList.appendChild(createLayerItem(layer));
-  });
+  // Sort disciplines: Management first, then alphabetically
+  const disciplineOrder = [
+    "Management",
+    "Architecture",
+    "Structure",
+    "MEP",
+    "Field",
+    "Unknown",
+  ];
+  const sortedDisciplines = Object.keys(disciplineGroups).sort(
+    (a, b) =>
+      (disciplineOrder.indexOf(a) + 1 || 99) -
+      (disciplineOrder.indexOf(b) + 1 || 99)
+  );
 
-  Object.keys(groups).forEach((groupName) => {
-    // Create a single item for the entire group using the first layer as representative
-    const firstLayer = groups[groupName][0];
-    const layerCount = groups[groupName].length;
-    const displayName = `${groupName} (${layerCount})`;
-    const groupItem = createLayerItem(firstLayer, displayName);
+  sortedDisciplines.forEach((discipline) => {
+    const layers = disciplineGroups[discipline];
+    const cfg = getDisciplineConfig(discipline);
 
-    // Mark this as a group item and store all layer IDs for batch operations
-    groupItem.dataset.isGroup = "true";
-    groupItem.dataset.groupName = groupName;
-    groupItem.dataset.layerIds = groups[groupName].map((l) => l.id).join(",");
+    // Discipline header with toggle
+    const header = document.createElement("li");
+    header.className = "discipline-group-header";
+    header.dataset.discipline = discipline;
+    header.innerHTML = `
+      <span class="discipline-dot" style="background:${cfg.color};"></span>
+      <span class="discipline-label">${cfg.label} <span class="discipline-code">(${cfg.code})</span></span>
+      <span class="discipline-count">${layers.length}</span>
+      <button class="discipline-toggle-btn" title="Toggle ${cfg.label} layers">▼</button>
+    `;
 
-    layerStackList.appendChild(groupItem);
+    const groupContainer = document.createElement("ul");
+    groupContainer.className = "discipline-layer-group";
+    groupContainer.dataset.discipline = discipline;
+
+    // Sort layers within discipline by STATUS_ORDER
+    const sortedLayers = [...layers].sort(
+      (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
+    );
+
+    // Group by groupName within discipline (preserve existing group behavior)
+    const subGroups = {};
+    const subUngrouped = [];
+    sortedLayers.forEach((layer) => {
+      if (layer.groupName) {
+        if (!subGroups[layer.groupName]) subGroups[layer.groupName] = [];
+        subGroups[layer.groupName].push(layer);
+      } else {
+        subUngrouped.push(layer);
+      }
+    });
+
+    subUngrouped.forEach((layer) => {
+      groupContainer.appendChild(createLayerItem(layer));
+    });
+
+    Object.keys(subGroups).forEach((groupName) => {
+      const firstLayer = subGroups[groupName][0];
+      const layerCount = subGroups[groupName].length;
+      const displayName = `${groupName} (${layerCount})`;
+      const groupItem = createLayerItem(firstLayer, displayName);
+      groupItem.dataset.isGroup = "true";
+      groupItem.dataset.groupName = groupName;
+      groupItem.dataset.layerIds = subGroups[groupName]
+        .map((l) => l.id)
+        .join(",");
+      groupContainer.appendChild(groupItem);
+    });
+
+    // Toggle button collapses/expands the group
+    header
+      .querySelector(".discipline-toggle-btn")
+      .addEventListener("click", (e) => {
+        e.stopPropagation();
+        const btn = e.currentTarget;
+        const isCollapsed = groupContainer.style.display === "none";
+        groupContainer.style.display = isCollapsed ? "" : "none";
+        btn.textContent = isCollapsed ? "▼" : "▶";
+      });
+
+    layerStackList.appendChild(header);
+    layerStackList.appendChild(groupContainer);
   });
 }
 
@@ -151,6 +225,7 @@ export function logPromotionToStatement(details) {
   collectPaths(primsInFile);
 
   const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const promotionBranch = getDisciplineBranch(state.currentUser, targetStatus);
   const logEntry = {
     ID: newId,
     Entry: entryNumber,
@@ -161,10 +236,12 @@ export function logPromotionToStatement(details) {
     "File Size": fileSize,
     Type: type || "Promotion",
     User: state.currentUser,
+    branch: promotionBranch,
     Status: "New",
     SourceStatus: sourceStatus,
     TargetStatus: targetStatus,
-    sourceStatusForHistory: targetStatus,
+    sourceStatus: sourceStatus,
+    targetStatus: targetStatus,
     stagedPrims: allStagedPaths,
     parent: state.headCommitId,
   };
@@ -515,6 +592,10 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         store.dispatch(coreActions.loadFile(usdFileName, usdContent));
         console.timeEnd("[IFC→USD] loadFile dispatch");
 
+        // Register prim hashes for future re-upload diffing
+        const ifcHashes = computePrimHashes(usdContent, usdFileName);
+        actions.updatePrimHashRegistry(ifcHashes);
+
         // Create layer with current user as owner
         const newLayer = {
           id: `layer-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -598,26 +679,92 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         }
 
         Object.entries(atomicFiles).forEach(([fileName, content]) => {
-          const existingPaths = store
-            .getState()
-            .stage.layerStack.map((l) => l.filePath);
-          if (existingPaths.includes(fileName)) {
-            console.warn(`[LayerStack] Skipping duplicate layer: ${fileName}`);
+          const state = store.getState();
+          const existingPaths = state.stage.layerStack.map((l) => l.filePath);
+          const isReUpload = existingPaths.includes(fileName);
+
+          if (isReUpload) {
+            // Phase B: diff against hash registry and auto-stage detected changes
+            const newHashes = computePrimHashes(content, fileName);
+            const registry = state.primHashRegistry || {};
+
+            // Collect old hashes for this file
+            const oldHashes = {};
+            Object.entries(registry).forEach(([path, val]) => {
+              if (val.sourceFile === fileName) oldHashes[path] = val;
+            });
+
+            const ts = new Date().toISOString();
+            const user = state.currentUser;
+
+            // Modified and added prims
+            Object.entries(newHashes).forEach(([path, { hash }]) => {
+              if (!oldHashes[path]) {
+                actions.addStagedChange({
+                  type: "primAdded",
+                  targetPath: path,
+                  sourceFile: fileName,
+                  user,
+                  timestamp: ts,
+                  sourceStatus: "WIP",
+                });
+              } else if (oldHashes[path].hash !== hash) {
+                actions.addStagedChange({
+                  type: "primUpdate",
+                  targetPath: path,
+                  sourceFile: fileName,
+                  user,
+                  timestamp: ts,
+                  sourceStatus: "WIP",
+                });
+              }
+            });
+
+            // Removed prims
+            Object.entries(oldHashes).forEach(([path]) => {
+              if (!newHashes[path]) {
+                actions.addStagedChange({
+                  type: "primRemoved",
+                  targetPath: path,
+                  sourceFile: fileName,
+                  user,
+                  timestamp: ts,
+                  sourceStatus: "WIP",
+                });
+              }
+            });
+
+            // Update file content and refresh hash registry for this file
+            actions.clearFileFromHashRegistry(fileName);
+            store.dispatch(coreActions.updateFile(fileName, content));
+            actions.updatePrimHashRegistry(newHashes);
+
+            const changed =
+              Object.keys(newHashes).length + Object.keys(oldHashes).length;
+            console.log(
+              `[Re-upload] ${fileName}: registry diffed (${changed} prims evaluated)`
+            );
             return;
           }
 
+          // First upload: load normally and register hashes
           store.dispatch(coreActions.loadFile(fileName, content));
 
-          // Create layer with current user as owner
+          const currentUser = store.getState().currentUser;
           const newLayer = {
             id: `layer-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             filePath: fileName,
             status: "WIP",
             visible: true,
-            owner: store.getState().currentUser,
+            owner: currentUser,
+            branch: getDisciplineBranch(currentUser, "WIP"),
             groupName: Object.keys(atomicFiles).length > 1 ? file.name : null,
           };
           store.dispatch(coreActions.addLayer(newLayer));
+
+          // Register prim hashes for future re-upload diffing
+          const newHashes = computePrimHashes(content, fileName);
+          actions.updatePrimHashRegistry(newHashes);
         });
 
         if (isLargeFile) {
@@ -697,6 +844,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
       renderLayerStack();
       recomposeStage();
+      syncRecordedHierarchy();
       if (store.getState().currentView === "stage") updateView();
       // Also potentially select prims? User only clicked eye. Maybe not.
       return;
@@ -748,6 +896,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
       renderLayerStack();
       recomposeStage();
+      syncRecordedHierarchy();
       if (store.getState().currentView === "stage") {
         updateView();
         // Select prims from all layers in the group
@@ -971,6 +1120,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
     store.dispatch(coreActions.reorderLayers(newStack));
     recomposeStage();
+    syncRecordedHierarchy();
     if (store.getState().currentView === "stage") updateView();
   });
 
@@ -1043,6 +1193,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
     renderLayerStack();
     recomposeStage();
+    syncRecordedHierarchy();
 
     if (currentFileRemoved) {
       store.dispatch(coreActions.setCurrentFile(null));
@@ -1536,6 +1687,7 @@ export function refreshComposedStage(
 
   console.log("[REFRESH] Calling recomposeStage to update hierarchy");
   recomposeStage();
+  syncRecordedHierarchy();
   console.log("[REFRESH] Refresh complete for:", modifiedFileName);
 }
 

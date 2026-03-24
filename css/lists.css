@@ -71,12 +71,6 @@
 }
 /* ---------------------------- */
 
-.active-marker {
-  color: #ffd700;
-  font-weight: 600;
-  font-size: 12px;
-}
-
 .layer-item-controls {
   margin-left: auto;
   display: flex;
@@ -151,30 +145,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #ddd;
-}
-
-.staged-dot-propertyEdit {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ffd700;
-  flex-shrink: 0;
-}
-
-.staged-dot-entityStaging {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #8fff8f;
-  flex-shrink: 0;
-}
-
-.staged-dot-rename {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #7aacff;
-  flex-shrink: 0;
 }
 
 .unstage-btn {
