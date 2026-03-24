@@ -15,79 +15,6 @@ import {
   insertPrimIntoFile,
   removePrimFromFile,
 } from "../viewer/usda/usdaEditor.js";
-import { composeLogPrim } from "../viewer/usda/usdaComposer.js";
-import { sha256 } from "js-sha256";
-
-// Function to log prim addition to statement.usda
-const logAdditionToStatement = errorHandler.wrap(
-  (primName, parentPath, targetFile, primType) => {
-    if (!primName || !targetFile) {
-      throw new ValidationError(
-        "Prim name and target file are required for logging",
-        "primName/targetFile",
-        { primName, targetFile }
-      );
-    }
-
-    const state = store.getState();
-    if (!state.loadedFiles["statement.usda"]) {
-      console.warn("statement.usda not loaded, skipping log entry");
-      return;
-    }
-
-    const newEntryNumber = actions.incrementLogEntryCounter();
-
-    const fullPath =
-      parentPath === "/" ? `/${primName}` : `${parentPath}/${primName}`;
-    const fileContent = state.loadedFiles[targetFile] || "";
-    const fileSize = new Blob([fileContent]).size;
-    const contentHash = sha256(fileContent);
-    const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Collect all currently staged prims
-    const allStagedPaths = [];
-    const collectPaths = (prims) => {
-      if (!prims || !Array.isArray(prims)) return;
-      prims.forEach((p) => {
-        allStagedPaths.push(p.path);
-        if (p.children) collectPaths(p.children);
-      });
-    };
-    collectPaths(state.stage.composedPrims || []);
-
-    const logEntry = {
-      ID: newId,
-      Entry: newEntryNumber,
-      Timestamp: new Date().toISOString(),
-      "USD Reference Path": fullPath,
-      "File Name": targetFile,
-      "Content Hash": contentHash,
-      "File Size": fileSize,
-      Type: "Addition",
-      PrimType: primType,
-      User: state.currentUser,
-      Status: "New",
-      sourceStatus: "null", // Addition has no source status
-      targetStatus: "WIP", // New prims start as WIP
-      stagedPrims: allStagedPaths,
-      parent: state.headCommitId,
-    };
-
-    actions.setHeadCommitId(newId);
-
-    const logPrimString = composeLogPrim(logEntry);
-    const newContent = USDA_PARSER.appendToUsdaFile(
-      state.loadedFiles["statement.usda"],
-      logPrimString,
-      "ChangeLog"
-    );
-    actions.updateLoadedFile("statement.usda", newContent);
-
-    console.log(
-      `✅ Logged addition to statement.usda (Entry ${newEntryNumber})`
-    );
-  }
-);
 
 const buildRefPrimTreeUI = errorHandler.wrap(
   (prims, parentUl, primToSelectPath) => {
@@ -625,14 +552,17 @@ def Xform "World"
         recomposeStage();
         console.log("[ADD PRIM] recomposeStage complete");
 
-        // NOW log to statement.usda
-        console.log("[ADD PRIM] Logging addition to statement.usda...");
-        logAdditionToStatement(
-          displayName,
-          desiredParentPath,
-          targetFile,
-          primType
-        );
+        // Record as a pending change (user must click "Record Changes" to commit)
+        actions.addStagedChange({
+          type: "primAdded",
+          targetPath: fullPath,
+          primName: displayName,
+          sourceFile: targetFile,
+          user: state.currentUser,
+          timestamp: new Date().toISOString(),
+          sourceStatus: statusValue,
+          targetStatus: statusValue,
+        });
 
         if (state.currentView === "stage") {
           console.log("[ADD PRIM] Calling updateView...");
@@ -711,6 +641,21 @@ def Xform "World"
 
         actions.updateLoadedFile(targetFile, content);
         console.log("[UPDATE PRIM] File updated in state");
+
+        // Record as a pending change (user must click "Record Changes" to commit)
+        const updatedPath =
+          desiredParentPath === "/" || desiredParentPath === ""
+            ? `/${displayName}`
+            : `${desiredParentPath}/${displayName}`;
+        actions.addStagedChange({
+          type: "primUpdate",
+          targetPath: updatedPath,
+          oldPath: originalPrimPath,
+          primName: displayName,
+          sourceFile: targetFile,
+          user: state.currentUser,
+          timestamp: new Date().toISOString(),
+        });
 
         console.log("[UPDATE PRIM] Calling refreshComposedStage...");
         refreshComposedStage(targetFile);

@@ -2,8 +2,10 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Layer Management", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
-    await page.waitForSelector("#layerStackList", { timeout: 10000 });
+    await page.goto("/", { waitUntil: "load" });
+    // Wait for the panel JS to run and expand the layer panel (adds .expanded class).
+    // This guarantees initPanelDockers() has fired and #layerStackList has non-zero height.
+    await page.waitForSelector("#layersPanel.expanded", { timeout: 10000 });
   });
 
   test("should display layer stack list", async ({ page }) => {

@@ -242,9 +242,9 @@ function renderStagingPanel() {
         reparent: "Reparent",
         propertyEdit: "Edit",
         setAttribute: "Edit",
-        primAdded: "File Add",
-        primUpdate: "File Update",
-        primRemoved: "File Remove",
+        primAdded: "Add",
+        primUpdate: "Update",
+        primRemoved: "Remove",
       }[change.type] || change.type;
     const detail =
       change.type === "propertyEdit" || change.type === "setAttribute"
@@ -279,11 +279,11 @@ function populateCommitPreview(changes) {
     } else if (c.type === "reparent") {
       li.textContent = `Reparent: ${c.oldPath} → ${c.targetPath}`;
     } else if (c.type === "primAdded") {
-      li.textContent = `File Add: ${c.targetPath}  (${c.sourceFile})`;
+      li.textContent = `Add: ${c.primName}  (${c.targetPath})`;
     } else if (c.type === "primUpdate") {
-      li.textContent = `File Update: ${c.targetPath}  (${c.sourceFile})`;
+      li.textContent = `Update: ${c.oldPath} → ${c.targetPath}`;
     } else if (c.type === "primRemoved") {
-      li.textContent = `File Remove: ${c.targetPath}  (${c.sourceFile})`;
+      li.textContent = `Remove: ${c.primName}  (${c.targetPath})`;
     } else {
       li.textContent = `${c.type}: ${c.targetPath}`;
     }
