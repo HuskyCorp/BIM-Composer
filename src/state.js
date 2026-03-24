@@ -31,7 +31,6 @@ def "ChangeLog"
         filePath: "statement.usda",
         active: false,
         visible: false,
-        owner: "Project Manager",
         branch: "Archived/PM",
       },
     ],

@@ -12,7 +12,9 @@ test.describe("File Loading Workflow", () => {
   });
 
   test("should display layer stack panel", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "load" });
+    // Wait for initPanelDockers() to run and expand the layer panel
+    await page.waitForSelector("#layersPanel.expanded", { timeout: 10000 });
 
     // Check for layer stack area
     const layerStack = page.locator("#layerStackList");
