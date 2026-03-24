@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Layer Management", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector("#layerStackList", { timeout: 5000 });
+    await page.goto("/", { waitUntil: "networkidle" });
+    await page.waitForSelector("#layerStackList", { timeout: 10000 });
   });
 
   test("should display layer stack list", async ({ page }) => {
