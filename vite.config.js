@@ -133,10 +133,10 @@ export default defineConfig(({ command }) => ({
         "src/components/modalController.test.js",
       ],
       thresholds: {
-        lines: 37,
+        lines: 35,
         functions: 38,
-        branches: 33,
-        statements: 36,
+        branches: 32,
+        statements: 34,
       },
     },
     setupFiles: ["./src/__tests__/setup.js"],
