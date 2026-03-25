@@ -11,7 +11,7 @@ describe("Store", () => {
 
   beforeEach(() => {
     testInitialState = {
-      sceneName: "Test Scene",
+      currentView: "stage",
       currentUser: "TestUser",
       stage: {
         layerStack: [],
@@ -57,23 +57,23 @@ describe("Store", () => {
 
     it("should reflect changes after dispatch", () => {
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "Updated Scene" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
       const state = store.getState();
-      expect(state.sceneName).toBe("Updated Scene");
+      expect(state.currentView).toBe("file");
     });
   });
 
   describe("dispatch", () => {
     it("should dispatch action and update state", () => {
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "New Scene" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
-      expect(store.state.sceneName).toBe("New Scene");
+      expect(store.state.currentView).toBe("file");
     });
 
     it("should return the dispatched action", () => {
@@ -90,8 +90,8 @@ describe("Store", () => {
       const reducerSpy = vi.spyOn(store, "reducer");
 
       const action = {
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "Test" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       };
       store.dispatch(action);
 
@@ -104,8 +104,8 @@ describe("Store", () => {
 
       const prevState = { ...store.state };
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "Changed" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
       expect(listener).toHaveBeenCalledWith(prevState, store.state);
@@ -113,15 +113,15 @@ describe("Store", () => {
 
     it("should handle multiple consecutive dispatches", () => {
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "First" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
       store.dispatch({
         type: "SET_CURRENT_USER",
         payload: { currentUser: "Second" },
       });
 
-      expect(store.state.sceneName).toBe("First");
+      expect(store.state.currentView).toBe("file");
       expect(store.state.currentUser).toBe("Second");
     });
 
@@ -181,8 +181,8 @@ describe("Store", () => {
       store.subscribe("test", listener);
 
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "New" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -194,13 +194,13 @@ describe("Store", () => {
 
       store.subscribe("test", listener);
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "Updated" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
       expect(listener).toHaveBeenCalledWith(prevState, store.state);
-      expect(listener.mock.calls[0][0].sceneName).toBe("Test Scene");
-      expect(listener.mock.calls[0][1].sceneName).toBe("Updated");
+      expect(listener.mock.calls[0][0].currentView).toBe("stage");
+      expect(listener.mock.calls[0][1].currentView).toBe("file");
     });
   });
 
@@ -212,8 +212,8 @@ describe("Store", () => {
       unsubscribe();
 
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "New" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
       expect(listener).not.toHaveBeenCalled();
@@ -229,8 +229,8 @@ describe("Store", () => {
       unsubscribe1();
 
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "New" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
       expect(listener1).not.toHaveBeenCalled();
@@ -270,7 +270,7 @@ describe("Store", () => {
       store.subscribe("key2", listener3);
 
       const prevState = { ...store.state };
-      const nextState = { ...store.state, sceneName: "Updated" };
+      const nextState = { ...store.state, currentView: "file" };
 
       store.notifyListeners(prevState, nextState);
 
@@ -397,9 +397,9 @@ describe("Store", () => {
     it("should update state using deep merge", () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-      store.setState({ sceneName: "Direct Update" });
+      store.setState({ currentView: "file" });
 
-      expect(store.state.sceneName).toBe("Direct Update");
+      expect(store.state.currentView).toBe("file");
       expect(store.state.currentUser).toBe("TestUser"); // Other properties preserved
 
       consoleSpy.mockRestore();
@@ -408,7 +408,7 @@ describe("Store", () => {
     it("should show deprecation warning", () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-      store.setState({ sceneName: "Test" });
+      store.setState({ currentView: "file" });
 
       expect(consoleSpy).toHaveBeenCalledWith(
         "[Store] setState() is deprecated. Use dispatch() with actions instead."
@@ -422,7 +422,7 @@ describe("Store", () => {
       const listener = vi.fn();
 
       store.subscribe("test", listener);
-      store.setState({ sceneName: "Updated" });
+      store.setState({ currentView: "file" });
 
       expect(listener).toHaveBeenCalled();
 
@@ -435,7 +435,7 @@ describe("Store", () => {
       const prevState = { ...store.state };
 
       store.subscribe("test", listener);
-      store.setState({ sceneName: "Changed" });
+      store.setState({ currentView: "file" });
 
       expect(listener).toHaveBeenCalledWith(prevState, store.state);
 
@@ -449,16 +449,16 @@ describe("Store", () => {
       store.subscribe("workflow", listener);
 
       // Initial state
-      expect(store.state.sceneName).toBe("Test Scene");
+      expect(store.state.currentView).toBe("stage");
 
       // Dispatch action
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "Workflow Scene" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
 
       // Verify state updated
-      expect(store.state.sceneName).toBe("Workflow Scene");
+      expect(store.state.currentView).toBe("file");
 
       // Verify listener called
       expect(listener).toHaveBeenCalledTimes(1);
@@ -483,8 +483,8 @@ describe("Store", () => {
 
     it("should maintain state integrity across multiple operations", () => {
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "Scene 1" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
       store.dispatch({
         type: "SET_CURRENT_USER",
@@ -496,7 +496,7 @@ describe("Store", () => {
       });
 
       const state = store.getState();
-      expect(state.sceneName).toBe("Scene 1");
+      expect(state.currentView).toBe("file");
       expect(state.currentUser).toBe("User 1");
       expect(state.stage.layerStack).toHaveLength(1);
     });

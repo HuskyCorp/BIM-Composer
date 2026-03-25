@@ -43,8 +43,11 @@ function collectAllPaths(prims, out = []) {
 /**
  * Write all staged changes as one commit entry to statement.usda.
  * Phase D: captures full composed-prims snapshot and computes added/modified/removed diff.
+ * @param {Array} changes
+ * @param {string} message
+ * @param {{ targetBranch?: string, designOptionId?: string, suitabilityCode?: string }} [options]
  */
-function writeCommitToStatement(changes, message) {
+function writeCommitToStatement(changes, message, options = {}) {
   const state = store.getState();
   const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const entryNumber = actions.incrementLogEntryCounter();
@@ -81,7 +84,23 @@ function writeCommitToStatement(changes, message) {
     ),
   ];
 
-  const branch = getDisciplineBranch(state.currentUser || "Unknown", "WIP");
+  const targetBranch = options.targetBranch || "WIP";
+  const designOptionId = options.designOptionId || null;
+  const suitabilityCode = options.suitabilityCode || null;
+
+  // Determine branch label — Shared uses design option slug if available
+  let branch;
+  if (targetBranch === "Shared" && designOptionId) {
+    const opt = (state.designOptions || []).find(
+      (o) => o.id === designOptionId
+    );
+    const slug = opt
+      ? opt.name.toLowerCase().replace(/\s+/g, "-")
+      : designOptionId;
+    branch = `Shared/${slug}`;
+  } else {
+    branch = getDisciplineBranch(state.currentUser || "Unknown", targetBranch);
+  }
 
   const logEntry = {
     ID: newId,
@@ -97,12 +116,14 @@ function writeCommitToStatement(changes, message) {
     packageId: state.activePackageId || null,
     commitMessage: message,
     sourceStatus: firstChange.sourceStatus || "WIP",
-    targetStatus: firstChange.targetStatus || "WIP",
+    targetStatus: targetBranch,
     stagedPrims: allComposedPaths,
     addedPrims,
     removedPrims,
     modifiedPrims,
     parent: state.headCommitId,
+    ...(designOptionId && { designOptionId }),
+    ...(suitabilityCode && { suitabilityCode }),
   };
 
   actions.setHeadCommitId(newId);
@@ -137,10 +158,89 @@ export function initStagingPanel(updateView) {
   store.subscribe("stagedChanges", renderStagingPanel);
   renderStagingPanel();
 
+  // Branch / design-option / suitability state within the modal
+  let _selectedBranch = "WIP";
+  let _selectedDesignOptionId = null;
+  let _selectedSuitabilityCode = null;
+
+  // Wire the "Record to Shared Branch" toggle button
+  const sharedToggleBtn = document.getElementById("commit-shared-toggle");
+  if (sharedToggleBtn) {
+    sharedToggleBtn.addEventListener("click", () => {
+      const isShared = _selectedBranch === "Shared";
+      _selectedBranch = isShared ? "WIP" : "Shared";
+      sharedToggleBtn.classList.toggle("active", !isShared);
+      const doRow = document.getElementById("commit-design-option-row");
+      if (doRow)
+        doRow.style.display = _selectedBranch === "Shared" ? "" : "none";
+      _updateConfirmBtn();
+    });
+  }
+
+  // Wire suitability buttons
+  const suitabilityBtns = document.getElementById("commit-suitability-btns");
+  if (suitabilityBtns) {
+    suitabilityBtns.addEventListener("click", (e) => {
+      const btn = e.target.closest(".suitability-code-btn");
+      if (!btn) return;
+      _selectedSuitabilityCode = btn.dataset.code;
+      suitabilityBtns
+        .querySelectorAll(".suitability-code-btn")
+        .forEach((b) => b.classList.toggle("selected", b === btn));
+      _updateConfirmBtn();
+    });
+  }
+
+  // Wire design option select
+  const doSelect = document.getElementById("commit-design-option-select");
+  if (doSelect) {
+    doSelect.addEventListener("change", () => {
+      _selectedDesignOptionId = doSelect.value || null;
+      _updateConfirmBtn();
+    });
+  }
+
+  function _updateConfirmBtn() {
+    if (!commitConfirmBtn) return;
+    const needsOption =
+      _selectedBranch === "Shared" &&
+      (!_selectedDesignOptionId || !_selectedSuitabilityCode);
+    commitConfirmBtn.disabled = needsOption;
+  }
+
+  function _populateDesignOptionSelect() {
+    if (!doSelect) return;
+    const opts = store.getState().designOptions || [];
+    doSelect.innerHTML = '<option value="">-- Select Design Option --</option>';
+    opts
+      .filter((o) => o.status !== "superseded")
+      .forEach((o) => {
+        const el = document.createElement("option");
+        el.value = o.id;
+        el.textContent = o.name;
+        doSelect.appendChild(el);
+      });
+    _selectedDesignOptionId = doSelect.value || null;
+  }
+
   // Open commit modal
   commitBtn.addEventListener("click", () => {
     const changes = store.getState().stagedChanges || [];
     if (changes.length === 0) return;
+
+    // Reset modal branch state
+    _selectedBranch = "WIP";
+    _selectedDesignOptionId = null;
+    _selectedSuitabilityCode = null;
+    const sharedToggle = document.getElementById("commit-shared-toggle");
+    if (sharedToggle) sharedToggle.classList.remove("active");
+    document
+      .querySelectorAll(".suitability-code-btn")
+      .forEach((b) => b.classList.remove("selected"));
+    const doRow = document.getElementById("commit-design-option-row");
+    if (doRow) doRow.style.display = "none";
+    _populateDesignOptionSelect();
+    _updateConfirmBtn();
 
     const state = store.getState();
     // Populate author and branch badge
@@ -189,7 +289,11 @@ export function initStagingPanel(updateView) {
     const changes = store.getState().stagedChanges || [];
     if (changes.length === 0) return;
 
-    writeCommitToStatement(changes, message);
+    writeCommitToStatement(changes, message, {
+      targetBranch: _selectedBranch,
+      designOptionId: _selectedDesignOptionId,
+      suitabilityCode: _selectedSuitabilityCode,
+    });
 
     // Snapshot composedHierarchy → recordedHierarchy so the scene shows the newly committed state
     store.dispatch(

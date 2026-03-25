@@ -61,7 +61,6 @@ export interface History {
 }
 
 export interface AppState {
-  sceneName: string;
   logEntryCounter: number;
   currentUser: string;
   users: string[];

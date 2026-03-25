@@ -30,6 +30,9 @@ export function readPackageRegistryFromStatement(content) {
   const ids = parseStringArray("packageIds");
   const names = parseStringArray("packageNames");
   const colors = parseStringArray("packageColors");
+  const isoNumbers = parseStringArray("packageIsoNumbers");
+  const stageBranches = parseStringArray("packageStageBranches");
+  const approvalStatuses = parseStringArray("packageApprovalStatuses");
 
   if (ids.length === 0) return [];
 
@@ -37,8 +40,57 @@ export function readPackageRegistryFromStatement(content) {
     id,
     name: names[i] || id,
     color: colors[i] || "#607d8b",
+    isoNumber: isoNumbers[i] || null,
+    stageBranch: stageBranches[i] || "WIP",
+    approvalStatus: approvalStatuses[i] || "pending",
+    designOptionId: null,
     createdAt: new Date().toISOString(),
     createdBy: "System",
+  }));
+}
+
+/**
+ * Reads design options from the customLayerData block in statement.usda.
+ * @param {string} content - statement.usda file content
+ * @returns {Array} Design options array
+ */
+export function readDesignOptionsFromStatement(content) {
+  if (!content || !content.includes("customLayerData")) return [];
+
+  const blockMatch = content.match(
+    /customLayerData\s*=\s*\{([\s\S]*?)\n {4}\}/
+  );
+  if (!blockMatch) return [];
+
+  const block = blockMatch[1];
+  const parseStringArray = (fieldName) => {
+    const pattern = new RegExp(`string\\[\\] ${fieldName} = \\[([^\\]]*)\\]`);
+    const m = block.match(pattern);
+    if (!m || !m[1].trim()) return [];
+    return m[1]
+      .split(",")
+      .map((s) => s.trim().replace(/^"|"$/g, ""))
+      .filter(Boolean);
+  };
+
+  const ids = parseStringArray("designOptionIds");
+  const names = parseStringArray("designOptionNames");
+  const suitabilities = parseStringArray("designOptionSuitabilities");
+  const statuses = parseStringArray("designOptionStatuses");
+
+  if (ids.length === 0) return [];
+
+  return ids.map((id, i) => ({
+    id,
+    name: names[i] || id,
+    suitability: suitabilities[i] || "S1",
+    status: statuses[i] || "open",
+    color: "#4a90d9",
+    createdAt: new Date().toISOString(),
+    createdBy: "System",
+    approvedBy: null,
+    approvedAt: null,
+    packageIds: [],
   }));
 }
 
@@ -147,6 +199,16 @@ export function parseStatementLog(statementContent) {
 
       const parentMatch = logBody.match(/custom string parent = "([^"]+)"/);
       if (parentMatch) commit.parent = parentMatch[1];
+
+      // ISO 19650: design option and suitability code
+      const designOptionMatch = logBody.match(
+        /custom string designOptionId = "([^"]+)"/
+      );
+      if (designOptionMatch) commit.designOptionId = designOptionMatch[1];
+      const suitabilityMatch = logBody.match(
+        /custom string suitabilityCode = "([^"]+)"/
+      );
+      if (suitabilityMatch) commit.suitabilityCode = suitabilityMatch[1];
 
       const sourceStatusMatch = logBody.match(
         /custom string sourceStatus = "([^"]+)"/

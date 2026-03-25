@@ -620,3 +620,79 @@ body.dark-theme .commit-message-textarea {
   padding: 4px 10px;
   border-radius: 12px;
 }
+
+/* ─── Commit Modal: Target Branch & Suitability ──────────────────────── */
+
+#commit-target-branch-group {
+  margin-bottom: 8px;
+}
+
+.commit-target-branch-btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.commit-target-branch-btn {
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.commit-target-branch-btn.active {
+  background: #007aff;
+  border-color: #007aff;
+  color: #fff;
+}
+
+.commit-target-branch-btn:hover:not(.active) {
+  background: rgba(0, 122, 255, 0.08);
+  border-color: #007aff;
+  color: #007aff;
+}
+
+#commit-design-option-row {
+  margin-bottom: 8px;
+}
+
+.suitability-code-group {
+  margin-top: 4px;
+}
+
+.suitability-btns-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.suitability-code-btn {
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid #f5a623;
+  border-radius: 3px;
+  background: transparent;
+  color: #f5a623;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.suitability-code-btn.selected {
+  background: #f5a623;
+  color: #fff;
+}
+
+.suitability-code-btn:hover:not(.selected) {
+  background: rgba(245, 166, 35, 0.12);
+}

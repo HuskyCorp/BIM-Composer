@@ -405,3 +405,59 @@ body.dark-theme #promotion-package-select {
   border-color: #555;
   color: #e0e0e0;
 }
+
+/* ─── Stage Branch Panel dark overrides ──────────────────────────────── */
+
+body.dark-theme .stage-branch-section {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+body.dark-theme .design-option-card {
+  background: #2a2a2a;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e0e0e0;
+}
+body.dark-theme .design-option-card.approved {
+  background: rgba(40, 167, 69, 0.12);
+  border-color: #28a745;
+}
+body.dark-theme .branch-empty {
+  color: #666;
+}
+body.dark-theme .archive-toggle-btn {
+  border-color: #555;
+  color: #999;
+}
+body.dark-theme .approve-option-btn {
+  border-color: #28a745;
+  color: #28a745;
+}
+body.dark-theme .approve-option-btn:hover {
+  background: #28a745;
+  color: #fff;
+}
+body.dark-theme .published-meta {
+  color: #666;
+}
+
+/* ─── Commit modal dark overrides ─────────────────────────────────────── */
+
+body.dark-theme .commit-target-branch-btn {
+  border-color: #444;
+  color: #aaa;
+}
+body.dark-theme .commit-target-branch-btn.active {
+  background: #007aff;
+  border-color: #007aff;
+  color: #fff;
+}
+body.dark-theme #commit-design-option-row select {
+  background: #2a2a2a;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+/* ─── Timeline tier header dark ───────────────────────────────────────── */
+
+body.dark-theme .timeline-tier-header {
+  opacity: 0.85;
+}

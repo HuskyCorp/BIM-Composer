@@ -31,18 +31,7 @@ describe("reducer", () => {
     });
   });
 
-  describe("Scene Actions", () => {
-    it("should handle SET_SCENE_NAME", () => {
-      const state = {};
-      const action = {
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "MyScene" },
-      };
-
-      const newState = reducer(state, action);
-      expect(newState).toEqual({ sceneName: "MyScene" });
-    });
-
+  describe("User Actions", () => {
     it("should handle SET_CURRENT_USER", () => {
       const state = {};
       const action = {
@@ -51,7 +40,8 @@ describe("reducer", () => {
       };
 
       const newState = reducer(state, action);
-      expect(newState).toEqual({ currentUser: "Alice" });
+      expect(newState.currentUser).toBe("Alice");
+      expect(newState.currentUserId).toBe("Alice");
     });
   });
 

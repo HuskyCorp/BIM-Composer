@@ -26,6 +26,8 @@ import {
   initPackageController,
   bootstrapPackages,
 } from "./components/packages/packageController.js";
+import { initUserManagementController } from "./components/userManagementController.js";
+import { initApprovalController } from "./components/approvalController.js";
 import { loadingIndicator } from "./components/loadingIndicator.js";
 
 function initSidebarResizing() {
@@ -126,10 +128,10 @@ document.addEventListener("DOMContentLoaded", () => {
   initConflictModal();
   initStagingPanel(updateView);
   initPackageController(updateView);
+  initUserManagementController(updateView);
+  initApprovalController(updateView);
   initSidebarResizing();
 
-  document.getElementById("sampleSceneItem").textContent =
-    store.getState().sceneName;
   updateView();
   initGenesisCommit(); // TASK 6.1: anchor the commit graph on first load
   bootstrapPackages(); // Sync package registry with loaded statement.usda

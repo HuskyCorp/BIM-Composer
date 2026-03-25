@@ -11,7 +11,6 @@ describe("Integration: Store + Reducer", () => {
 
   beforeEach(() => {
     initialState = {
-      sceneName: "Untitled Project",
       currentUser: "Architect",
       users: [
         "Architect",
@@ -39,16 +38,7 @@ describe("Integration: Store + Reducer", () => {
     };
   });
 
-  describe("Scene Actions", () => {
-    it("should set scene name", () => {
-      const result = reducer(initialState, {
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "My Scene" },
-      });
-
-      expect(result.sceneName).toBe("My Scene");
-    });
-
+  describe("User Actions", () => {
     it("should set current user", () => {
       const result = reducer(initialState, {
         type: "SET_CURRENT_USER",
@@ -416,7 +406,7 @@ describe("Integration: Store + Reducer", () => {
     });
 
     it("should return action for non-action objects", () => {
-      const updates = { sceneName: "Direct Update" };
+      const updates = { currentView: "file" };
       const result = reducer(initialState, updates);
 
       expect(result).toBe(updates);

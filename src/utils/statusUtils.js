@@ -60,3 +60,61 @@ export function getStatusColor(status) {
 export function getStatusCssColor(status) {
   return STATUS_HEX_COLORS[status] || STATUS_HEX_COLORS.Published;
 }
+
+// Amber shades for Shared suitability levels S1–S5
+const URI_STATUS_COLORS = {
+  wip: 0xffa500, // orange
+  "shared-s1": 0xffb300, // amber 1
+  "shared-s2": 0xff8f00, // amber 2
+  "shared-s3": 0xff6f00, // amber 3
+  "shared-s4": 0xe65100, // amber 4
+  "shared-s5": 0xbf360c, // amber 5
+  published: 0x28a745, // green
+  archived: 0x424242, // dark gray
+};
+
+/**
+ * Derive a THREE.js hex color from a prim's iso19650_uri string.
+ * Falls back to null if URI is missing or unrecognised.
+ * @param {string|undefined} uri
+ * @returns {number|null}
+ */
+export function getUriColor(uri) {
+  if (!uri) return null;
+  const inner = uri.replace(/^@|@$/g, "").toLowerCase();
+  if (inner.startsWith("archived")) return URI_STATUS_COLORS.archived;
+  if (inner.startsWith("published")) return URI_STATUS_COLORS.published;
+  for (let i = 5; i >= 1; i--) {
+    if (inner.startsWith(`shared-s${i}`))
+      return URI_STATUS_COLORS[`shared-s${i}`];
+  }
+  if (inner.startsWith("shared")) return URI_STATUS_COLORS["shared-s1"];
+  if (inner.startsWith("wip")) return URI_STATUS_COLORS.wip;
+  return null;
+}
+
+/**
+ * Return the opacity for an archived URI prim (0.45) or 1.0 otherwise.
+ * @param {string|undefined} uri
+ * @returns {number}
+ */
+export function getUriOpacity(uri) {
+  if (!uri) return 1.0;
+  const inner = uri.replace(/^@|@$/g, "").toLowerCase();
+  return inner.startsWith("archived") ? 0.45 : 1.0;
+}
+
+/**
+ * Given a URI and a set of active hashtag filters, return true if the URI
+ * matches ALL active filters (or no filters are active).
+ * @param {string|undefined} uri
+ * @param {string[]} activeFilters  e.g. ["#wip","#ABC"]
+ * @returns {boolean}
+ */
+export function uriMatchesFilters(uri, activeFilters) {
+  if (!activeFilters || activeFilters.length === 0) return true;
+  if (!uri) return false;
+  const inner = uri.replace(/^@|@$/g, "");
+  const tags = inner.split("-").map((t) => `#${t}`);
+  return activeFilters.every((f) => tags.includes(f));
+}

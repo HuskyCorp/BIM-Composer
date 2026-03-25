@@ -12,19 +12,12 @@
 
 export const sceneActions = {
   /**
-   * Set scene name
+   * Set current user by ID (UUID)
+   * @param {string} userId - UUID of the user in state.users Map
    */
-  setSceneName: (name) => ({
-    type: "SET_SCENE_NAME",
-    payload: { sceneName: name },
-  }),
-
-  /**
-   * Set current user
-   */
-  setCurrentUser: (user) => ({
+  setCurrentUser: (userId) => ({
     type: "SET_CURRENT_USER",
-    payload: { currentUser: user },
+    payload: { currentUserId: userId },
   }),
 };
 
@@ -363,6 +356,100 @@ export const packageActions = {
     type: "SET_PACKAGE_FILTER",
     payload: { packageId },
   }),
+
+  /**
+   * Update a package's branch assignment and approval status
+   */
+  updatePackageBranch: (packageId, stageBranch, approvalStatus) => ({
+    type: "UPDATE_PACKAGE",
+    payload: { packageId, updates: { stageBranch, approvalStatus } },
+  }),
+};
+
+// ==================== User Management Actions ====================
+
+export const userManagementActions = {
+  addUser: (user) => ({ type: "ADD_USER", payload: { user } }),
+  updateUser: (userId, updates) => ({
+    type: "UPDATE_USER",
+    payload: { userId, updates },
+  }),
+  removeUser: (userId) => ({ type: "REMOVE_USER", payload: { userId } }),
+};
+
+export const companyActions = {
+  addCompany: (company) => ({ type: "ADD_COMPANY", payload: { company } }),
+  updateCompany: (companyId, updates) => ({
+    type: "UPDATE_COMPANY",
+    payload: { companyId, updates },
+  }),
+  removeCompany: (companyId) => ({
+    type: "REMOVE_COMPANY",
+    payload: { companyId },
+  }),
+};
+
+export const taskTeamActions = {
+  addTaskTeam: (team) => ({ type: "ADD_TASK_TEAM", payload: { team } }),
+  updateTaskTeam: (teamId, updates) => ({
+    type: "UPDATE_TASK_TEAM",
+    payload: { teamId, updates },
+  }),
+  removeTaskTeam: (teamId) => ({
+    type: "REMOVE_TASK_TEAM",
+    payload: { teamId },
+  }),
+};
+
+// ==================== URI Actions ====================
+
+export const uriActions = {
+  registerUrisBatch: (entries) => ({
+    type: "REGISTER_URIS_BATCH",
+    payload: { entries },
+  }),
+  clearUrisForFile: (fileName) => ({
+    type: "CLEAR_URIS_FOR_FILE",
+    payload: { fileName },
+  }),
+  setActiveUriFilters: (filters) => ({
+    type: "SET_ACTIVE_URI_FILTERS",
+    payload: { filters },
+  }),
+  toggleUriFilter: (tag) => ({ type: "TOGGLE_URI_FILTER", payload: { tag } }),
+};
+
+// ==================== Design Option Actions ====================
+
+export const designOptionActions = {
+  addDesignOption: (option) => ({
+    type: "ADD_DESIGN_OPTION",
+    payload: { option },
+  }),
+  removeDesignOption: (optionId) => ({
+    type: "REMOVE_DESIGN_OPTION",
+    payload: { optionId },
+  }),
+  updateDesignOption: (optionId, updates) => ({
+    type: "UPDATE_DESIGN_OPTION",
+    payload: { optionId, updates },
+  }),
+  setActiveDesignOption: (optionId) => ({
+    type: "SET_ACTIVE_DESIGN_OPTION",
+    payload: { optionId },
+  }),
+  approveDesignOption: (optionId, approvedBy) => ({
+    type: "APPROVE_DESIGN_OPTION",
+    payload: { optionId, approvedBy, approvedAt: new Date().toISOString() },
+  }),
+  archiveDesignOption: (optionId, archivedBy) => ({
+    type: "ARCHIVE_DESIGN_OPTION",
+    payload: { optionId, archivedBy, archivedAt: new Date().toISOString() },
+  }),
+  setStageBranchesState: (updates) => ({
+    type: "SET_STAGE_BRANCHES_STATE",
+    payload: { updates },
+  }),
 };
 
 // ==================== Combined Actions ====================
@@ -380,14 +467,18 @@ export const actions = {
   ...fileActions,
   ...hashRegistryActions,
   ...packageActions,
+  ...userManagementActions,
+  ...companyActions,
+  ...taskTeamActions,
+  ...uriActions,
+  ...designOptionActions,
 };
 
 /**
  * Action types (for comparison/filtering)
  */
 export const ActionTypes = {
-  // Scene
-  SET_SCENE_NAME: "SET_SCENE_NAME",
+  // User
   SET_CURRENT_USER: "SET_CURRENT_USER",
 
   // Layers
@@ -444,4 +535,30 @@ export const ActionTypes = {
   UPDATE_PACKAGE: "UPDATE_PACKAGE",
   SET_ACTIVE_PACKAGE: "SET_ACTIVE_PACKAGE",
   SET_PACKAGE_FILTER: "SET_PACKAGE_FILTER",
+
+  // User Management
+  ADD_USER: "ADD_USER",
+  UPDATE_USER: "UPDATE_USER",
+  REMOVE_USER: "REMOVE_USER",
+  ADD_COMPANY: "ADD_COMPANY",
+  UPDATE_COMPANY: "UPDATE_COMPANY",
+  REMOVE_COMPANY: "REMOVE_COMPANY",
+  ADD_TASK_TEAM: "ADD_TASK_TEAM",
+  UPDATE_TASK_TEAM: "UPDATE_TASK_TEAM",
+  REMOVE_TASK_TEAM: "REMOVE_TASK_TEAM",
+
+  // URI
+  REGISTER_URIS_BATCH: "REGISTER_URIS_BATCH",
+  CLEAR_URIS_FOR_FILE: "CLEAR_URIS_FOR_FILE",
+  SET_ACTIVE_URI_FILTERS: "SET_ACTIVE_URI_FILTERS",
+  TOGGLE_URI_FILTER: "TOGGLE_URI_FILTER",
+
+  // Design Options
+  ADD_DESIGN_OPTION: "ADD_DESIGN_OPTION",
+  REMOVE_DESIGN_OPTION: "REMOVE_DESIGN_OPTION",
+  UPDATE_DESIGN_OPTION: "UPDATE_DESIGN_OPTION",
+  SET_ACTIVE_DESIGN_OPTION: "SET_ACTIVE_DESIGN_OPTION",
+  APPROVE_DESIGN_OPTION: "APPROVE_DESIGN_OPTION",
+  ARCHIVE_DESIGN_OPTION: "ARCHIVE_DESIGN_OPTION",
+  SET_STAGE_BRANCHES_STATE: "SET_STAGE_BRANCHES_STATE",
 };

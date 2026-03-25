@@ -1,99 +1,122 @@
 // src/utils/rolePermissions.js
 // ISO 19650-based role definitions and promotion permission enforcement.
 //
-// Roles:
-//   TaskTeam             — discipline teams (Architect, Structural Engineer)
-//   LeadAppointedParty   — delivery lead / Project Manager
-//   AppointingParty      — client representative (Field Person)
+// Roles (ISO 19650 terminology):
+//   task_team_member      — discipline teams (Architect, Structural Engineer)
+//   lead_task_team        — team leads
+//   lead_appointing_party — delivery lead / Project Manager
+//   appointed_party       — appointed consultant
+//   appointing_party      — client representative (Field Person)
 
-/** Maps each application user name to an ISO 19650 role key. */
-export const USER_ROLE_MAP = {
-  Architect: "TaskTeam",
-  "Structural Engineer": "TaskTeam",
-  "Project Manager": "LeadAppointedParty",
-  "Field Person": "AppointingParty",
+import { ISO_ROLES } from "../data/isoModels.js";
+
+export { ISO_ROLES };
+
+// ─── Legacy role map (for backward compat with string-based callers) ────────
+
+const LEGACY_NAME_TO_ROLE = {
+  Architect: "task_team_member",
+  "Structural Engineer": "task_team_member",
+  "Project Manager": "lead_appointing_party",
+  "Field Person": "appointing_party",
 };
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 /**
- * Permission matrix for each role.
- *   canPromote  — source statuses the role is allowed to promote from
- *   canDemote   — source statuses the role is allowed to demote from
+ * Get the ISO role key for a user.
+ * Accepts either a full user object { role } or a legacy name string.
  */
+export function getUserRole(userOrName) {
+  if (!userOrName) return "task_team_member";
+  if (typeof userOrName === "object")
+    return userOrName.role || "task_team_member";
+  return LEGACY_NAME_TO_ROLE[userOrName] || "task_team_member";
+}
+
+/** Return the human-readable role label. */
+export function getRoleLabel(userOrName) {
+  const role = getUserRole(userOrName);
+  return ISO_ROLES[role]?.label || role;
+}
+
+/** Return the badge colour hex string. */
+export function getRoleColor(userOrName) {
+  const role = getUserRole(userOrName);
+  return ISO_ROLES[role]?.color || "#4a90e2";
+}
+
+/**
+ * Returns true if the given user is permitted to promote FROM fromStatus.
+ * @param {Object|string} userOrName - User object or legacy name string
+ * @param {string} fromStatus        - "WIP" | "Shared" | "Published"
+ */
+export function canUserPromote(userOrName, fromStatus) {
+  const role = getUserRole(userOrName);
+  return (ISO_ROLES[role]?.canPromote || []).includes(fromStatus);
+}
+
+/**
+ * Returns true if the given user is permitted to demote FROM fromStatus.
+ */
+export function canUserDemote(userOrName, fromStatus) {
+  const role = getUserRole(userOrName);
+  return (ISO_ROLES[role]?.canDemote || []).includes(fromStatus);
+}
+
+/**
+ * Returns true if the user has the lead_appointing_party role (Project Manager).
+ * Used for PM-only approval gates.
+ */
+export function isProjectManager(userOrName) {
+  const role = getUserRole(userOrName);
+  return role === "lead_appointing_party" || role === "lead_task_team";
+}
+
+/**
+ * Build a human-readable denial message.
+ */
+export function getPermissionError(userOrName, direction, fromStatus) {
+  const role = getUserRole(userOrName);
+  const roleLabel = ISO_ROLES[role]?.label || role;
+  const desc = ISO_ROLES[role]?.description || "";
+  const name = typeof userOrName === "object" ? userOrName.name : userOrName;
+  return (
+    `Permission denied: ${name} (${roleLabel}) cannot ${direction} from ${fromStatus}.\n` +
+    `Role description: ${desc}`
+  );
+}
+
+// ─── Legacy ROLE_PERMISSIONS export (for code that imports it directly) ─────
+// Maps old keys to new structure for backward compat
+
 export const ROLE_PERMISSIONS = {
   TaskTeam: {
     label: "Task Team",
     color: "#4a90e2",
-    canPromote: ["WIP"], // WIP → Shared
+    canPromote: ["WIP"],
     canDemote: [],
     description: "Can promote own WIP layers to Shared.",
   },
   LeadAppointedParty: {
     label: "Lead Appointed Party",
     color: "#28a745",
-    canPromote: ["WIP", "Shared"], // WIP → Shared  or  Shared → Published
-    canDemote: ["Shared"], // Shared → WIP
-    description:
-      "Can approve Shared layers and promote to Published. Can demote Shared layers.",
+    canPromote: ["WIP", "Shared"],
+    canDemote: ["Shared"],
+    description: "Can approve Shared layers and promote to Published.",
   },
   AppointingParty: {
     label: "Appointing Party",
     color: "#808080",
-    canPromote: [], // Read-only — no promotion
-    canDemote: ["Published"], // Can demote Published → Shared (corrective action)
-    description:
-      "Read-only access. Can demote Published layers for corrective action.",
+    canPromote: [],
+    canDemote: ["Published"],
+    description: "Read-only access. Can demote Published layers.",
   },
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-/** Return the role key for a given user name. */
-export function getUserRole(user) {
-  return USER_ROLE_MAP[user] || "TaskTeam";
-}
-
-/** Return the human-readable role label for a given user name. */
-export function getRoleLabel(user) {
-  const role = getUserRole(user);
-  return ROLE_PERMISSIONS[role]?.label || role;
-}
-
-/** Return the badge colour hex string for a given user name. */
-export function getRoleColor(user) {
-  const role = getUserRole(user);
-  return ROLE_PERMISSIONS[role]?.color || "#4a90e2";
-}
-
-/**
- * Returns true if the given user is permitted to promote FROM fromStatus.
- * @param {string} user
- * @param {string} fromStatus  e.g. "WIP", "Shared"
- */
-export function canUserPromote(user, fromStatus) {
-  const role = getUserRole(user);
-  return (ROLE_PERMISSIONS[role]?.canPromote || []).includes(fromStatus);
-}
-
-/**
- * Returns true if the given user is permitted to demote FROM fromStatus.
- */
-export function canUserDemote(user, fromStatus) {
-  const role = getUserRole(user);
-  return (ROLE_PERMISSIONS[role]?.canDemote || []).includes(fromStatus);
-}
-
-/**
- * Build a human-readable denial message.
- * @param {string} user
- * @param {"promote"|"demote"} direction
- * @param {string} fromStatus
- */
-export function getPermissionError(user, direction, fromStatus) {
-  const role = getUserRole(user);
-  const roleLabel = ROLE_PERMISSIONS[role]?.label || role;
-  const desc = ROLE_PERMISSIONS[role]?.description || "";
-  return (
-    `Permission denied: ${user} (${roleLabel}) cannot ${direction} from ${fromStatus}.\n` +
-    `Role description: ${desc}`
-  );
-}
+export const USER_ROLE_MAP = {
+  Architect: "TaskTeam",
+  "Structural Engineer": "TaskTeam",
+  "Project Manager": "LeadAppointedParty",
+  "Field Person": "AppointingParty",
+};

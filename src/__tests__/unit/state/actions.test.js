@@ -17,19 +17,11 @@ import {
 
 describe("Action Creators", () => {
   describe("sceneActions", () => {
-    it("setSceneName should create correct action", () => {
-      const action = sceneActions.setSceneName("MyScene");
-      expect(action).toEqual({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "MyScene" },
-      });
-    });
-
     it("setCurrentUser should create correct action", () => {
       const action = sceneActions.setCurrentUser("artist1");
       expect(action).toEqual({
         type: "SET_CURRENT_USER",
-        payload: { currentUser: "artist1" },
+        payload: { currentUserId: "artist1" },
       });
     });
   });
@@ -303,7 +295,7 @@ describe("Action Creators", () => {
 
   describe("combined actions object", () => {
     it("should include all action creators", () => {
-      expect(actions.setSceneName).toBe(sceneActions.setSceneName);
+      expect(actions.setCurrentUser).toBe(sceneActions.setCurrentUser);
       expect(actions.addLayer).toBe(layerActions.addLayer);
       expect(actions.setComposedHierarchy).toBe(
         primActions.setComposedHierarchy
@@ -316,8 +308,7 @@ describe("Action Creators", () => {
   });
 
   describe("ActionTypes", () => {
-    it("should have all scene action types", () => {
-      expect(ActionTypes.SET_SCENE_NAME).toBe("SET_SCENE_NAME");
+    it("should have user action types", () => {
       expect(ActionTypes.SET_CURRENT_USER).toBe("SET_CURRENT_USER");
     });
 

@@ -3,7 +3,15 @@
 // These now use dispatch() instead of the deprecated setState()
 
 import { store } from "../core/index.js";
-import { actions as coreActions } from "../core/state/actions/index.js";
+import {
+  actions as coreActions,
+  userManagementActions,
+  companyActions,
+  taskTeamActions,
+  uriActions,
+  designOptionActions,
+} from "../core/state/actions/index.js";
+import { resolveUserIdFromName } from "../data/isoModels.js";
 
 /**
  * All state mutations should use these action functions
@@ -11,12 +19,15 @@ import { actions as coreActions } from "../core/state/actions/index.js";
  */
 export const actions = {
   /**
-   * Sets the current user
-   * @param {string} user - The user name
+   * Sets the current user by ID (UUID) or legacy name string.
+   * @param {string} userIdOrName - UUID or legacy name for backward compat
    */
-  setCurrentUser(user) {
-    console.log("[ACTION] setCurrentUser:", user);
-    store.dispatch(coreActions.setCurrentUser(user));
+  setCurrentUser(userIdOrName) {
+    console.log("[ACTION] setCurrentUser:", userIdOrName);
+    const userId = userIdOrName.startsWith("user-")
+      ? userIdOrName
+      : resolveUserIdFromName(userIdOrName);
+    store.dispatch(coreActions.setCurrentUser(userId));
   },
 
   /**
@@ -249,15 +260,6 @@ export const actions = {
   },
 
   /**
-   * Sets the scene name
-   * @param {string} name - The scene name
-   */
-  setSceneName(name) {
-    console.log("[ACTION] setSceneName:", name);
-    store.dispatch(coreActions.setSceneName(name));
-  },
-
-  /**
    * Merges new prim hash entries into the registry
    * @param {Object} entries - Map of primPath → { hash, sourceFile }
    */
@@ -314,5 +316,80 @@ export const actions = {
    */
   setPackageFilter(packageId) {
     store.dispatch(coreActions.setPackageFilter(packageId));
+  },
+
+  // ==================== User Management ====================
+
+  addUser(user) {
+    store.dispatch(userManagementActions.addUser(user));
+  },
+  updateUser(userId, updates) {
+    store.dispatch(userManagementActions.updateUser(userId, updates));
+  },
+  removeUser(userId) {
+    store.dispatch(userManagementActions.removeUser(userId));
+  },
+
+  addCompany(company) {
+    store.dispatch(companyActions.addCompany(company));
+  },
+  updateCompany(companyId, updates) {
+    store.dispatch(companyActions.updateCompany(companyId, updates));
+  },
+  removeCompany(companyId) {
+    store.dispatch(companyActions.removeCompany(companyId));
+  },
+
+  addTaskTeam(team) {
+    store.dispatch(taskTeamActions.addTaskTeam(team));
+  },
+  updateTaskTeam(teamId, updates) {
+    store.dispatch(taskTeamActions.updateTaskTeam(teamId, updates));
+  },
+  removeTaskTeam(teamId) {
+    store.dispatch(taskTeamActions.removeTaskTeam(teamId));
+  },
+
+  // ==================== URI ====================
+
+  registerUrisBatch(entries) {
+    store.dispatch(uriActions.registerUrisBatch(entries));
+  },
+  clearUrisForFile(fileName) {
+    store.dispatch(uriActions.clearUrisForFile(fileName));
+  },
+  setActiveUriFilters(filters) {
+    store.dispatch(uriActions.setActiveUriFilters(filters));
+  },
+  toggleUriFilter(tag) {
+    store.dispatch(uriActions.toggleUriFilter(tag));
+  },
+
+  // ==================== Design Options ====================
+
+  addDesignOption(option) {
+    store.dispatch(designOptionActions.addDesignOption(option));
+  },
+  removeDesignOption(optionId) {
+    store.dispatch(designOptionActions.removeDesignOption(optionId));
+  },
+  updateDesignOption(optionId, updates) {
+    store.dispatch(designOptionActions.updateDesignOption(optionId, updates));
+  },
+  setActiveDesignOption(optionId) {
+    store.dispatch(designOptionActions.setActiveDesignOption(optionId));
+  },
+  approveDesignOption(optionId, approvedBy) {
+    store.dispatch(
+      designOptionActions.approveDesignOption(optionId, approvedBy)
+    );
+  },
+  archiveDesignOption(optionId, archivedBy) {
+    store.dispatch(
+      designOptionActions.archiveDesignOption(optionId, archivedBy)
+    );
+  },
+  setStageBranchesState(updates) {
+    store.dispatch(designOptionActions.setStageBranchesState(updates));
   },
 };

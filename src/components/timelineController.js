@@ -302,14 +302,27 @@ export function initTimelineController(historyThreeScene) {
 
       laneCommits.forEach((commit) => {
         const typeColor = getCommitTypeColor(commit.type);
+        const commitTier = getTierFromCommit(commit);
         const node = document.createElement("div");
-        node.className = "timeline-node";
+        const isArchiveNode =
+          commitTier === "Archived" || commit.type?.startsWith("Archive");
+        const isApprovalNode =
+          commit.type?.startsWith("Approval") || commit.type === "Approve";
+        node.className = `timeline-node${isArchiveNode ? " archived" : ""}${isApprovalNode ? " approval" : ""}`;
         node.dataset.commitId = commit.id;
         node.dataset.baseColor = typeColor;
         const commitBranch =
           commit.branch ||
           getDisciplineBranch(commit.user || "", commit.sourceStatus || "WIP");
-        node.title = `[${commitBranch}] ${commit.type}\nEntry #${commit.entry} · ${commit.user || "Unknown"}\n${new Date(commit.timestamp).toLocaleString()}\nPrims: ${commit.stagedPrims?.length || 0}${commit.commitMessage ? `\n"${commit.commitMessage}"` : ""}`;
+        const designOption = commit.designOptionId
+          ? (store.getState().designOptions || []).find(
+              (o) => o.id === commit.designOptionId
+            )
+          : null;
+        const doLabel = designOption
+          ? `\nOption: ${designOption.name}${commit.suitabilityCode ? ` [${commit.suitabilityCode}]` : ""}`
+          : "";
+        node.title = `[${commitBranch}] ${commit.type}\nEntry #${commit.entry} · ${commit.user || "Unknown"}\n${new Date(commit.timestamp).toLocaleString()}\nPrims: ${commit.stagedPrims?.length || 0}${doLabel}${commit.commitMessage ? `\n"${commit.commitMessage}"` : ""}`;
         node.style.cssText = `
           width: 12px;
           height: 12px;
@@ -362,10 +375,58 @@ export function initTimelineController(historyThreeScene) {
     return packages.find((p) => p.id === commit.packageId) || null;
   }
 
+  function getTierFromCommit(commit) {
+    const branch = (commit.branch || "").toLowerCase();
+    const target = (commit.targetStatus || "").toLowerCase();
+    if (branch.startsWith("shared") || target === "shared") return "Shared";
+    if (branch.startsWith("published") || target === "published")
+      return "Published";
+    if (branch.startsWith("archived") || target === "archived")
+      return "Archived";
+    return "WIP";
+  }
+
+  const TIER_ORDER = ["WIP", "Shared", "Published", "Archived"];
+  const TIER_COLORS = {
+    WIP: "#ffa500",
+    Shared: "#007aff",
+    Published: "#28a745",
+    Archived: "#808080",
+  };
+
   function renderStatementList(commits) {
     historyList.innerHTML = "";
 
+    const state = store.getState();
+    const designOptions = state.designOptions || [];
+
+    // Group into tiers for headers
+    let lastTier = null;
+
     commits.forEach((commit) => {
+      const tier = getTierFromCommit(commit);
+
+      // Insert tier header when tier changes
+      if (tier !== lastTier) {
+        const header = document.createElement("li");
+        header.className = "timeline-tier-header";
+        header.style.cssText = `
+          list-style: none;
+          padding: 4px 10px;
+          font-size: 9px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: ${TIER_COLORS[tier]};
+          border-top: 1px solid ${TIER_COLORS[tier]}44;
+          margin-top: 4px;
+          pointer-events: none;
+        `;
+        header.textContent = `── ${tier} ──`;
+        historyList.appendChild(header);
+        lastTier = tier;
+      }
+
       const li = document.createElement("li");
       li.className = "history-item";
       li.dataset.id = commit.id;
@@ -387,6 +448,18 @@ export function initTimelineController(historyThreeScene) {
         ? `<span class="commit-package-badge history-pkg-badge" style="background:${pkg.color}22;border:1px solid ${pkg.color}88;color:${pkg.color};">${pkg.name}</span>`
         : "";
 
+      // Design option sub-label for Shared commits
+      let designOptionLabel = "";
+      if (commit.designOptionId) {
+        const opt = designOptions.find((o) => o.id === commit.designOptionId);
+        if (opt) {
+          const suitBadge = commit.suitabilityCode
+            ? ` <span style="font-size:9px;opacity:0.8;">[${commit.suitabilityCode}]</span>`
+            : "";
+          designOptionLabel = `<div class="history-item-details" style="color:${TIER_COLORS.Shared};">Option: ${opt.name}${suitBadge}</div>`;
+        }
+      }
+
       li.innerHTML = `
             <div class="history-item-header">
                 <span>${dateStr} ${timeStr}</span>
@@ -397,6 +470,7 @@ export function initTimelineController(historyThreeScene) {
               <span class="commit-branch-badge" style="${branchBadgeStyle}">${commitBranch}</span>
               ${pkgBadge}
             </div>
+            ${designOptionLabel}
             ${commit.commitMessage ? `<div class="history-item-details" style="font-style:italic;color:#aaa;">${commit.commitMessage}</div>` : ""}
             <div class="history-item-details">Ref: ${commit.id.substring(0, 8)}...</div>
           `;

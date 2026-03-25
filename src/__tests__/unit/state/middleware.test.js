@@ -18,7 +18,7 @@ describe("Async Middleware", () => {
   beforeEach(() => {
     mockStore = {
       setState: vi.fn(),
-      getState: vi.fn(() => ({ sceneName: "test" })),
+      getState: vi.fn(() => ({ currentView: "stage" })),
     };
     mockNext = vi.fn();
   });
@@ -78,7 +78,7 @@ describe("Async Middleware", () => {
       expect(typeof capturedGetState).toBe("function");
 
       // getState should return current state
-      expect(capturedGetState()).toEqual({ sceneName: "test" });
+      expect(capturedGetState()).toEqual({ currentView: "stage" });
     });
   });
 
@@ -189,8 +189,8 @@ describe("Logger Middleware", () => {
     const mockStore = {
       getState: vi
         .fn()
-        .mockReturnValueOnce({ sceneName: "old" }) // prevState
-        .mockReturnValueOnce({ sceneName: "new" }), // nextState
+        .mockReturnValueOnce({ currentView: "stage" }) // prevState
+        .mockReturnValueOnce({ currentView: "file" }), // nextState
     };
 
     const groupSpy = vi
@@ -204,9 +204,9 @@ describe("Logger Middleware", () => {
     const middleware = createLoggerMiddleware({ enabled: true });
     const next = vi.fn();
 
-    middleware(mockStore)(next)({ type: "SET_SCENE_NAME" });
+    middleware(mockStore)(next)({ type: "TOGGLE_STATUS_COLOR" });
 
-    expect(next).toHaveBeenCalledWith({ type: "SET_SCENE_NAME" });
+    expect(next).toHaveBeenCalledWith({ type: "TOGGLE_STATUS_COLOR" });
     expect(groupSpy).toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalled();
     expect(groupEndSpy).toHaveBeenCalled();
@@ -269,7 +269,7 @@ describe("applyMiddleware", () => {
     mockStore = {
       setState: vi.fn(),
       getState: vi.fn(() => ({
-        sceneName: "test",
+        currentView: "stage",
         stage: {
           layerStack: [],
           composedPrims: {},
@@ -285,7 +285,6 @@ describe("applyMiddleware", () => {
           logEntryCounter: 0,
         },
         stagedChanges: [],
-        currentView: "stage",
         loadedFiles: {},
       })),
     };
@@ -304,8 +303,7 @@ describe("applyMiddleware", () => {
   it("should handle actions through setState", () => {
     applyMiddleware(mockStore);
     mockStore.setState({
-      type: "SET_SCENE_NAME",
-      payload: { sceneName: "New" },
+      type: "TOGGLE_STATUS_COLOR",
     });
 
     // The middleware chain should have processed the action via reducer
@@ -316,7 +314,7 @@ describe("applyMiddleware", () => {
     applyMiddleware(mockStore);
 
     // Direct state update (no type property)
-    mockStore.setState({ sceneName: "Direct" });
+    mockStore.setState({ currentView: "file" });
 
     // Should have called through to original
     expect(typeof mockStore.setState).toBe("function");

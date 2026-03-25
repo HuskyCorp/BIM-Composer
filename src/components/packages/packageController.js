@@ -4,6 +4,7 @@ import { store } from "../../core/index.js";
 import { actions as coreActions } from "../../core/state/actions/index.js";
 import { writePackageRegistryToStatement } from "../../viewer/usda/usdaComposer.js";
 import { readPackageRegistryFromStatement } from "../../viewer/usda/parser/logParser.js";
+import { DISCIPLINE_CONFIG } from "../../utils/precedenceMatrix.js";
 
 const PACKAGE_COLORS = [
   "#607d8b",
@@ -24,6 +25,26 @@ function getNextColor(packages) {
 
 function generatePackageId() {
   return `pkg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+}
+
+/**
+ * Generate an ISO 19650-compliant package number.
+ * Format: {companyCode}-{teamCode}-{disciplineCode}-{001}
+ */
+function generateIsoPackageNumber(state) {
+  const user =
+    state.users instanceof Map ? state.users.get(state.currentUserId) : null;
+  if (!user) return null;
+
+  const company = user.company?.code || "AEC";
+  const team = user.taskTeams?.[0]?.code || "TEAM";
+  const discipline = DISCIPLINE_CONFIG[user.discipline]?.code || "GEN";
+  const prefix = `${company}-${team}-${discipline}`;
+  const existing = (state.packages || []).filter((p) =>
+    p.isoNumber?.startsWith(prefix)
+  );
+  const seq = String(existing.length + 1).padStart(3, "0");
+  return `${prefix}-${seq}`;
 }
 
 function persistPackages(packages) {
@@ -151,7 +172,10 @@ export function initPackageController(updateView) {
 
       li.innerHTML = `
         <span class="package-swatch" style="background:${pkg.color};"></span>
-        <span class="package-name">${pkg.name}</span>
+        <span class="package-name-col">
+          <span class="package-name">${pkg.name}</span>
+          ${pkg.isoNumber ? `<span class="package-iso-number">${pkg.isoNumber}</span>` : ""}
+        </span>
         ${pkg.id === activePackageId ? '<span class="package-active-dot" title="Active Package">●</span>' : ""}
       `;
 
@@ -227,12 +251,17 @@ export function initPackageController(updateView) {
         return;
       }
 
+      const state = store.getState();
       const newPkg = {
         id: generatePackageId(),
         name,
         color,
         createdAt: new Date().toISOString(),
-        createdBy: store.getState().currentUser || "System",
+        createdBy: state.currentUser || "System",
+        isoNumber: generateIsoPackageNumber(state),
+        designOptionId: null,
+        stageBranch: "WIP",
+        approvalStatus: "pending",
       };
       store.dispatch(coreActions.addPackage(newPkg));
       store.dispatch(coreActions.setActivePackage(newPkg.id));

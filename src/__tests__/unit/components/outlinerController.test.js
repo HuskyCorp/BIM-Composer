@@ -49,13 +49,12 @@ describe("OutlinerController", () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <ul id="usdaOutliner"></ul>
-      <div id="sampleSceneItem">Test Scene</div>
       <canvas id="webglCanvas"></canvas>
+      <span id="sampleSceneItem">Test Scene</span>
     `;
 
     store.getState.mockReturnValue({
       stage: { layerStack: [] },
-      sceneName: "TestScene",
       isHistoryMode: false,
     });
   });
@@ -284,7 +283,6 @@ describe("OutlinerController", () => {
     beforeEach(() => {
       outlinerEl = document.getElementById("usdaOutliner");
       mockState = {
-        sceneName: "TestStage",
         stage: { layerStack: [] },
       };
     });
@@ -327,17 +325,6 @@ describe("OutlinerController", () => {
     });
 
     it("should create scene root with custom scene name", async () => {
-      await buildStageOutliner(outlinerEl, [], {}, mockState);
-
-      const sceneItem = outlinerEl.querySelector(".scene-item");
-      expect(sceneItem.querySelector(".outliner-text").textContent).toBe(
-        "TestStage"
-      );
-    });
-
-    it("should use default scene name when state.sceneName is missing", async () => {
-      mockState.sceneName = null;
-
       await buildStageOutliner(outlinerEl, [], {}, mockState);
 
       const sceneItem = outlinerEl.querySelector(".scene-item");

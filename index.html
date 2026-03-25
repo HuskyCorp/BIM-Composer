@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="css/user-switch.css" />
     <link rel="stylesheet" href="css/history-overlay.css" />
     <link rel="stylesheet" href="css/dark-theme.css" />
+    <link rel="stylesheet" href="css/user-management.css" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script type="importmap">
@@ -46,6 +47,7 @@
         <button id="view3d" class="active">3D</button>
         <button id="viewCode">&lt;&gt;</button>
       </div>
+      <button id="manageUsersButton" title="Manage Users">⚙</button>
       <div class="user-switch-container">
         <span class="user-label">User:</span>
         <div class="user-switch" data-testid="user-select">
@@ -77,29 +79,9 @@
     </div>
     <div class="container">
       <div class="sidebar">
-        <div class="panel" id="scenePanel">
-          <div class="panel-header">
-            <h3>Scene</h3>
-            <div class="scene-controls">
-              <button id="rename-scene-button">✏️</button>
-              <button
-                id="toggle-status-color-button"
-                title="Toggle Status Color"
-              >
-                🎨
-              </button>
-            </div>
-          </div>
-          <div class="panel-content">
-            <ul id="projectsList">
-              <li id="sampleSceneItem">Sample Scene</li>
-            </ul>
-          </div>
-        </div>
-
         <div class="panel" id="layersPanel">
           <div class="panel-header">
-            <h3>Layer Stack</h3>
+            <h3>Scene Stage</h3>
             <div class="file-controls">
               <button id="add-file-button" title="Add Layer">+</button>
               <button id="delete-file-button" title="Remove Layer">-</button>
@@ -107,26 +89,17 @@
               <button id="entity-stage-button" title="Entity Placeholder">
                 E
               </button>
+              <button
+                id="toggle-status-color-button"
+                title="Toggle Status Color"
+              >
+                🎨
+              </button>
               <button id="promote-layer-button" title="Promote Layer">▲</button>
               <button id="demote-layer-button" title="Demote Layer">▼</button>
             </div>
           </div>
           <div class="panel-content">
-            <div class="panel-controls" id="layer-filter-controls">
-              <button class="filter-btn active" data-filter="All">All</button>
-              <button class="filter-btn" data-filter="WIP">WIP</button>
-              <button class="filter-btn" data-filter="Shared">Shared</button>
-
-              <button class="filter-btn" data-filter="Published">
-                Published
-              </button>
-              <button class="filter-btn" data-filter="Archived">
-                Archived
-              </button>
-            </div>
-            <div class="panel-controls" id="package-filter-controls">
-              <!-- Package filter buttons populated dynamically -->
-            </div>
             <ul id="layerStackList"></ul>
             <input
               type="file"
@@ -184,21 +157,6 @@
           </div>
           <div class="panel-content">
             <ul id="staged-changes-list"></ul>
-          </div>
-        </div>
-
-        <div class="panel" id="packagesPanel">
-          <div class="panel-header">
-            <h3>Design Packages</h3>
-            <div class="package-controls">
-              <button id="add-package-button" title="New Package">+</button>
-              <button id="remove-package-button" title="Remove Package">
-                −
-              </button>
-            </div>
-          </div>
-          <div class="panel-content">
-            <ul id="packages-list"></ul>
           </div>
         </div>
 
@@ -576,6 +534,77 @@
             </label>
             <ul id="commit-preview-list" class="commit-preview-list"></ul>
           </div>
+          <div id="commit-target-branch-group">
+            <label class="commit-section-label">Target Branch</label>
+            <div class="commit-target-branch-btns">
+              <button
+                class="commit-target-branch-btn"
+                id="commit-shared-toggle"
+                data-branch="Shared"
+              >
+                Record to Shared Branch
+              </button>
+            </div>
+          </div>
+          <div id="commit-design-option-row" style="display: none">
+            <label class="commit-section-label">Design Option</label>
+            <div style="display: flex; gap: 6px; align-items: center">
+              <select
+                id="commit-design-option-select"
+                style="
+                  flex: 1;
+                  font-size: 12px;
+                  padding: 4px 6px;
+                  border: 1px solid #d0d0d0;
+                  border-radius: 4px;
+                "
+              >
+                <option value="">-- Select Design Option --</option>
+              </select>
+            </div>
+            <div class="suitability-code-group">
+              <label class="commit-section-label" style="margin-top: 6px"
+                >Suitability Code</label
+              >
+              <div id="commit-suitability-btns" class="suitability-btns-row">
+                <button
+                  class="suitability-code-btn"
+                  data-code="S1"
+                  title="Work in Progress"
+                >
+                  S1
+                </button>
+                <button
+                  class="suitability-code-btn"
+                  data-code="S2"
+                  title="Suitable for Coordination"
+                >
+                  S2
+                </button>
+                <button
+                  class="suitability-code-btn"
+                  data-code="S3"
+                  title="Suitable for Information"
+                >
+                  S3
+                </button>
+                <button
+                  class="suitability-code-btn"
+                  data-code="S4"
+                  title="Suitable for Review/Comment"
+                >
+                  S4
+                </button>
+                <button
+                  class="suitability-code-btn"
+                  data-code="S5"
+                  title="Suitable for Authorization"
+                >
+                  S5
+                </button>
+              </div>
+            </div>
+          </div>
           <div>
             <label for="commit-message-input" class="commit-section-label"
               >Revision Note</label
@@ -592,6 +621,24 @@
           <button id="commit-confirm-button" class="primary">
             Record Changes
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Management Modal -->
+    <div id="user-management-modal" style="display: none">
+      <div class="um-modal-content">
+        <div class="um-modal-header">
+          <h2>Manage Users</h2>
+          <button id="um-close-btn">&times;</button>
+        </div>
+        <div class="um-tabs">
+          <button class="um-tab active" data-tab="users">Users</button>
+          <button class="um-tab" data-tab="companies">Companies</button>
+          <button class="um-tab" data-tab="teams">Task Teams</button>
+        </div>
+        <div class="um-tab-content" id="um-tab-content">
+          <!-- Populated by userManagementController.js -->
         </div>
       </div>
     </div>

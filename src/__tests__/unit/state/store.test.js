@@ -15,7 +15,6 @@ describe("Store", () => {
     vi.clearAllMocks();
 
     initialState = {
-      sceneName: "test",
       currentUser: "artist",
       stage: {
         layerStack: [],
@@ -118,7 +117,7 @@ describe("Store", () => {
   describe("getState", () => {
     it("should return current state", () => {
       const state = store.getState();
-      expect(state.sceneName).toBe("test");
+      expect(state.currentView).toBe("stage");
       expect(state.currentUser).toBe("artist");
     });
   });
@@ -126,14 +125,17 @@ describe("Store", () => {
   describe("dispatch", () => {
     it("should update state via reducer", () => {
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "NewScene" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
-      expect(store.getState().sceneName).toBe("NewScene");
+      expect(store.getState().currentView).toBe("file");
     });
 
     it("should return the dispatched action", () => {
-      const action = { type: "SET_SCENE_NAME", payload: { sceneName: "Test" } };
+      const action = {
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
+      };
       const result = store.dispatch(action);
       expect(result).toBe(action);
     });
@@ -143,13 +145,13 @@ describe("Store", () => {
       store.subscribe("test", listener);
 
       store.dispatch({
-        type: "SET_SCENE_NAME",
-        payload: { sceneName: "Changed" },
+        type: "SET_CURRENT_VIEW",
+        payload: { currentView: "file" },
       });
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(
-        expect.objectContaining({ sceneName: "test" }),
-        expect.objectContaining({ sceneName: "Changed" })
+        expect.objectContaining({ currentView: "stage" }),
+        expect.objectContaining({ currentView: "file" })
       );
     });
 
@@ -194,7 +196,7 @@ describe("Store", () => {
       const listener = vi.fn();
       store.subscribe("test", listener);
 
-      store.dispatch({ type: "SET_SCENE_NAME", payload: { sceneName: "X" } });
+      store.dispatch({ type: "TOGGLE_STATUS_COLOR" });
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
@@ -204,7 +206,7 @@ describe("Store", () => {
       store.subscribe("views", listener1);
       store.subscribe("views", listener2);
 
-      store.dispatch({ type: "SET_SCENE_NAME", payload: { sceneName: "Y" } });
+      store.dispatch({ type: "TOGGLE_STATUS_COLOR" });
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
     });
@@ -215,7 +217,7 @@ describe("Store", () => {
       store.subscribe("layers", listener1);
       store.subscribe("prims", listener2);
 
-      store.dispatch({ type: "SET_SCENE_NAME", payload: { sceneName: "Z" } });
+      store.dispatch({ type: "TOGGLE_STATUS_COLOR" });
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
     });
@@ -224,12 +226,12 @@ describe("Store", () => {
       const listener = vi.fn();
       const unsubscribe = store.subscribe("test", listener);
 
-      store.dispatch({ type: "SET_SCENE_NAME", payload: { sceneName: "A" } });
+      store.dispatch({ type: "TOGGLE_STATUS_COLOR" });
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
 
-      store.dispatch({ type: "SET_SCENE_NAME", payload: { sceneName: "B" } });
+      store.dispatch({ type: "TOGGLE_STATUS_COLOR" });
       expect(listener).toHaveBeenCalledTimes(1); // Not called again
     });
 
@@ -242,7 +244,7 @@ describe("Store", () => {
       unsubscribe();
 
       // Should still have one listener for 'test'
-      store.dispatch({ type: "SET_SCENE_NAME", payload: { sceneName: "C" } });
+      store.dispatch({ type: "TOGGLE_STATUS_COLOR" });
       expect(listener).toHaveBeenCalledTimes(1);
     });
   });
@@ -287,8 +289,8 @@ describe("Store", () => {
 
   describe("setState (deprecated)", () => {
     it("should update state directly", () => {
-      store.setState({ sceneName: "Direct" });
-      expect(store.getState().sceneName).toBe("Direct");
+      store.setState({ currentView: "file" });
+      expect(store.getState().currentView).toBe("file");
     });
 
     it("should deep merge updates", () => {
@@ -301,7 +303,7 @@ describe("Store", () => {
       const listener = vi.fn();
       store.subscribe("test", listener);
 
-      store.setState({ sceneName: "Updated" });
+      store.setState({ currentView: "file" });
       expect(listener).toHaveBeenCalledTimes(1);
     });
   });

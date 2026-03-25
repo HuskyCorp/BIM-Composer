@@ -2,7 +2,13 @@
 import * as THREE from "three";
 import { buildStageOutliner } from "../../components/outlinerController.js";
 import { SpatialHash } from "../spatialHash.js";
-import { resolvePrimStatus, getStatusColor } from "../../utils/statusUtils.js";
+import {
+  resolvePrimStatus,
+  getStatusColor,
+  getUriColor,
+  getUriOpacity,
+  uriMatchesFilters,
+} from "../../utils/statusUtils.js";
 
 function clearScene(threeScene) {
   while (threeScene.meshesGroup.children.length > 0) {
@@ -179,6 +185,23 @@ export function renderStageView(threeScene, state) {
             resolveColor(prim.properties.displayColor) ??
             resolveColor(geomData.color) ??
             0xcccccc;
+        }
+
+        // URI-based color and opacity override (when colorizeByStatus is active)
+        const primUri = prim.properties?.iso19650_uri;
+        if (state.stage.colorizeByStatus && primUri && !hasStagedChange) {
+          const uriColor = getUriColor(primUri);
+          if (uriColor !== null) finalColor = new THREE.Color(uriColor);
+          const uriOpacity = getUriOpacity(primUri);
+          if (uriOpacity < opacity) opacity = uriOpacity;
+        }
+
+        // Hashtag filter dimming: non-matching prims become near-transparent
+        const activeFilters = state.activeUriFilters || [];
+        if (activeFilters.length > 0 && !hasStagedChange) {
+          if (!uriMatchesFilters(primUri, activeFilters)) {
+            opacity = 0.15;
+          }
         }
 
         const material = new THREE.MeshStandardMaterial({

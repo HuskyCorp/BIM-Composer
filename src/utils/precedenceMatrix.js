@@ -60,7 +60,7 @@ export const DISCIPLINE_CONFIG = {
   },
   Management: {
     code: "PM",
-    label: "Management",
+    label: "Project Management",
     precedence: 4,
     color: "#9b59b6",
     authoritative_props: null, // null = authority over all properties
@@ -80,17 +80,23 @@ export const DISCIPLINE_CONFIG = {
   },
 };
 
-export function getDisciplineForUser(userName) {
-  return USER_TO_DISCIPLINE[userName] || "Unknown";
+/**
+ * Get discipline for a user.
+ * Accepts a full user object { discipline } or a legacy name string.
+ */
+export function getDisciplineForUser(userOrName) {
+  if (!userOrName) return "Management";
+  if (typeof userOrName === "object")
+    return userOrName.discipline || "Management";
+  return USER_TO_DISCIPLINE[userOrName] || "Unknown";
 }
 
 export function getDisciplineConfig(discipline) {
   return (
     DISCIPLINE_CONFIG[discipline] || {
-      code: "?",
-      label: discipline || "Unknown",
+      code: "UNKNOWN",
+      label: "Unknown",
       precedence: 0,
-      color: "#888",
       authoritative_props: new Set(),
     }
   );
@@ -99,12 +105,12 @@ export function getDisciplineConfig(discipline) {
 /**
  * Derives the discipline branch name for a given user and optional layer/commit status.
  * WIP work lives on "WIP/{CODE}", promoted work on "Shared/{CODE}", "Published/{CODE}", etc.
- * @param {string} userName - The current user's display name
+ * @param {Object|string} userOrName - User object or legacy name string
  * @param {string} [status="WIP"] - The layer/commit status (WIP, Shared, Published, Archived)
  * @returns {string} e.g. "WIP/ARCH", "Shared/STRUCT", "Published/MEP"
  */
-export function getDisciplineBranch(userName, status = "WIP") {
-  const discipline = USER_TO_DISCIPLINE[userName] || "Unknown";
+export function getDisciplineBranch(userOrName, status = "WIP") {
+  const discipline = getDisciplineForUser(userOrName);
   const cfg = DISCIPLINE_CONFIG[discipline] || { code: "?" };
   const effectiveStatus = status === "WIP" || !status ? "WIP" : status;
   return `${effectiveStatus}/${cfg.code}`;

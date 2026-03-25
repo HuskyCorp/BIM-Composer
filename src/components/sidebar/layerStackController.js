@@ -8,7 +8,10 @@ import {
   actions as coreActions,
 } from "../../core/index.js";
 import { USDA_PARSER } from "../../viewer/usda/usdaParser.js";
-import { composeLogPrim } from "../../viewer/usda/usdaComposer.js";
+import {
+  composeLogPrim,
+  writePackageRegistryToStatement,
+} from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
 import {
   explodeUsda,
@@ -22,6 +25,13 @@ import {
   getDisciplineBranch,
 } from "../../utils/precedenceMatrix.js";
 import { actions } from "../../state/actions.js";
+import { generateUrisForFile } from "../../utils/uriGenerator.js";
+import {
+  uriActions,
+  designOptionActions,
+} from "../../core/state/actions/index.js";
+import { SUITABILITY_CODES } from "../../data/isoModels.js";
+import { isProjectManager } from "../../utils/rolePermissions.js";
 
 const STATUS_ORDER = ["WIP", "Shared", "Published", "Archived"];
 
@@ -38,86 +48,67 @@ function syncRecordedHierarchy() {
 // - Status promotion logic
 // - Permission validation logic
 
-export function renderLayerStack() {
-  const layerStackList = document.getElementById("layerStackList");
-  layerStackList.innerHTML = "";
+// ─── Module-level helper: create a single layer <li> item ─────────────────
+function createLayerItem(layer, displayName, state) {
+  const li = document.createElement("li");
+  li.draggable = true;
+  li.dataset.layerId = layer.id;
+  li.dataset.filePath = layer.filePath;
 
-  if (!store.getState().stage || !store.getState().stage.layerStack) return;
+  const statusIndicator = `<span class="status-indicator ${layer.status.toLowerCase()}" title="Click to change status">${layer.status.charAt(0)}</span>`;
+  const nameStr = displayName || layer.filePath;
+  const visibilityToggle = `<span class="visibility-toggle ${layer.visible ? "" : "hidden-item"}">${layer.visible ? "👁️" : "➖"}</span>`;
+  const layerBranch =
+    layer.branch ||
+    getDisciplineBranch(layer.owner || "", layer.status || "WIP");
+  const branchDiscipline = getDisciplineForUser(layer.owner || "");
+  const branchCfg = getDisciplineConfig(branchDiscipline);
+  const suitabilityBadge = layer.suitabilityCode
+    ? `<span class="suitability-badge" title="Suitability: ${layer.suitabilityCode}">${layer.suitabilityCode}</span>`
+    : "";
+  const immutableIcon = layer.immutable
+    ? `<span class="archive-lock-icon" title="Archived — immutable">🔒</span>`
+    : "";
+  const branchBadge = `<span class="layer-branch-badge" style="border-color:${branchCfg.color}88;color:${branchCfg.color};" title="Branch: ${layerBranch}">${layerBranch}</span>`;
 
-  const state = store.getState();
-  let filteredLayers = state.stage.layerStack.filter((layer) => {
-    if (state.currentUser === "Project Manager") {
-      // fallthrough to status filter
-    } else if (layer.owner && layer.owner !== state.currentUser) {
-      return false;
-    }
-    if (state.stage.activeFilter === "All") return true;
-    return layer.status === state.stage.activeFilter;
-  });
+  li.innerHTML = `
+    ${statusIndicator}
+    <span class="layer-name" style="flex: 1; word-break: break-word; line-height: 1.4;" title="${layer.filePath}">${nameStr}</span>
+    <div class="layer-item-controls">${suitabilityBadge}${immutableIcon}${branchBadge}${visibilityToggle}</div>
+  `;
 
-  // Apply package filter (only when at least one layer has a packageId assigned)
-  const pkgFilter = state.stage.activePackageFilter;
-  if (
-    pkgFilter &&
-    pkgFilter !== "All" &&
-    filteredLayers.some((l) => l.packageId)
-  ) {
-    filteredLayers = filteredLayers.filter((l) => l.packageId === pkgFilter);
+  if (state.currentView === "file" && state.currentFile === layer.filePath) {
+    li.classList.add("selected");
   }
+  return li;
+}
 
-  // Group layers by discipline (derived from layer.owner)
+// ─── Module-level helper: append discipline groups to a container element ──
+const DISCIPLINE_ORDER = [
+  "Management",
+  "Architecture",
+  "Structure",
+  "MEP",
+  "Field",
+];
+
+function appendDisciplineGroups(containerEl, layers, state) {
+  // Group layers by discipline
   const disciplineGroups = {};
-  filteredLayers.forEach((layer) => {
+  layers.forEach((layer) => {
     const discipline = getDisciplineForUser(layer.owner || "");
     if (!disciplineGroups[discipline]) disciplineGroups[discipline] = [];
     disciplineGroups[discipline].push(layer);
   });
 
-  const createLayerItem = (layer, displayName) => {
-    const li = document.createElement("li");
-    li.draggable = true;
-    li.dataset.layerId = layer.id;
-    li.dataset.filePath = layer.filePath;
-
-    const statusIndicator = `<span class="status-indicator ${layer.status.toLowerCase()}" title="Click to change status">${layer.status.charAt(0)}</span>`;
-    const nameStr = displayName || layer.filePath;
-    const visibilityToggle = `<span class="visibility-toggle ${layer.visible ? "" : "hidden-item"}">${layer.visible ? "👁️" : "➖"}</span>`;
-    const layerBranch =
-      layer.branch ||
-      getDisciplineBranch(layer.owner || "", layer.status || "WIP");
-    const branchDiscipline = getDisciplineForUser(layer.owner || "");
-    const branchCfg = getDisciplineConfig(branchDiscipline);
-    const branchBadge = `<span class="layer-branch-badge" style="border-color:${branchCfg.color}88;color:${branchCfg.color};" title="Branch: ${layerBranch}">${layerBranch}</span>`;
-
-    li.innerHTML = `
-      ${statusIndicator}
-      <span class="layer-name" style="flex: 1; word-break: break-word; line-height: 1.4;" title="${layer.filePath}">${nameStr}</span>
-      <div class="layer-item-controls">${branchBadge}${visibilityToggle}</div>
-    `;
-
-    if (state.currentView === "file" && state.currentFile === layer.filePath) {
-      li.classList.add("selected");
-    }
-    return li;
-  };
-
-  // Sort disciplines: Management first, then alphabetically
-  const disciplineOrder = [
-    "Management",
-    "Architecture",
-    "Structure",
-    "MEP",
-    "Field",
-    "Unknown",
-  ];
   const sortedDisciplines = Object.keys(disciplineGroups).sort(
     (a, b) =>
-      (disciplineOrder.indexOf(a) + 1 || 99) -
-      (disciplineOrder.indexOf(b) + 1 || 99)
+      (DISCIPLINE_ORDER.indexOf(a) + 1 || 99) -
+      (DISCIPLINE_ORDER.indexOf(b) + 1 || 99)
   );
 
   sortedDisciplines.forEach((discipline) => {
-    const layers = disciplineGroups[discipline];
+    const disciplineLayers = disciplineGroups[discipline];
     const cfg = getDisciplineConfig(discipline);
 
     // Discipline header with toggle
@@ -127,7 +118,7 @@ export function renderLayerStack() {
     header.innerHTML = `
       <span class="discipline-dot" style="background:${cfg.color};"></span>
       <span class="discipline-label">${cfg.label} <span class="discipline-code">(${cfg.code})</span></span>
-      <span class="discipline-count">${layers.length}</span>
+      <span class="discipline-count">${disciplineLayers.length}</span>
       <button class="discipline-toggle-btn" title="Toggle ${cfg.label} layers">▼</button>
     `;
 
@@ -136,11 +127,11 @@ export function renderLayerStack() {
     groupContainer.dataset.discipline = discipline;
 
     // Sort layers within discipline by STATUS_ORDER
-    const sortedLayers = [...layers].sort(
+    const sortedLayers = [...disciplineLayers].sort(
       (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
     );
 
-    // Group by groupName within discipline (preserve existing group behavior)
+    // Group by groupName within discipline
     const subGroups = {};
     const subUngrouped = [];
     sortedLayers.forEach((layer) => {
@@ -153,14 +144,14 @@ export function renderLayerStack() {
     });
 
     subUngrouped.forEach((layer) => {
-      groupContainer.appendChild(createLayerItem(layer));
+      groupContainer.appendChild(createLayerItem(layer, null, state));
     });
 
     Object.keys(subGroups).forEach((groupName) => {
       const firstLayer = subGroups[groupName][0];
       const layerCount = subGroups[groupName].length;
       const displayName = `${groupName} (${layerCount})`;
-      const groupItem = createLayerItem(firstLayer, displayName);
+      const groupItem = createLayerItem(firstLayer, displayName, state);
       groupItem.dataset.isGroup = "true";
       groupItem.dataset.groupName = groupName;
       groupItem.dataset.layerIds = subGroups[groupName]
@@ -180,14 +171,332 @@ export function renderLayerStack() {
         btn.textContent = isCollapsed ? "▼" : "▶";
       });
 
-    layerStackList.appendChild(header);
-    layerStackList.appendChild(groupContainer);
+    containerEl.appendChild(header);
+    containerEl.appendChild(groupContainer);
   });
+}
+
+// ─── Stage Branch helpers (from stageBranchController.js) ─────────────────
+
+function generateId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+}
+
+/**
+ * Scan commit history and return a Map of designOptionId → Set<primPath>.
+ * Commits with no designOptionId are grouped under the key "wip".
+ */
+function getPrimsByBranch(state) {
+  const map = new Map();
+  const commits = state.history?.commits;
+  if (!commits) return map;
+
+  commits.forEach((commit) => {
+    const key = commit.designOptionId || "wip";
+    if (!map.has(key)) map.set(key, new Set());
+    const prims = commit.stagedPrims || commit.addedPrims || [];
+    prims.forEach((p) => map.get(key).add(p));
+  });
+
+  return map;
+}
+
+function renderDesignOptionCard(opt, packages, isPM, primsByBranch) {
+  const optionPackages = packages.filter(
+    (p) => p.designOptionId === opt.id && p.stageBranch === "Shared"
+  );
+  const suitLabel =
+    SUITABILITY_CODES[opt.suitability]?.label || opt.suitability || "";
+  const isApproved = opt.status === "approved";
+  const isSuperseded = opt.status === "superseded";
+  const optionPrims = primsByBranch
+    ? primsByBranch.get(opt.id) || new Set()
+    : new Set();
+
+  const primItems =
+    optionPrims.size === 0
+      ? '<div class="branch-empty" style="font-size:10px;padding:2px 0;">No objects yet</div>'
+      : `<ul class="branch-prim-list">${[...optionPrims]
+          .map((p) => {
+            const name = p.split("/").filter(Boolean).pop() || p;
+            return `<li class="branch-prim-item" title="${p}">${name}</li>`;
+          })
+          .join("")}</ul>`;
+
+  return `
+    <li class="design-option-card ${isApproved ? "approved" : ""} ${isSuperseded ? "archived" : ""}">
+      <div class="design-option-card-header">
+        <span class="design-option-name">${opt.name}</span>
+        <span class="suitability-badge" title="${suitLabel}">${opt.suitability || ""}</span>
+        ${
+          isPM && !isApproved && !isSuperseded
+            ? `<button class="approve-option-btn design-option-approve-btn" data-option-id="${opt.id}">
+               Approve for Published
+             </button>`
+            : isApproved
+              ? '<span class="approved-badge">✓ Approved</span>'
+              : ""
+        }
+      </div>
+      ${
+        optionPackages.length > 0
+          ? `<div class="design-option-packages">
+             ${optionPackages
+               .map(
+                 (p) => `
+               <span class="option-package-chip" style="border-color:${p.color};color:${p.color};"
+                     title="${p.name}">${p.isoNumber || p.name}</span>`
+               )
+               .join("")}
+           </div>`
+          : ""
+      }
+      ${primItems}
+    </li>
+  `;
+}
+
+function openNewDesignOptionDialog(updateView) {
+  const name = prompt("Design Option name (e.g. 'Option A'):");
+  if (!name || !name.trim()) return;
+
+  const suitCodes = Object.entries(SUITABILITY_CODES)
+    .filter(([, v]) => v.allowedStatus === "Shared")
+    .map(([k]) => k)
+    .join(" / ");
+
+  const suitability = prompt(
+    `Suitability code for "${name.trim()}":\n${suitCodes}`,
+    "S1"
+  )
+    ?.trim()
+    .toUpperCase();
+
+  if (!suitability || !SUITABILITY_CODES[suitability]) {
+    alert("Invalid suitability code.");
+    return;
+  }
+
+  const newOption = {
+    id: generateId("do"),
+    name: name.trim(),
+    suitability,
+    color: "#4a90d9",
+    status: "open",
+    createdAt: new Date().toISOString(),
+    createdBy: store.getState().currentUser || "System",
+    approvedBy: null,
+    approvedAt: null,
+    packageIds: [],
+  };
+
+  store.dispatch(designOptionActions.addDesignOption(newOption));
+  persistDesignOptions();
+  if (updateView) updateView();
+}
+
+function persistDesignOptions() {
+  const state = store.getState();
+  const statementContent = state.loadedFiles?.["statement.usda"];
+  if (!statementContent) return;
+  const newContent = writePackageRegistryToStatement(
+    statementContent,
+    state.packages || [],
+    state.designOptions || []
+  );
+  store.dispatch({
+    type: "UPDATE_FILE",
+    payload: { filePath: "statement.usda", content: newContent },
+  });
+}
+
+// ─── Main render function ──────────────────────────────────────────────────
+
+export function renderLayerStack() {
+  const layerStackList = document.getElementById("layerStackList");
+  layerStackList.innerHTML = "";
+
+  if (!store.getState().stage || !store.getState().stage.layerStack) return;
+
+  const state = store.getState();
+  const layerStack = state.stage.layerStack;
+
+  // Ownership filter: non-PMs only see their own layers
+  const visibleLayers = layerStack.filter((layer) => {
+    if (state.currentUser === "Project Manager") return true;
+    if (layer.owner && layer.owner !== state.currentUser) return false;
+    return true;
+  });
+
+  // Split layers by status into branch buckets
+  const wipLayers = visibleLayers.filter((l) => l.status === "WIP");
+  const sharedLayers = visibleLayers.filter((l) => l.status === "Shared");
+  const publishedLayers = visibleLayers.filter((l) => l.status === "Published");
+  const archivedLayers = visibleLayers.filter((l) => l.status === "Archived");
+
+  const designOptions = state.designOptions || [];
+  const packages = state.packages || [];
+  const archiveVisible = state.stageBranches?.archive?.visible || false;
+  const primsByBranch = getPrimsByBranch(state);
+
+  const currentUserObj =
+    state.users instanceof Map ? state.users.get(state.currentUserId) : null;
+  const isPM = isProjectManager(currentUserObj || state.currentUser);
+
+  const publishedPackage = packages.find(
+    (p) => p.stageBranch === "Published" && p.approvalStatus === "approved"
+  );
+  const archivedPackages = packages.filter((p) => p.stageBranch === "Archived");
+
+  // ── Helper to build a branch section wrapper ──
+  function makeBranchSection(cssClass, labelHtml, bodyContent) {
+    const section = document.createElement("div");
+    section.className = `stage-branch-section ${cssClass}`;
+
+    const header = document.createElement("div");
+    header.className = "stage-branch-section-header";
+    header.innerHTML = `
+      <span class="branch-icon"></span>
+      <span class="branch-label">${labelHtml}</span>
+      <span class="branch-chevron">▾</span>
+    `;
+
+    section.appendChild(header);
+    if (bodyContent) {
+      const body = document.createElement("div");
+      body.className = "stage-branch-section-body";
+      if (typeof bodyContent === "string") {
+        body.innerHTML = bodyContent;
+      } else {
+        body.appendChild(bodyContent);
+      }
+      section.appendChild(body);
+    }
+    return section;
+  }
+
+  // ── WIP section ──
+  const wipSection = makeBranchSection("wip", "WIP", null);
+  const wipBody = document.createElement("div");
+  wipBody.className = "stage-branch-section-body";
+  if (wipLayers.length === 0) {
+    wipBody.innerHTML = '<div class="branch-empty">No WIP layers.</div>';
+  } else {
+    appendDisciplineGroups(wipBody, wipLayers, state);
+  }
+  wipSection.appendChild(wipBody);
+  layerStackList.appendChild(wipSection);
+
+  // ── Shared section ──
+  const sharedSection = makeBranchSection("shared", "SHARED", null);
+  const sharedHeader = sharedSection.querySelector(
+    ".stage-branch-section-header"
+  );
+  // Insert "+" button into header span
+  const addBtn = document.createElement("button");
+  addBtn.id = "add-design-option-btn";
+  addBtn.className = "um-add-btn";
+  addBtn.style.cssText = "margin:0 6px;font-size:10px;";
+  addBtn.textContent = "+ Option";
+  sharedHeader.appendChild(addBtn);
+
+  const sharedBody = document.createElement("div");
+  sharedBody.className = "stage-branch-section-body";
+
+  // Design option cards
+  const designOptionsList = document.createElement("ul");
+  designOptionsList.className = "design-options-list";
+  designOptionsList.id = "design-options-list";
+  if (designOptions.length === 0) {
+    designOptionsList.innerHTML =
+      '<li class="branch-empty">No design options yet. Create one to send records to Shared.</li>';
+  } else {
+    designOptionsList.innerHTML = designOptions
+      .map((opt) => renderDesignOptionCard(opt, packages, isPM, primsByBranch))
+      .join("");
+  }
+  sharedBody.appendChild(designOptionsList);
+
+  // Unassigned Shared layers (no designOptionId)
+  const unassignedShared = sharedLayers.filter((l) => !l.designOptionId);
+  if (unassignedShared.length > 0) {
+    appendDisciplineGroups(sharedBody, unassignedShared, state);
+  }
+
+  sharedSection.appendChild(sharedBody);
+  layerStackList.appendChild(sharedSection);
+
+  // ── Published section ──
+  const publishedSection = makeBranchSection("published", "PUBLISHED", null);
+  const publishedBody = document.createElement("div");
+  publishedBody.className = "stage-branch-section-body";
+
+  if (publishedPackage) {
+    const pkgDiv = document.createElement("div");
+    pkgDiv.className = "published-package-display";
+    pkgDiv.innerHTML = `
+      <span class="option-package-chip" style="border-color:#27ae60;color:#27ae60;">${publishedPackage.isoNumber || publishedPackage.name}</span>
+      <span class="published-meta">Approved by ${publishedPackage.approvedBy || "PM"}</span>
+    `;
+    publishedBody.appendChild(pkgDiv);
+  } else {
+    publishedBody.innerHTML =
+      '<div class="branch-empty">No published package yet.</div>';
+  }
+
+  if (publishedLayers.length > 0) {
+    appendDisciplineGroups(publishedBody, publishedLayers, state);
+  }
+
+  publishedSection.appendChild(publishedBody);
+  layerStackList.appendChild(publishedSection);
+
+  // ── Archived section ──
+  const archivedSection = makeBranchSection("archived", "ARCHIVED", null);
+  const archivedHeader = archivedSection.querySelector(
+    ".stage-branch-section-header"
+  );
+  if (isPM) {
+    const toggleBtn = document.createElement("button");
+    toggleBtn.id = "toggle-archive-visibility";
+    toggleBtn.className = "archive-toggle-btn";
+    toggleBtn.textContent = `${archiveVisible ? "Hide" : "Show"} Archive`;
+    archivedHeader.appendChild(toggleBtn);
+  }
+
+  if (archiveVisible) {
+    const archivedBody = document.createElement("div");
+    archivedBody.className = "stage-branch-section-body";
+
+    if (archivedPackages.length > 0) {
+      archivedPackages.forEach((p) => {
+        const card = document.createElement("div");
+        card.className = "design-option-card archived";
+        card.innerHTML = `
+          <span class="archive-badge">ARCHIVED</span>
+          <span class="archive-lock-icon">🔒</span>
+          <span class="option-package-chip">${p.isoNumber || p.name}</span>
+          ${p.archivedAt ? `<span class="archive-timestamp">${new Date(p.archivedAt).toLocaleDateString()}</span>` : ""}
+        `;
+        archivedBody.appendChild(card);
+      });
+    } else {
+      archivedBody.innerHTML =
+        '<div class="branch-empty">No archived states.</div>';
+    }
+
+    if (archivedLayers.length > 0) {
+      appendDisciplineGroups(archivedBody, archivedLayers, state);
+    }
+
+    archivedSection.appendChild(archivedBody);
+  }
+
+  layerStackList.appendChild(archivedSection);
 }
 
 function handleLayerSelection(li, updateView) {
   if (!li.dataset.layerId) return;
-  document.getElementById("sampleSceneItem").classList.remove("selected");
   const allItems = document
     .getElementById("layerStackList")
     .querySelectorAll("li");
@@ -513,7 +822,6 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   const promoteLayerButton = document.getElementById("promote-layer-button");
   const demoteLayerButton = document.getElementById("demote-layer-button");
   const fileInput = document.getElementById("usdaFileInput");
-  const layerFilterControls = document.getElementById("layer-filter-controls");
 
   // ==================== Add File Button ====================
   const handleAddFile = errorHandler.wrap(() => {
@@ -531,11 +839,23 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
   addFileButton.addEventListener("click", handleAddFile);
 
-  // Migration: Fix legacy ownership if present
+  // Migration: Fix legacy ownership + enforce system-file statuses
   const layerStack = store.getState().stage.layerStack.map((layer) => {
     if (layer.owner === "user1") return { ...layer, owner: "Architect" };
     if (layer.owner === "user2")
       return { ...layer, owner: "Structural Engineer" };
+    // statement.usda is a system audit log — always Archived + immutable
+    if (layer.filePath === "statement.usda") {
+      return {
+        ...layer,
+        status: "Archived",
+        immutable: true,
+        active: false,
+        visible: false,
+        owner: layer.owner || "Project Manager",
+        branch: "Archived/PM",
+      };
+    }
     return layer;
   });
   store.dispatch(coreActions.updateLayerStack(layerStack));
@@ -708,6 +1028,11 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
 
             const ts = new Date().toISOString();
             const user = state.currentUser;
+            const reuploadUserId = state.currentUserId;
+            const reuploadUserObj =
+              state.users instanceof Map
+                ? state.users.get(reuploadUserId)
+                : null;
 
             // Modified and added prims
             Object.entries(newHashes).forEach(([path, { hash }]) => {
@@ -751,6 +1076,18 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
             store.dispatch(coreActions.updateFile(fileName, content));
             actions.updatePrimHashRegistry(newHashes);
 
+            // Regenerate URIs for changed/new prims (version bump)
+            const existingLayer = state.stage.layerStack.find(
+              (l) => l.filePath === fileName
+            );
+            const uriEntries = generateUrisForFile(
+              { [fileName]: content },
+              existingLayer || { status: "WIP", suitabilityCode: null },
+              reuploadUserObj,
+              store.getState()
+            );
+            store.dispatch(uriActions.registerUrisBatch(uriEntries));
+
             const changed =
               Object.keys(newHashes).length + Object.keys(oldHashes).length;
             console.log(
@@ -762,14 +1099,27 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
           // First upload: load normally and register hashes
           store.dispatch(coreActions.loadFile(fileName, content));
 
-          const currentUser = store.getState().currentUser;
+          const uploadState = store.getState();
+          const currentUser = uploadState.currentUser;
+          const currentUserId = uploadState.currentUserId;
+          const userObj =
+            uploadState.users instanceof Map
+              ? uploadState.users.get(currentUserId)
+              : null;
+
           const newLayer = {
             id: `layer-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             filePath: fileName,
             status: "WIP",
             visible: true,
+            active: true,
             owner: currentUser,
-            branch: getDisciplineBranch(currentUser, "WIP"),
+            ownerId: currentUserId || null,
+            companyCode: userObj?.company?.code || "AEC",
+            teamCode: userObj?.taskTeams?.[0]?.code || "TEAM",
+            suitabilityCode: null,
+            immutable: false,
+            branch: getDisciplineBranch(userObj || currentUser, "WIP"),
             groupName: Object.keys(atomicFiles).length > 1 ? file.name : null,
           };
           store.dispatch(coreActions.addLayer(newLayer));
@@ -777,6 +1127,15 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
           // Register prim hashes for future re-upload diffing
           const newHashes = computePrimHashes(content, fileName);
           actions.updatePrimHashRegistry(newHashes);
+
+          // Generate and register ISO 19650 URIs for all prims in this file
+          const uriEntries = generateUrisForFile(
+            { [fileName]: content },
+            newLayer,
+            userObj,
+            store.getState()
+          );
+          store.dispatch(uriActions.registerUrisBatch(uriEntries));
         });
 
         if (isLargeFile) {
@@ -824,6 +1183,49 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   };
 
   layerStackList.addEventListener("click", (e) => {
+    // Branch section header collapse/expand
+    const sectionHeader = e.target.closest(".stage-branch-section-header");
+    if (sectionHeader && !e.target.closest("button")) {
+      const section = sectionHeader.closest(".stage-branch-section");
+      if (section) {
+        section.classList.toggle("collapsed");
+        const chevron = sectionHeader.querySelector(".branch-chevron");
+        if (chevron)
+          chevron.textContent = section.classList.contains("collapsed")
+            ? "▶"
+            : "▾";
+      }
+      return;
+    }
+
+    // Add design option
+    if (e.target.closest("#add-design-option-btn")) {
+      openNewDesignOptionDialog(updateView);
+      return;
+    }
+
+    // Approve design option
+    const approveBtn = e.target.closest(".design-option-approve-btn");
+    if (approveBtn) {
+      const optionId = approveBtn.dataset.optionId;
+      document.dispatchEvent(
+        new CustomEvent("approveDesignOption", { detail: { optionId } })
+      );
+      return;
+    }
+
+    // Archive toggle
+    if (e.target.closest("#toggle-archive-visibility")) {
+      const archState = store.getState();
+      const current = archState.stageBranches?.archive?.visible || false;
+      store.dispatch({
+        type: "SET_STAGE_BRANCHES_STATE",
+        payload: { updates: { archive: { visible: !current } } },
+      });
+      renderLayerStack();
+      return;
+    }
+
     const targetLi = e.target.closest("li");
     if (!targetLi) return;
 
@@ -986,7 +1388,6 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
       // Single Selection
       if (isGroup) {
         // For groups, select all files in the group
-        document.getElementById("sampleSceneItem").classList.remove("selected");
         const allItems = document
           .getElementById("layerStackList")
           .querySelectorAll("li");
@@ -1017,56 +1418,6 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
       }
     }
   });
-
-  // ==================== Layer Filter Controls ====================
-  const handleLayerFilter = errorHandler.wrap((e) => {
-    if (!e.target.classList.contains("filter-btn")) {
-      return; // Not a filter button, ignore
-    }
-
-    const filter = e.target.dataset.filter;
-
-    if (!filter) {
-      throw new ValidationError(
-        "Filter button missing data-filter attribute",
-        "filter",
-        null
-      );
-    }
-
-    store.dispatch(coreActions.setLayerFilter(filter));
-
-    layerFilterControls
-      .querySelectorAll(".filter-btn")
-      .forEach((btn) => btn.classList.remove("active"));
-    e.target.classList.add("active");
-
-    renderLayerStack();
-
-    if (store.getState().currentView === "stage") {
-      updateView();
-    }
-
-    console.log(`🔍 Filter changed to: ${filter}`);
-  });
-
-  layerFilterControls.addEventListener("click", handleLayerFilter);
-
-  // ==================== Package Filter Controls ====================
-  const packageFilterControls = document.getElementById(
-    "package-filter-controls"
-  );
-  if (packageFilterControls) {
-    packageFilterControls.addEventListener("click", (e) => {
-      const btn = e.target.closest(".pkg-filter-btn");
-      if (!btn) return;
-      const pkgId = btn.dataset.pkgFilter;
-      if (!pkgId) return;
-      store.dispatch(coreActions.setPackageFilter(pkgId));
-      renderLayerStack();
-      if (store.getState().currentView === "stage") updateView();
-    });
-  }
 
   // ==================== Drag-to-Reorder ====================
   let dragSrcEl = null;
@@ -1226,7 +1577,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
     if (currentFileRemoved) {
       store.dispatch(coreActions.setCurrentFile(null));
       store.dispatch(coreActions.setCurrentView("stage"));
-      document.getElementById("sampleSceneItem").click();
+      updateView();
     } else {
       updateView();
     }
@@ -1476,6 +1827,10 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   });
 
   renderLayerStack();
+
+  // Re-render when design options or packages change
+  store.subscribe("designOptions", renderLayerStack);
+  store.subscribe("packages", renderLayerStack);
 
   console.log("✅ Layer Stack Controller initialized with error handling");
 }
@@ -1736,4 +2091,77 @@ export function syncPrimStatusFromLayer(layer) {
 
   updatePrimStatus(composedPrims);
   store.dispatch(coreActions.setComposedHierarchy(composedPrims));
+}
+
+/**
+ * Render the URI hashtag filter bar.
+ * Reads all unique tags from state.uriRegistry and renders pill buttons.
+ * Called from initSidebar after renderLayerStack.
+ */
+export function renderUriFilterBar() {
+  const container = document.getElementById("uri-filter-bar");
+  if (!container) return;
+
+  const state = store.getState();
+  const registry = state.uriRegistry;
+  const activeFilters = state.activeUriFilters || [];
+
+  if (!(registry instanceof Map) || registry.size === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  container.style.display = "";
+  const { collectAllTags } = (() => {
+    // Inline tag collection to avoid circular dep issues
+    const tagSet = new Set();
+    for (const entry of registry.values()) {
+      const uri = entry.uri || "";
+      if (!uri.startsWith("@") || !uri.endsWith("@")) continue;
+      const inner = uri.slice(1, -1);
+      inner.split("-").forEach((part) => {
+        if (part && part.length > 1) tagSet.add(`#${part}`);
+      });
+    }
+    return { collectAllTags: () => Array.from(tagSet).sort() };
+  })();
+
+  const allTags = collectAllTags();
+  const tagList = container.querySelector(".uri-tag-list");
+  if (!tagList) return;
+
+  tagList.innerHTML = "";
+  allTags.forEach((tag) => {
+    const btn = document.createElement("button");
+    btn.className =
+      "uri-tag-pill" + (activeFilters.includes(tag) ? " active" : "");
+    btn.textContent = tag;
+    btn.title = `Filter by ${tag}`;
+    btn.addEventListener("click", () => {
+      store.dispatch({ type: "TOGGLE_URI_FILTER", payload: { tag } });
+      renderUriFilterBar();
+      // Trigger view refresh for Three.js dimming
+      window.dispatchEvent(new CustomEvent("uriFilterChanged"));
+    });
+    tagList.appendChild(btn);
+  });
+
+  // Clear filters button
+  if (activeFilters.length > 0) {
+    const clearBtn = container.querySelector(".uri-filter-clear");
+    if (clearBtn) {
+      clearBtn.style.display = "";
+      clearBtn.onclick = () => {
+        store.dispatch({
+          type: "SET_ACTIVE_URI_FILTERS",
+          payload: { filters: [] },
+        });
+        renderUriFilterBar();
+        window.dispatchEvent(new CustomEvent("uriFilterChanged"));
+      };
+    }
+  } else {
+    const clearBtn = container.querySelector(".uri-filter-clear");
+    if (clearBtn) clearBtn.style.display = "none";
+  }
 }

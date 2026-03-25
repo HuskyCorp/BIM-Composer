@@ -176,3 +176,42 @@
   cursor: pointer;
   flex-shrink: 0;
 }
+
+/* ─── Tier Band Headers ───────────────────────────────────────────────── */
+
+.timeline-tier-header {
+  padding: 4px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  margin-top: 4px;
+}
+
+/* ─── Archive and Approval node shapes ───────────────────────────────── */
+
+.timeline-node.archived {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  border-radius: 0;
+  background-color: #424242;
+  border-color: #666;
+}
+
+.timeline-node.approval {
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  border-radius: 0;
+  background-color: #28a745;
+  border-color: #1a6630;
+}

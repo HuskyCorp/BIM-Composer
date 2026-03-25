@@ -177,8 +177,9 @@ export const buildFileOutliner = errorHandler.wrap(
     outlinerEl.className = "blender-outliner";
     const fragment = document.createDocumentFragment();
 
+    const sampleSceneEl = document.getElementById("sampleSceneItem");
     const sceneName =
-      document.getElementById("sampleSceneItem").textContent || "Stage";
+      (sampleSceneEl && sampleSceneEl.textContent.trim()) || "Stage";
     const sceneRootLi = document.createElement("li");
     sceneRootLi.classList.add("scene-item");
     sceneRootLi.dataset.type = "hierarchy";
@@ -245,7 +246,7 @@ export const buildStageOutliner = errorHandler.wrapAsync(
       outlinerEl.innerHTML = "";
       outlinerEl.className = "blender-outliner";
       const fragment = document.createDocumentFragment();
-      const sceneName = state.sceneName || "Stage";
+      const sceneName = "Stage";
       if (!composedHierarchy) return;
 
       const sceneRootLi = document.createElement("li");

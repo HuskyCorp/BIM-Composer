@@ -1,0 +1,377 @@
+/* css/user-management.css — ISO 19650 User Management Modal */
+
+#user-management-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.um-modal-content {
+  background: #fff;
+  border-radius: 8px;
+  width: min(800px, 96vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.um-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.um-modal-header h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.um-modal-header button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+}
+
+/* ─── Tabs ─────────────────────────────────────────────────────────────── */
+
+.um-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0 20px;
+}
+
+.um-tab {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  color: #666;
+  margin-right: 4px;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.um-tab.active {
+  color: #007aff;
+  border-bottom-color: #007aff;
+}
+
+.um-tab-content {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ─── Two-column layout ──────────────────────────────────────────────── */
+
+.um-two-col {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  height: 400px;
+}
+
+.um-list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.um-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.um-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.1s;
+}
+
+.um-list-item:hover {
+  background: #f5f7fa;
+}
+.um-list-item.selected {
+  background: #e8f0fe;
+}
+
+.um-item-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.um-item-sub {
+  font-size: 10px;
+  color: #888;
+}
+
+.um-role-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #333;
+  align-self: flex-start;
+}
+
+/* ─── Form column ──────────────────────────────────────────────────── */
+
+.um-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.um-form-col label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+}
+
+.um-form-col input,
+.um-form-col select {
+  padding: 5px 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+}
+
+.um-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.um-checkbox-label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: normal !important;
+  color: #333 !important;
+  cursor: pointer;
+}
+
+.um-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ─── Buttons ──────────────────────────────────────────────────────── */
+
+.um-add-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  border: 1px solid #007aff;
+  color: #007aff;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.um-add-btn:hover {
+  background: #007aff;
+  color: #fff;
+}
+
+#um-save-user-btn {
+  padding: 6px 14px;
+  font-size: 11px;
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.um-danger-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  background: transparent;
+  color: #e74c3c;
+  border: 1px solid #e74c3c;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.um-danger-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+/* ─── Simple table layout ──────────────────────────────────────────── */
+
+.um-simple-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.um-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.um-table th {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+}
+
+.um-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.um-inline-input {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 12px;
+  background: transparent;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.um-inline-input:focus {
+  border-color: #007aff;
+  background: #fff;
+  outline: none;
+}
+
+.um-table select {
+  font-size: 11px;
+  padding: 2px 4px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  background: #fff;
+}
+
+/* ─── Manage users button in top bar ───────────────────────────────── */
+
+#manageUsersButton {
+  padding: 4px 8px;
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.15s;
+  margin-left: 6px;
+}
+
+#manageUsersButton:hover {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+}
+
+/* ─── Dark theme overrides ──────────────────────────────────────────── */
+
+.dark-theme .um-modal-content {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .um-modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.dark-theme .um-tabs {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.dark-theme .um-tab {
+  color: #aaa;
+}
+.dark-theme .um-tab.active {
+  color: #4da6ff;
+  border-bottom-color: #4da6ff;
+}
+.dark-theme .um-list {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.dark-theme .um-list-item {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+.dark-theme .um-list-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.dark-theme .um-list-item.selected {
+  background: rgba(77, 166, 255, 0.15);
+}
+.dark-theme .um-item-sub {
+  color: #666;
+}
+.dark-theme .um-form-col input,
+.dark-theme .um-form-col select,
+.dark-theme .um-inline-input,
+.dark-theme .um-table select {
+  background: #2a2a2a;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e0e0e0;
+}
+.dark-theme .um-table th {
+  color: #666;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.dark-theme .um-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+.dark-theme #manageUsersButton {
+  color: #aaa;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.dark-theme #manageUsersButton:hover {
+  color: #4da6ff;
+  background: rgba(77, 166, 255, 0.1);
+}

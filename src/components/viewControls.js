@@ -7,6 +7,22 @@ import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
 import { validateUsdaSyntax } from "../utils/atomicFileHandler.js";
 import { recomposeStage } from "./sidebar/layerStackController.js";
 
+/** Returns the active branch name for use as a USDA root prim / filename. */
+function _getActiveBranchName(state) {
+  if (state.activeDesignOptionId) {
+    const opt = (state.designOptions || []).find(
+      (o) => o.id === state.activeDesignOptionId
+    );
+    if (opt) return opt.name;
+  }
+  const activePkg = (state.packages || []).find(
+    (p) => p.id === state.activePackageId
+  );
+  if (activePkg?.stageBranch && activePkg.stageBranch !== "WIP")
+    return activePkg.stageBranch;
+  return "Stage";
+}
+
 export function initViewControls(
   fileThreeScene,
   stageThreeScene,
@@ -131,8 +147,9 @@ export function initViewControls(
       } else {
         // Fix: Use state.stage.composedPrims (The Stage Definition) instead of state.composedHierarchy (The Resolved/Rendered Tree)
         // This ensures that we show the "Source Code" structure (References) rather than the fully expanded tree.
+        const activeBranchName = _getActiveBranchName(state);
         editor.value = generateStageUsda(
-          state.sceneName,
+          activeBranchName,
           state.stage.composedPrims
         );
       }
@@ -340,8 +357,9 @@ export function initViewControls(
     }
 
     // 2. Generate the Root Stage Content with filtered prims
-    const rootFileName = `${state.sceneName.replace(/\s+/g, "_")}.usda`;
-    const stageContent = generateStageUsda(state.sceneName, filteredPrims);
+    const activeBranchName = _getActiveBranchName(state);
+    const rootFileName = `${activeBranchName.replace(/\s+/g, "_")}.usda`;
+    const stageContent = generateStageUsda(activeBranchName, filteredPrims);
 
     // 2.5. Validate USD syntax before adding to zip
     const validation = validateUsdaSyntax(stageContent);
@@ -423,10 +441,7 @@ export function initViewControls(
     // Include filter info in filename for clarity
     const filterSuffix =
       statusFilters.length === 4 ? "All" : statusFilters.join("-");
-    link.download = `Project_${state.sceneName.replace(
-      /\s+/g,
-      "_"
-    )}_${filterSuffix}_${Date.now()}.usdz`;
+    link.download = `Project_${_getActiveBranchName(state).replace(/\s+/g, "_")}_${filterSuffix}_${Date.now()}.usdz`;
 
     document.body.appendChild(link);
     link.click();

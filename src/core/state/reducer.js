@@ -35,12 +35,18 @@ export function reducer(state, action) {
   const { type, payload } = action;
 
   switch (type) {
-    // ==================== Scene Actions ====================
-    case "SET_SCENE_NAME":
-      return { sceneName: payload.sceneName };
-
-    case "SET_CURRENT_USER":
-      return { currentUser: payload.currentUser };
+    // ==================== User Actions ====================
+    case "SET_CURRENT_USER": {
+      // Accepts both new format { currentUserId } and legacy format { currentUser }
+      const userId = payload.currentUserId || payload.currentUser;
+      const userObj =
+        state.users instanceof Map ? state.users.get(userId) : null;
+      return {
+        currentUserId: userId,
+        // Keep currentUser string in sync for backward compat
+        currentUser: userObj?.name ?? userId,
+      };
+    }
 
     // ==================== Layer Actions ====================
     case "ADD_LAYER": {
@@ -67,6 +73,14 @@ export function reducer(state, action) {
 
     case "UPDATE_LAYER": {
       const currentStack = state.stage?.layerStack || [];
+      const targetLayer = currentStack.find((l) => l.id === payload.layerId);
+      // Immutable layers cannot be modified
+      if (targetLayer?.immutable) {
+        console.warn(
+          `[Reducer] Blocked mutation of immutable layer: ${payload.layerId}`
+        );
+        return {};
+      }
       return {
         stage: {
           ...state.stage,
@@ -230,11 +244,15 @@ export function reducer(state, action) {
         return state;
       }
 
+      const authorUser =
+        state.users instanceof Map
+          ? state.users.get(state.currentUserId)
+          : null;
       const commit = {
         id: generateId(),
         timestamp: Date.now(),
         message: commitMessage,
-        author: state.currentUser || "Unknown",
+        author: authorUser?.name || state.currentUser || "Unknown",
         changes: [...state.stagedChanges],
       };
 
@@ -416,6 +434,176 @@ export function reducer(state, action) {
           activePackageFilter: payload.packageId,
         },
       };
+
+    // ==================== User Management Actions ====================
+    case "ADD_USER": {
+      const currentUsers =
+        state.users instanceof Map ? new Map(state.users) : new Map();
+      currentUsers.set(payload.user.id, payload.user);
+      return { users: currentUsers };
+    }
+
+    case "UPDATE_USER": {
+      if (!(state.users instanceof Map)) return {};
+      const updatedUsers = new Map(state.users);
+      const existing = updatedUsers.get(payload.userId);
+      if (existing)
+        updatedUsers.set(payload.userId, { ...existing, ...payload.updates });
+      return { users: updatedUsers };
+    }
+
+    case "REMOVE_USER": {
+      if (!(state.users instanceof Map)) return {};
+      const filteredUsers = new Map(state.users);
+      filteredUsers.delete(payload.userId);
+      const newCurrentId =
+        state.currentUserId === payload.userId
+          ? filteredUsers.keys().next().value || null
+          : state.currentUserId;
+      return { users: filteredUsers, currentUserId: newCurrentId };
+    }
+
+    case "ADD_COMPANY": {
+      const currentCompanies = state.companies || [];
+      return { companies: [...currentCompanies, payload.company] };
+    }
+
+    case "UPDATE_COMPANY": {
+      return {
+        companies: (state.companies || []).map((c) =>
+          c.id === payload.companyId ? { ...c, ...payload.updates } : c
+        ),
+      };
+    }
+
+    case "REMOVE_COMPANY": {
+      return {
+        companies: (state.companies || []).filter(
+          (c) => c.id !== payload.companyId
+        ),
+      };
+    }
+
+    case "ADD_TASK_TEAM": {
+      return { taskTeams: [...(state.taskTeams || []), payload.team] };
+    }
+
+    case "UPDATE_TASK_TEAM": {
+      return {
+        taskTeams: (state.taskTeams || []).map((t) =>
+          t.id === payload.teamId ? { ...t, ...payload.updates } : t
+        ),
+      };
+    }
+
+    case "REMOVE_TASK_TEAM": {
+      return {
+        taskTeams: (state.taskTeams || []).filter(
+          (t) => t.id !== payload.teamId
+        ),
+      };
+    }
+
+    // ==================== URI Actions ====================
+    case "REGISTER_URIS_BATCH": {
+      const currentRegistry =
+        state.uriRegistry instanceof Map
+          ? new Map(state.uriRegistry)
+          : new Map();
+      for (const [primPath, entry] of Object.entries(payload.entries)) {
+        currentRegistry.set(primPath, entry);
+      }
+      return { uriRegistry: currentRegistry };
+    }
+
+    case "CLEAR_URIS_FOR_FILE": {
+      if (!(state.uriRegistry instanceof Map)) return {};
+      const filtered = new Map();
+      for (const [path, entry] of state.uriRegistry) {
+        if (entry.sourceFile !== payload.fileName) filtered.set(path, entry);
+      }
+      return { uriRegistry: filtered };
+    }
+
+    case "SET_ACTIVE_URI_FILTERS":
+      return { activeUriFilters: payload.filters };
+
+    case "TOGGLE_URI_FILTER": {
+      const current = state.activeUriFilters || [];
+      const idx = current.indexOf(payload.tag);
+      return {
+        activeUriFilters:
+          idx >= 0
+            ? current.filter((t) => t !== payload.tag)
+            : [...current, payload.tag],
+      };
+    }
+
+    // ==================== Design Option Actions ====================
+    case "ADD_DESIGN_OPTION": {
+      return {
+        designOptions: [...(state.designOptions || []), payload.option],
+      };
+    }
+
+    case "REMOVE_DESIGN_OPTION": {
+      return {
+        designOptions: (state.designOptions || []).filter(
+          (o) => o.id !== payload.optionId
+        ),
+        activeDesignOptionId:
+          state.activeDesignOptionId === payload.optionId
+            ? null
+            : state.activeDesignOptionId,
+      };
+    }
+
+    case "UPDATE_DESIGN_OPTION": {
+      return {
+        designOptions: (state.designOptions || []).map((o) =>
+          o.id === payload.optionId ? { ...o, ...payload.updates } : o
+        ),
+      };
+    }
+
+    case "SET_ACTIVE_DESIGN_OPTION":
+      return { activeDesignOptionId: payload.optionId };
+
+    case "APPROVE_DESIGN_OPTION": {
+      return {
+        designOptions: (state.designOptions || []).map((o) =>
+          o.id === payload.optionId
+            ? {
+                ...o,
+                status: "approved",
+                approvedBy: payload.approvedBy,
+                approvedAt: payload.approvedAt,
+              }
+            : o
+        ),
+      };
+    }
+
+    case "ARCHIVE_DESIGN_OPTION": {
+      return {
+        designOptions: (state.designOptions || []).map((o) =>
+          o.id === payload.optionId
+            ? {
+                ...o,
+                status: "superseded",
+                archivedBy: payload.archivedBy,
+                archivedAt: payload.archivedAt,
+              }
+            : o
+        ),
+      };
+    }
+
+    case "SET_STAGE_BRANCHES_STATE": {
+      return {
+        stageBranches: { ...(state.stageBranches || {}), ...payload.updates },
+      };
+    }
 
     // ==================== Unknown Action ====================
     default:

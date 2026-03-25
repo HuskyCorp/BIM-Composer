@@ -70,6 +70,10 @@ export function composePrimsFromHierarchy(prims, indent, layerStatus) {
       if (prim.properties.entityType) {
         propertiesString += `\n${indentStr}    custom string primvars:entityType = "${prim.properties.entityType}"`;
       }
+      // Write ISO 19650 URI if present
+      if (prim.properties.iso19650_uri) {
+        propertiesString += `\n${indentStr}    custom string primvars:iso19650_uri = "${prim.properties.iso19650_uri}"`;
+      }
 
       // Write all other custom properties
       const systemProperties = [
@@ -78,6 +82,7 @@ export function composePrimsFromHierarchy(prims, indent, layerStatus) {
         "status",
         "opacity",
         "entityType",
+        "iso19650_uri",
       ];
 
       for (const propName in prim.properties) {
@@ -192,8 +197,8 @@ export function composeHierarchyToUsda(hierarchy, layerStatus) {
   return `#usda 1.0\n(\n    defaultPrim = "${defaultPrim}"\n    upAxis = "Z"\n)\n${definitions}\n`;
 }
 
-export function generateStageUsda(sceneName, composedHierarchy) {
-  const validPrimName = sceneName.replace(/\s/g, "");
+export function generateStageUsda(branchName, composedHierarchy) {
+  const validPrimName = (branchName || "Stage").replace(/\s/g, "");
   const definitions = composePrimsFromHierarchy(composedHierarchy, 1, null);
   return `#usda 1.0\n(\n    defaultPrim = "${validPrimName}"\n    metersPerUnit = 1.0\n    upAxis = "Z"\n)\n\ndef Xform "${validPrimName}" (\n    kind = "assembly"\n)\n{\n${definitions}\n}\n`;
 }
@@ -206,27 +211,58 @@ export function generateStageUsda(sceneName, composedHierarchy) {
  * @param {Array<{id, name, color}>} packages - Current package list
  * @returns {string} Updated file content
  */
-export function writePackageRegistryToStatement(content, packages) {
+export function writePackageRegistryToStatement(
+  content,
+  packages,
+  designOptions = []
+) {
   const ids = packages.map((p) => `"${p.id}"`).join(", ");
   const names = packages
     .map((p) => `"${p.name.replace(/"/g, '\\"')}"`)
     .join(", ");
   const colors = packages.map((p) => `"${p.color}"`).join(", ");
+  const isoNumbers = packages.map((p) => `"${p.isoNumber || ""}"`).join(", ");
+  const stageBranches = packages
+    .map((p) => `"${p.stageBranch || "WIP"}"`)
+    .join(", ");
+  const approvalStatuses = packages
+    .map((p) => `"${p.approvalStatus || "pending"}"`)
+    .join(", ");
+
+  // Design options
+  const doIds = designOptions.map((o) => `"${o.id}"`).join(", ");
+  const doNames = designOptions
+    .map((o) => `"${o.name.replace(/"/g, '\\"')}"`)
+    .join(", ");
+  const doSuitabilities = designOptions
+    .map((o) => `"${o.suitability || ""}"`)
+    .join(", ");
+  const doStatuses = designOptions
+    .map((o) => `"${o.status || "open"}"`)
+    .join(", ");
 
   const block =
     `    customLayerData = {\n` +
     `        string[] packageIds = [${ids}]\n` +
     `        string[] packageNames = [${names}]\n` +
     `        string[] packageColors = [${colors}]\n` +
+    `        string[] packageIsoNumbers = [${isoNumbers}]\n` +
+    `        string[] packageStageBranches = [${stageBranches}]\n` +
+    `        string[] packageApprovalStatuses = [${approvalStatuses}]\n` +
+    (doIds ? `        string[] designOptionIds = [${doIds}]\n` : "") +
+    (doNames ? `        string[] designOptionNames = [${doNames}]\n` : "") +
+    (doSuitabilities
+      ? `        string[] designOptionSuitabilities = [${doSuitabilities}]\n`
+      : "") +
+    (doStatuses
+      ? `        string[] designOptionStatuses = [${doStatuses}]\n`
+      : "") +
     `    }`;
 
   if (/customLayerData\s*=\s*\{/.test(content)) {
-    // Replace the existing block (we control the format so \n    } is unambiguous)
     return content.replace(/ {4}customLayerData = \{[\s\S]*?\n {4}\}/, block);
   }
 
-  // Insert before the closing ) of the header metadata block.
-  // Use a regex to handle varying amounts of whitespace between ) and def "ChangeLog".
   return content.replace(/(\n\))\n+(def "ChangeLog")/, `\n${block}$1\n\n$2`);
 }
 
@@ -256,6 +292,14 @@ export function composeLogPrim(logEntry) {
   // Add packageId field (Design Package assignment)
   if (logEntry.packageId) {
     extraFields += `\n        custom string packageId = "${logEntry.packageId}"`;
+  }
+
+  // ISO 19650: Design Option and Suitability Code
+  if (logEntry.designOptionId) {
+    extraFields += `\n        custom string designOptionId = "${logEntry.designOptionId}"`;
+  }
+  if (logEntry.suitabilityCode) {
+    extraFields += `\n        custom string suitabilityCode = "${logEntry.suitabilityCode}"`;
   }
 
   // Add parent field if exists
