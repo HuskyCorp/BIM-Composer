@@ -1,0 +1,96 @@
+/* css/scene-properties-overlay.css — floating in-scene properties panel */
+
+.scene-properties-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 280px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.scene-properties-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(12px);
+}
+
+/* Header */
+.spo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.spo-prim-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.spo-close-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.spo-close-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+}
+
+/* Properties content area — reuses .properties-content rules from properties.css */
+.spo-properties-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+/* Dark theme */
+.dark-theme .scene-properties-overlay {
+  background: rgba(30, 30, 30, 0.96);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.dark-theme .spo-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark-theme .spo-prim-name {
+  color: #eee;
+}
+
+.dark-theme .spo-close-btn {
+  color: #666;
+}
+
+.dark-theme .spo-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
+}

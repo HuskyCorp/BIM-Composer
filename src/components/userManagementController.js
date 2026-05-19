@@ -5,10 +5,16 @@ import {
   userManagementActions,
   companyActions,
   taskTeamActions,
-  sceneActions,
 } from "../core/state/actions/index.js";
-import { ISO_ROLES, SUITABILITY_CODES } from "../data/isoModels.js";
+import { ISO_ROLES } from "../data/isoModels.js";
 import { DISCIPLINE_CONFIG } from "../utils/precedenceMatrix.js";
+import { isProjectManager } from "../utils/rolePermissions.js";
+
+function getCurrentUserObj(state) {
+  return state.users instanceof Map
+    ? state.users.get(state.currentUserId)
+    : null;
+}
 
 const DISCIPLINES = Object.keys(DISCIPLINE_CONFIG);
 
@@ -47,7 +53,20 @@ export function initUserManagementController(updateView) {
 
   // ── Open / Close ──────────────────────────────────────────────────────────
   openBtn.addEventListener("click", () => {
-    renderModal();
+    const state = store.getState();
+    const currentUserObj = getCurrentUserObj(state);
+    const isPM = isProjectManager(currentUserObj || state.currentUser);
+    renderModal(isPM);
+    // Reset to Users tab on every open
+    modal
+      .querySelectorAll(".um-tab")
+      .forEach((t) => t.classList.remove("active"));
+    modal
+      .querySelectorAll(".um-tab-content")
+      .forEach((c) => (c.style.display = "none"));
+    modal.querySelector(".um-tab[data-tab='users']")?.classList.add("active");
+    const usersTab = modal.querySelector("#um-tab-users");
+    if (usersTab) usersTab.style.display = "";
     modal.style.display = "flex";
   });
 
@@ -72,15 +91,15 @@ export function initUserManagementController(updateView) {
 
 // ─── Render ────────────────────────────────────────────────────────────────
 
-function renderModal() {
-  renderCompaniesTab();
-  renderTaskTeamsTab();
-  renderUsersTab();
+function renderModal(isPM = false) {
+  renderCompaniesTab(isPM);
+  renderTaskTeamsTab(isPM);
+  renderUsersTab(isPM);
 }
 
 // ─── Users Tab ────────────────────────────────────────────────────────────
 
-function renderUsersTab() {
+function renderUsersTab(isPM = false) {
   const container = document.getElementById("um-tab-users");
   if (!container) return;
 
@@ -88,7 +107,27 @@ function renderUsersTab() {
   const users =
     state.users instanceof Map ? Array.from(state.users.values()) : [];
   const companies = state.companies || [];
-  const taskTeams = state.taskTeams || [];
+  if (!isPM) {
+    container.innerHTML = `
+      <div class="um-readonly-notice">
+        <span class="um-readonly-icon">🔒</span>
+        <span>User management is restricted to Project Managers.</span>
+      </div>
+      <ul class="um-list um-list-readonly">
+        ${users
+          .map(
+            (u) => `
+          <li class="um-list-item">
+            <span class="um-item-name">${u.name}</span>
+            <span class="um-role-badge" style="background:${ISO_ROLES[u.role]?.color || "#888"}44">${ISO_ROLES[u.role]?.label || u.role}</span>
+            <span class="um-item-sub">${u.company?.code || ""} · ${u.discipline || ""}</span>
+          </li>`
+          )
+          .join("")}
+      </ul>
+    `;
+    return;
+  }
 
   container.innerHTML = `
     <div class="um-two-col">
@@ -208,12 +247,13 @@ function renderUsersTab() {
 
     if (editingUserId) {
       store.dispatch(userManagementActions.updateUser(editingUserId, userObj));
+      renderUserList();
     } else {
-      store.dispatch(
-        userManagementActions.addUser({ ...userObj, id: generateId("user") })
-      );
+      const newId = generateId("user");
+      store.dispatch(userManagementActions.addUser({ ...userObj, id: newId }));
+      editingUserId = newId;
+      openUserForm(newId); // enter edit mode for the newly created user
     }
-    renderUserList();
   });
 
   // Delete
@@ -233,12 +273,26 @@ function renderUsersTab() {
 
 // ─── Companies Tab ────────────────────────────────────────────────────────
 
-function renderCompaniesTab() {
+function renderCompaniesTab(isPM = false) {
   const container = document.getElementById("um-tab-companies");
   if (!container) return;
 
   const state = store.getState();
   const companies = state.companies || [];
+
+  if (!isPM) {
+    container.innerHTML = `
+      <div class="um-readonly-notice">
+        <span class="um-readonly-icon">🔒</span>
+        <span>Company management is restricted to Project Managers.</span>
+      </div>
+      <table class="um-table">
+        <thead><tr><th>Name</th><th>Code</th></tr></thead>
+        <tbody>${companies.map((c) => `<tr><td>${c.name}</td><td>${c.code}</td></tr>`).join("")}</tbody>
+      </table>
+    `;
+    return;
+  }
 
   container.innerHTML = `
     <div class="um-simple-list">
@@ -275,7 +329,28 @@ function renderCompaniesTab() {
         );
       });
       tr.querySelector(".co-delete").addEventListener("click", () => {
-        if (confirm("Delete this company?")) {
+        const s = store.getState();
+        const usersInCompany =
+          s.users instanceof Map
+            ? Array.from(s.users.values()).filter((u) => u.company?.id === c.id)
+            : [];
+        const teamsInCompany = (s.taskTeams || []).filter(
+          (t) => t.company?.id === c.id
+        );
+        let message = "Delete this company?";
+        if (usersInCompany.length > 0 || teamsInCompany.length > 0) {
+          const parts = [];
+          if (usersInCompany.length > 0)
+            parts.push(
+              `Users: ${usersInCompany.map((u) => u.name).join(", ")}`
+            );
+          if (teamsInCompany.length > 0)
+            parts.push(
+              `Teams: ${teamsInCompany.map((t) => t.name).join(", ")}`
+            );
+          message = `"${c.name}" is still referenced by:\n${parts.join("\n")}\n\nThose users/teams will lose their company reference. Continue?`;
+        }
+        if (confirm(message)) {
           store.dispatch(companyActions.removeCompany(c.id));
           renderCompanyList();
         }
@@ -301,9 +376,24 @@ function renderCompaniesTab() {
 
 // ─── Task Teams Tab ───────────────────────────────────────────────────────
 
-function renderTaskTeamsTab() {
+function renderTaskTeamsTab(isPM = false) {
   const container = document.getElementById("um-tab-teams");
   if (!container) return;
+
+  if (!isPM) {
+    const s = store.getState();
+    container.innerHTML = `
+      <div class="um-readonly-notice">
+        <span class="um-readonly-icon">🔒</span>
+        <span>Task team management is restricted to Project Managers.</span>
+      </div>
+      <table class="um-table">
+        <thead><tr><th>Name</th><th>Code</th><th>Discipline</th><th>Company</th></tr></thead>
+        <tbody>${(s.taskTeams || []).map((t) => `<tr><td>${t.name}</td><td>${t.code}</td><td>${t.discipline || ""}</td><td>${t.company?.code || ""}</td></tr>`).join("")}</tbody>
+      </table>
+    `;
+    return;
+  }
 
   container.innerHTML = `
     <div class="um-simple-list">
@@ -360,7 +450,18 @@ function renderTaskTeamsTab() {
           store.dispatch(taskTeamActions.updateTaskTeam(t.id, { company }));
       });
       tr.querySelector(".tt-delete").addEventListener("click", () => {
-        if (confirm("Delete this task team?")) {
+        const s = store.getState();
+        const usersInTeam =
+          s.users instanceof Map
+            ? Array.from(s.users.values()).filter((u) =>
+                u.taskTeams?.some((tt) => tt.id === t.id)
+              )
+            : [];
+        let message = "Delete this task team?";
+        if (usersInTeam.length > 0) {
+          message = `"${t.name}" is still used by: ${usersInTeam.map((u) => u.name).join(", ")}\n\nDeleting it will remove this team from those users. Continue?`;
+        }
+        if (confirm(message)) {
           store.dispatch(taskTeamActions.removeTaskTeam(t.id));
           renderTeamList();
         }

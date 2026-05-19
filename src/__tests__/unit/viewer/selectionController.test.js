@@ -1242,6 +1242,12 @@ describe("SelectionController", () => {
 
       controller.onMouseDown(event);
 
+      const upEvent = new MouseEvent("mouseup", { clientX: 400, clientY: 300 });
+      Object.defineProperty(upEvent, "target", {
+        value: mockRenderer.domElement,
+      });
+      controller.onMouseUp(upEvent);
+
       expect(controller.selectedMeshes.has(mesh)).toBe(true);
     });
 
@@ -1261,6 +1267,12 @@ describe("SelectionController", () => {
       vi.spyOn(controller.raycaster, "intersectObjects").mockReturnValue([]);
 
       controller.onMouseDown(event);
+
+      const upEvent = new MouseEvent("mouseup", { clientX: 400, clientY: 300 });
+      Object.defineProperty(upEvent, "target", {
+        value: mockRenderer.domElement,
+      });
+      controller.onMouseUp(upEvent);
 
       expect(controller.selectedMeshes.size).toBe(0);
     });
@@ -1310,6 +1322,12 @@ describe("SelectionController", () => {
 
       controller.onMouseDown(event);
 
+      const upEvent = new MouseEvent("mouseup", { clientX: 400, clientY: 300 });
+      Object.defineProperty(upEvent, "target", {
+        value: mockRenderer.domElement,
+      });
+      controller.onMouseUp(upEvent);
+
       expect(controller.selectedMeshes.has(parentMesh)).toBe(true);
     });
 
@@ -1343,6 +1361,16 @@ describe("SelectionController", () => {
       ]);
 
       controller.onMouseDown(event);
+
+      const upEvent = new MouseEvent("mouseup", {
+        clientX: 400,
+        clientY: 300,
+        metaKey: true,
+      });
+      Object.defineProperty(upEvent, "target", {
+        value: mockRenderer.domElement,
+      });
+      controller.onMouseUp(upEvent);
 
       expect(controller.selectedMeshes.has(mesh1)).toBe(true);
       expect(controller.selectedMeshes.has(mesh2)).toBe(true);

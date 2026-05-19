@@ -1,0 +1,335 @@
+/* css/scene-navigator.css — unified Scene Navigator panel */
+
+.scene-navigator-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-y: auto;
+}
+
+/* ISO 19650 Status section headers */
+.status-section {
+  width: 100%;
+}
+
+.status-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #888;
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  user-select: none;
+}
+
+.status-section-header:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.status-section-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-section-dot.wip {
+  background: #ffa500;
+}
+.status-section-dot.shared {
+  background: #007aff;
+}
+.status-section-dot.published {
+  background: #28a745;
+}
+.status-section-dot.archived {
+  background: #888;
+}
+
+.status-section-chevron {
+  margin-left: auto;
+  font-size: 9px;
+  color: #aaa;
+  transition: transform 0.2s ease;
+}
+
+.status-section.collapsed .status-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.status-section-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-section.collapsed .status-section-body {
+  display: none;
+}
+
+/* Layer item row */
+.nav-layer-item {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.nav-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #333;
+  background: transparent;
+  transition: background 0.12s;
+}
+
+.nav-layer-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.nav-layer-row.active-file {
+  background: rgba(0, 122, 255, 0.08);
+  color: #007aff;
+  font-weight: 600;
+}
+
+.nav-layer-row.nav-selected {
+  outline: 1px solid rgba(0, 122, 255, 0.4);
+  outline-offset: -1px;
+}
+
+.nav-layer-expand-btn {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #aaa;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-layer-expand-btn.expanded {
+  transform: rotate(90deg);
+}
+
+.nav-layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.nav-layer-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.nav-layer-branch-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.nav-layer-suitability {
+  font-size: 9px;
+  font-weight: 700;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  padding: 1px 5px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.nav-layer-lock {
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+/* Prim tree nested under a layer */
+.nav-layer-prims {
+  display: none;
+  flex-direction: column;
+  padding-left: 16px;
+  border-left: 2px solid rgba(0, 0, 0, 0.06);
+  margin-left: 20px;
+}
+
+.nav-layer-prims.open {
+  display: flex;
+}
+
+/* Recursive prim nodes */
+.nav-prim-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-prim-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 2px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #555;
+  border-radius: 3px;
+  transition: background 0.1s;
+}
+
+.nav-prim-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #111;
+}
+
+.nav-prim-row.selected {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+}
+
+.nav-prim-expand {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #bbb;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.nav-prim-expand.has-children {
+  color: #888;
+  cursor: pointer;
+}
+
+.nav-prim-expand.expanded {
+  transform: rotate(90deg);
+}
+
+.nav-prim-type-icon {
+  font-size: 10px;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+}
+
+.nav-prim-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-prim-type {
+  font-size: 9px;
+  color: #bbb;
+  flex-shrink: 0;
+}
+
+.nav-prim-children {
+  display: none;
+  flex-direction: column;
+  padding-left: 14px;
+}
+
+.nav-prim-children.open {
+  display: flex;
+}
+
+/* Empty state */
+.nav-empty-status {
+  padding: 6px 20px;
+  font-size: 11px;
+  color: #bbb;
+  font-style: italic;
+}
+
+/* Dark theme */
+.dark-theme .status-section-header {
+  color: #666;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .status-section-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dark-theme .nav-layer-row {
+  color: #ccc;
+}
+
+.dark-theme .nav-layer-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dark-theme .nav-layer-row.active-file {
+  background: rgba(0, 122, 255, 0.12);
+}
+
+.dark-theme .nav-layer-row.nav-selected {
+  outline-color: rgba(0, 122, 255, 0.5);
+}
+
+.dark-theme .nav-layer-prims {
+  border-left-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark-theme .nav-prim-row {
+  color: #999;
+}
+
+.dark-theme .nav-prim-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #ddd;
+}
+
+.dark-theme .nav-prim-row.selected {
+  background: rgba(0, 122, 255, 0.15);
+  color: #4da3ff;
+}
+
+.dark-theme .nav-layer-item {
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Partial / split-layer badge — shown when a layer appears in a section because
+   only some of its prims have been individually promoted to that status. */
+.nav-layer-partial-badge,
+.status-partial-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 165, 0, 0.5);
+  color: #ffa500;
+  background: rgba(255, 165, 0, 0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 4px;
+  vertical-align: middle;
+  white-space: nowrap;
+}

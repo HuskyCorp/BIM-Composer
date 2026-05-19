@@ -113,6 +113,21 @@
   opacity: 1;
 }
 
+/* ── Discipline label inside dropdown items ─────────────────────────── */
+.user-option-name {
+  flex-shrink: 0;
+}
+
+.user-option-discipline {
+  font-size: 10px;
+  color: #aaa;
+  flex-shrink: 0;
+}
+
+.user-option.selected .user-option-discipline {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 /* ── Role badge (shown inside the user-switch button) ─────────────────── */
 .user-role-badge {
   margin-left: auto;

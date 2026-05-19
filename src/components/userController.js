@@ -7,7 +7,7 @@ import {
 } from "../core/index.js";
 import { renderLayerStack } from "./sidebar/layerStackController.js";
 import { getRoleLabel, getRoleColor } from "../utils/rolePermissions.js";
-import { resolveUserIdFromName } from "../data/isoModels.js";
+import { resolveUserIdFromName, ISO_ROLES } from "../data/isoModels.js";
 
 const USER_STORAGE_KEY = "usda_composer_current_user";
 
@@ -124,11 +124,18 @@ export function initUserController(updateView) {
       const li = document.createElement("li");
       li.className = "user-option" + (id === currentUserId ? " selected" : "");
       li.dataset.userId = id;
-      li.textContent = user.name;
+      li.innerHTML = `<span class="user-option-name">${user.name}</span>`;
+      if (user.discipline) {
+        const disc = document.createElement("span");
+        disc.className = "user-option-discipline";
+        disc.textContent = user.discipline;
+        li.appendChild(disc);
+      }
       const badge = document.createElement("span");
       badge.className = "role-badge";
       badge.textContent = getRoleLabel(user);
       badge.style.background = getRoleColor(user) + "44";
+      badge.title = ISO_ROLES[user.role]?.description || getRoleLabel(user);
       li.appendChild(badge);
       userDropdown.appendChild(li);
     }
@@ -169,6 +176,9 @@ export function initUserController(updateView) {
       updateUserUI();
     })();
   }
+
+  // Refresh dropdown whenever user data changes (e.g. after User Management modal closes)
+  window.addEventListener("userChanged", () => updateUserUI());
 
   // Initial UI update
   updateUserUI();

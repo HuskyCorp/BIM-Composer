@@ -2,6 +2,13 @@
 import { store } from "../core/index.js";
 import { USDA_PARSER } from "../viewer/usda/usdaParser.js";
 import { getDisciplineForUser, hasAuthority } from "./precedenceMatrix.js";
+import { isProjectManager } from "./rolePermissions.js";
+
+function getCurrentUserObj(state) {
+  return state.users instanceof Map
+    ? state.users.get(state.currentUserId)
+    : null;
+}
 
 /**
  * Detect if a property change will create a conflict
@@ -147,14 +154,10 @@ export function checkPermission(prim, propertyName) {
     };
   }
 
-  // Project Manager can edit anything
-  if (state.currentUser === "Project Manager") {
+  // Project Managers (and equivalent roles) can edit anything
+  const currentUserObj = getCurrentUserObj(state);
+  if (isProjectManager(currentUserObj || state.currentUser)) {
     return { allowed: true, reason: "Project Manager has full permissions" };
-  }
-
-  // Field Engineer can edit anything
-  if (state.currentUser === "Field Engineer") {
-    return { allowed: true, reason: "Field Engineer has full permissions" };
   }
 
   // Field Person can add new attributes but cannot edit existing properties

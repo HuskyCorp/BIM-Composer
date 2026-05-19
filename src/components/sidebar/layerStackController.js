@@ -1,5 +1,6 @@
 // src/components/sidebar/layerStackController.js
 // REFACTORED: Enhanced with error handling and core architecture
+import { showFileConflictResolver } from "../conflictResolver.js";
 import {
   store,
   errorHandler,
@@ -13,10 +14,7 @@ import {
   writePackageRegistryToStatement,
 } from "../../viewer/usda/usdaComposer.js";
 import { sha256 } from "js-sha256";
-import {
-  explodeUsda,
-  computePrimHashes,
-} from "../../utils/atomicFileHandler.js";
+import { computePrimHashes } from "../../utils/atomicFileHandler.js";
 import { ifcConverterAPI } from "../../services/ifcConverterAPI.js";
 import { loadingIndicator } from "../loadingIndicator.js";
 import {
@@ -57,6 +55,9 @@ function createLayerItem(layer, displayName, state) {
 
   const statusIndicator = `<span class="status-indicator ${layer.status.toLowerCase()}" title="Click to change status">${layer.status.charAt(0)}</span>`;
   const nameStr = displayName || layer.filePath;
+  const partialBadge = layer._isSplit
+    ? `<span class="status-partial-badge" title="Only prims at this status from this layer">partial</span>`
+    : "";
   const visibilityToggle = `<span class="visibility-toggle ${layer.visible ? "" : "hidden-item"}">${layer.visible ? "👁️" : "➖"}</span>`;
   const layerBranch =
     layer.branch ||
@@ -73,7 +74,7 @@ function createLayerItem(layer, displayName, state) {
 
   li.innerHTML = `
     ${statusIndicator}
-    <span class="layer-name" style="flex: 1; word-break: break-word; line-height: 1.4;" title="${layer.filePath}">${nameStr}</span>
+    <span class="layer-name" style="flex: 1; word-break: break-word; line-height: 1.4;" title="${layer.filePath}">${nameStr}${partialBadge}</span>
     <div class="layer-item-controls">${suitabilityBadge}${immutableIcon}${branchBadge}${visibilityToggle}</div>
   `;
 
@@ -321,27 +322,47 @@ export function renderLayerStack() {
   const state = store.getState();
   const layerStack = state.stage.layerStack;
 
+  const currentUserObj =
+    state.users instanceof Map ? state.users.get(state.currentUserId) : null;
+  const isPM = isProjectManager(currentUserObj || state.currentUser);
+
   // Ownership filter: non-PMs only see their own layers
   const visibleLayers = layerStack.filter((layer) => {
-    if (state.currentUser === "Project Manager") return true;
+    if (isPM) return true;
     if (layer.owner && layer.owner !== state.currentUser) return false;
     return true;
   });
 
-  // Split layers by status into branch buckets
-  const wipLayers = visibleLayers.filter((l) => l.status === "WIP");
-  const sharedLayers = visibleLayers.filter((l) => l.status === "Shared");
-  const publishedLayers = visibleLayers.filter((l) => l.status === "Published");
-  const archivedLayers = visibleLayers.filter((l) => l.status === "Archived");
+  // Build per-layer, per-status prim groups from composedHierarchy so that
+  // layers with individually-promoted prims appear in the correct sections.
+  const _lsg = computeLayerStatusGroups(
+    state.composedHierarchy || [],
+    state.stage.layerStack
+  );
+
+  const makeBucket = (targetStatus) => {
+    const native = visibleLayers.filter((l) => l.status === targetStatus);
+    const split = visibleLayers
+      .filter((l) => l.status !== targetStatus)
+      .filter((l) => {
+        const byStatus = _lsg.get(l.id);
+        return (
+          byStatus?.has(targetStatus) && byStatus.get(targetStatus).length > 0
+        );
+      })
+      .map((l) => ({ ...l, _isSplit: true }));
+    return [...native, ...split];
+  };
+
+  const wipLayers = makeBucket("WIP");
+  const sharedLayers = makeBucket("Shared");
+  const publishedLayers = makeBucket("Published");
+  const archivedLayers = makeBucket("Archived");
 
   const designOptions = state.designOptions || [];
   const packages = state.packages || [];
   const archiveVisible = state.stageBranches?.archive?.visible || false;
   const primsByBranch = getPrimsByBranch(state);
-
-  const currentUserObj =
-    state.users instanceof Map ? state.users.get(state.currentUserId) : null;
-  const isPM = isProjectManager(currentUserObj || state.currentUser);
 
   const publishedPackage = packages.find(
     (p) => p.stageBranch === "Published" && p.approvalStatus === "approved"
@@ -493,6 +514,9 @@ export function renderLayerStack() {
   }
 
   layerStackList.appendChild(archivedSection);
+
+  // Keep Scene Navigator in sync
+  renderSceneNavigator();
 }
 
 function handleLayerSelection(li, updateView) {
@@ -611,7 +635,9 @@ export function recomposeStage() {
   let stagedPrims = state.stage.composedPrims || [];
 
   // Strict Visibility Filter for 3D Viewer
-  if (state.currentUser !== "Project Manager") {
+  const _rcUserObj =
+    state.users instanceof Map ? state.users.get(state.currentUserId) : null;
+  if (!isProjectManager(_rcUserObj || state.currentUser)) {
     stagedPrims = stagedPrims.filter((prim) => {
       // If no source file, assume it's safe (or blocking it might break local edits)
       // But strict mode means we only show what we own.
@@ -814,6 +840,309 @@ export function recomposeStage() {
   );
 }
 
+// ─── Scene Navigator: unified layer + prim tree ─────────────────────────────
+// Tracks which layer nodes are expanded by the user so state survives re-renders
+const _expandedLayers = new Set();
+let _selectedNavLayerId = null;
+
+/**
+ * Render prim hierarchy for a single layer into a container element.
+ * @param {Array} prims - Root prims from USDA_PARSER.getPrimHierarchy()
+ * @param {HTMLElement} container
+ */
+// eslint-disable-next-line no-unused-vars
+function renderPrimTree(prims, container) {
+  prims.forEach((prim) => {
+    const item = document.createElement("div");
+    item.className = "nav-prim-item";
+
+    const hasChildren = prim.children && prim.children.length > 0;
+    const typeIcon =
+      prim.type === "Mesh" ? "◼" : prim.type === "Scope" ? "◈" : "◻";
+
+    const row = document.createElement("div");
+    row.className = "nav-prim-row";
+    row.dataset.primPath = prim.path;
+    row.innerHTML = `
+      <span class="nav-prim-expand ${hasChildren ? "has-children expanded" : ""}" data-expand>${hasChildren ? "▶" : ""}</span>
+      <span class="nav-prim-type-icon">${typeIcon}</span>
+      <span class="nav-prim-name" title="${prim.path}">${prim.name}</span>
+      <span class="nav-prim-type">${prim.type || ""}</span>
+    `;
+
+    row.addEventListener("click", (e) => {
+      if (
+        e.target.dataset.expand !== undefined ||
+        e.target.closest("[data-expand]")
+      ) {
+        if (hasChildren) {
+          const childrenEl = item.querySelector(".nav-prim-children");
+          const expandEl = row.querySelector("[data-expand]");
+          const isOpen = childrenEl?.classList.contains("open");
+          childrenEl?.classList.toggle("open", !isOpen);
+          expandEl?.classList.toggle("expanded", !isOpen);
+          e.stopPropagation();
+        }
+        return;
+      }
+      // Select prim
+      container
+        .querySelectorAll(".nav-prim-row.selected")
+        .forEach((r) => r.classList.remove("selected"));
+      row.classList.add("selected");
+      document.dispatchEvent(
+        new CustomEvent("primSelected", { detail: { primPath: prim.path } })
+      );
+    });
+
+    item.appendChild(row);
+
+    if (hasChildren) {
+      const childrenEl = document.createElement("div");
+      childrenEl.className = "nav-prim-children open";
+      renderPrimTree(prim.children, childrenEl);
+      item.appendChild(childrenEl);
+    }
+
+    container.appendChild(item);
+  });
+}
+
+/**
+ * Builds a Map<layerId, Map<status, prim[]>> from the composed hierarchy.
+ * effective_status = prim.properties?.status || layer.status
+ * Used by both renderSceneNavigator and renderLayerStack to support split-layer display.
+ */
+function computeLayerStatusGroups(composedHierarchy, layerStack) {
+  const groups = new Map();
+
+  const traverse = (prims) => {
+    for (const prim of prims || []) {
+      if (prim._sourceFile) {
+        const layer = layerStack.find((l) => l.filePath === prim._sourceFile);
+        if (layer) {
+          const effectiveStatus = prim.properties?.status || layer.status;
+          if (!groups.has(layer.id)) groups.set(layer.id, new Map());
+          const byStatus = groups.get(layer.id);
+          if (!byStatus.has(effectiveStatus)) byStatus.set(effectiveStatus, []);
+          byStatus.get(effectiveStatus).push(prim);
+        }
+      }
+      traverse(prim.children);
+    }
+  };
+
+  traverse(composedHierarchy);
+  return groups;
+}
+
+/**
+ * Renders a flat list of prims sourced from composedHierarchy into a container.
+ * Used when showing only the prims belonging to a specific status in the navigator.
+ */
+function renderComposedPrimList(prims, container) {
+  prims.forEach((prim) => {
+    const row = document.createElement("div");
+    row.className = "nav-prim-row";
+    row.dataset.primPath = prim.path;
+    const typeIcon =
+      prim.type === "Mesh" ? "◼" : prim.type === "Scope" ? "◈" : "◻";
+    row.innerHTML = `
+      <span class="nav-prim-type-icon">${typeIcon}</span>
+      <span class="nav-prim-name" title="${prim.path}">${prim.name}</span>
+      <span class="nav-prim-type">${prim.type || ""}</span>
+    `;
+    row.addEventListener("click", () => {
+      container
+        .querySelectorAll(".nav-prim-row.selected")
+        .forEach((r) => r.classList.remove("selected"));
+      row.classList.add("selected");
+      document.dispatchEvent(
+        new CustomEvent("primSelected", { detail: { primPath: prim.path } })
+      );
+    });
+    container.appendChild(row);
+  });
+}
+
+/**
+ * Render the unified Scene Navigator panel into #scene-navigator-content.
+ * Groups layers by ISO 19650 status and shows a per-layer expandable prim tree.
+ */
+export function renderSceneNavigator() {
+  const navContent = document.getElementById("scene-navigator-content");
+  if (!navContent) return;
+
+  navContent.innerHTML = "";
+
+  const state = store.getState();
+  if (!state.stage?.layerStack) return;
+
+  const _snUserObj =
+    state.users instanceof Map ? state.users.get(state.currentUserId) : null;
+  const _snIsPM = isProjectManager(_snUserObj || state.currentUser);
+  const visibleLayers = state.stage.layerStack.filter((layer) => {
+    if (layer.filePath === "statement.usda") return false;
+    if (_snIsPM) return true;
+    if (layer.owner && layer.owner !== state.currentUser) return false;
+    return true;
+  });
+
+  const SECTIONS = [
+    { status: "WIP", label: "WIP", dotClass: "wip" },
+    { status: "Shared", label: "SHARED", dotClass: "shared" },
+    { status: "Published", label: "PUBLISHED", dotClass: "published" },
+    { status: "Archived", label: "ARCHIVED", dotClass: "archived" },
+  ];
+
+  // Compute per-layer, per-status prim groups from the composed hierarchy so
+  // split layers (prims individually promoted to a different status than their
+  // layer's own status) can be shown in both the native and the target section.
+  const layerStatusGroups = computeLayerStatusGroups(
+    state.composedHierarchy || [],
+    state.stage.layerStack
+  );
+
+  SECTIONS.forEach(({ status, label, dotClass }) => {
+    // Native layers: their layer.status matches this section
+    const nativeLayers = visibleLayers.filter((l) => l.status === status);
+
+    // Split layers: layer.status differs but some prims are at this status
+    const splitLayers = visibleLayers.filter((l) => {
+      if (l.status === status) return false;
+      const byStatus = layerStatusGroups.get(l.id);
+      return byStatus?.has(status) && byStatus.get(status).length > 0;
+    });
+
+    const allSectionLayers = [...nativeLayers, ...splitLayers];
+
+    const sectionEl = document.createElement("div");
+    sectionEl.className = "status-section";
+
+    // Section header (collapsible) — count includes both native and split
+    const sectionHeader = document.createElement("div");
+    sectionHeader.className = "status-section-header";
+    sectionHeader.innerHTML = `
+      <span class="status-section-dot ${dotClass}"></span>
+      <span>${label}</span>
+      <span class="status-section-count" style="margin-left:4px;opacity:0.6;font-size:9px;">(${allSectionLayers.length})</span>
+      <span class="status-section-chevron">▾</span>
+    `;
+    sectionEl.appendChild(sectionHeader);
+
+    const sectionBody = document.createElement("div");
+    sectionBody.className = "status-section-body";
+
+    if (allSectionLayers.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "nav-empty-status";
+      empty.textContent = `No ${label} layers`;
+      sectionBody.appendChild(empty);
+    } else {
+      allSectionLayers.forEach((layer) => {
+        const isSplit = !nativeLayers.includes(layer);
+        // Prims for this layer at this section's status (from composedHierarchy)
+        const primsForStatus =
+          layerStatusGroups.get(layer.id)?.get(status) || [];
+
+        const discipline = getDisciplineForUser(layer.owner || "");
+        const cfg = getDisciplineConfig(discipline);
+        const branch =
+          layer.branch || getDisciplineBranch(layer.owner || "", layer.status);
+        const fileName = layer.filePath.split("/").pop();
+        const isActiveFile =
+          state.currentView === "file" && state.currentFile === layer.filePath;
+        // Use a composite key for expanded state so native and split entries
+        // track expansion independently.
+        const expandKey = `${layer.id}::${status}`;
+        const isExpanded = _expandedLayers.has(expandKey);
+
+        const layerItem = document.createElement("div");
+        layerItem.className = "nav-layer-item";
+
+        const layerRow = document.createElement("div");
+        layerRow.className =
+          "nav-layer-row" + (isActiveFile ? " active-file" : "");
+        layerRow.dataset.layerId = layer.id;
+        layerRow.dataset.filePath = layer.filePath;
+        layerRow.innerHTML = `
+          <button class="nav-layer-expand-btn ${isExpanded ? "expanded" : ""}" title="Expand prims">▶</button>
+          <span class="nav-layer-name" title="${layer.filePath}">${fileName}</span>
+          ${isSplit ? `<span class="nav-layer-partial-badge" title="Only the prims at ${status} from this layer are shown here">partial</span>` : ""}
+          <div class="nav-layer-badges">
+            ${layer.suitabilityCode ? `<span class="nav-layer-suitability">${layer.suitabilityCode}</span>` : ""}
+            <span class="nav-layer-branch-badge" style="color:${cfg.color};">${branch}</span>
+            ${layer.immutable ? `<span class="nav-layer-lock" title="Archived — immutable">🔒</span>` : ""}
+          </div>
+        `;
+
+        layerRow.addEventListener("click", (e) => {
+          if (
+            e.target.classList.contains("nav-layer-expand-btn") ||
+            e.target.closest(".nav-layer-expand-btn")
+          ) {
+            const expandBtn = layerRow.querySelector(".nav-layer-expand-btn");
+            const primsEl = layerItem.querySelector(".nav-layer-prims");
+            const isNowExpanded = !primsEl.classList.contains("open");
+            primsEl.classList.toggle("open", isNowExpanded);
+            expandBtn.classList.toggle("expanded", isNowExpanded);
+            if (isNowExpanded) {
+              _expandedLayers.add(expandKey);
+              if (primsEl.childElementCount === 0) {
+                // Always use the composedHierarchy-filtered list so in-memory
+                // status overrides (from object-mode promotion) are reflected.
+                if (primsForStatus.length > 0) {
+                  renderComposedPrimList(primsForStatus, primsEl);
+                } else {
+                  primsEl.innerHTML =
+                    '<div class="nav-empty-status">No prims at this status</div>';
+                }
+              }
+            } else {
+              _expandedLayers.delete(expandKey);
+            }
+            return;
+          }
+
+          _selectedNavLayerId = layer.id;
+          document
+            .querySelectorAll(".nav-layer-row.nav-selected")
+            .forEach((el) => el.classList.remove("nav-selected"));
+          layerRow.classList.add("nav-selected");
+
+          actions.setCurrentFile(layer.filePath);
+          actions.setCurrentView("file");
+          document.dispatchEvent(new CustomEvent("updateView"));
+        });
+
+        const primsEl = document.createElement("div");
+        primsEl.className = "nav-layer-prims" + (isExpanded ? " open" : "");
+
+        if (isExpanded) {
+          if (primsForStatus.length > 0) {
+            renderComposedPrimList(primsForStatus, primsEl);
+          } else {
+            primsEl.innerHTML =
+              '<div class="nav-empty-status">No prims at this status</div>';
+          }
+        }
+
+        layerItem.appendChild(layerRow);
+        layerItem.appendChild(primsEl);
+        sectionBody.appendChild(layerItem);
+      });
+    }
+
+    sectionEl.appendChild(sectionBody);
+
+    sectionHeader.addEventListener("click", () => {
+      sectionEl.classList.toggle("collapsed");
+    });
+
+    navContent.appendChild(sectionEl);
+  });
+}
+
 export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   const layerStackList = document.getElementById("layerStackList");
   const addFileButton = document.getElementById("add-file-button");
@@ -1000,43 +1329,46 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
           loadingIndicator.updateProgress(30, "Parsing USD structure...");
         }
 
-        // TODO: Use layerService.createLayer() here in future refactor
-        const atomicFiles = explodeUsda(fileContent, file.name);
-
         if (isLargeFile) {
-          loadingIndicator.updateProgress(
-            60,
-            `Processing ${Object.keys(atomicFiles).length} layer(s)...`
-          );
+          loadingIndicator.updateProgress(60, "Processing file...");
         }
 
-        Object.entries(atomicFiles).forEach(([fileName, content]) => {
-          const state = store.getState();
-          const existingPaths = state.stage.layerStack.map((l) => l.filePath);
-          const isReUpload = existingPaths.includes(fileName);
+        const fileName = file.name;
+        const state = store.getState();
+        const isReUpload = state.stage.layerStack.some(
+          (l) => l.filePath === fileName
+        );
 
-          if (isReUpload) {
-            // Phase B: diff against hash registry and auto-stage detected changes
-            const newHashes = computePrimHashes(content, fileName);
-            const registry = state.primHashRegistry || {};
+        if (isReUpload) {
+          // Show GitHub-style diff modal so the user can accept/reject changes
+          const oldContent = state.loadedFiles?.[fileName] || "";
+          const reuploadUserId = state.currentUserId;
+          const reuploadUserObj =
+            state.users instanceof Map ? state.users.get(reuploadUserId) : null;
 
-            // Collect old hashes for this file
-            const oldHashes = {};
-            Object.entries(registry).forEach(([path, val]) => {
-              if (val.sourceFile === fileName) oldHashes[path] = val;
-            });
+          showFileConflictResolver(fileName, oldContent, fileContent).then(
+            ({ accepted, diff: acceptedDiff }) => {
+              if (!accepted) {
+                console.log(
+                  `[Re-upload] ${fileName}: user rejected all changes`
+                );
+                return;
+              }
 
-            const ts = new Date().toISOString();
-            const user = state.currentUser;
-            const reuploadUserId = state.currentUserId;
-            const reuploadUserObj =
-              state.users instanceof Map
-                ? state.users.get(reuploadUserId)
-                : null;
+              const ts = new Date().toISOString();
+              const user = state.currentUser;
 
-            // Modified and added prims
-            Object.entries(newHashes).forEach(([path, { hash }]) => {
-              if (!oldHashes[path]) {
+              const acceptedAdded = acceptedDiff
+                .filter((d) => d.kind === "added")
+                .map((d) => d.path);
+              const acceptedRemoved = acceptedDiff
+                .filter((d) => d.kind === "removed")
+                .map((d) => d.path);
+              const acceptedModified = acceptedDiff
+                .filter((d) => d.kind === "modified")
+                .map((d) => d.path);
+
+              acceptedAdded.forEach((path) =>
                 actions.addStagedChange({
                   type: "primAdded",
                   targetPath: path,
@@ -1044,8 +1376,9 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
                   user,
                   timestamp: ts,
                   sourceStatus: "WIP",
-                });
-              } else if (oldHashes[path].hash !== hash) {
+                })
+              );
+              acceptedModified.forEach((path) =>
                 actions.addStagedChange({
                   type: "primUpdate",
                   targetPath: path,
@@ -1053,13 +1386,9 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
                   user,
                   timestamp: ts,
                   sourceStatus: "WIP",
-                });
-              }
-            });
-
-            // Removed prims
-            Object.entries(oldHashes).forEach(([path]) => {
-              if (!newHashes[path]) {
+                })
+              );
+              acceptedRemoved.forEach((path) =>
                 actions.addStagedChange({
                   type: "primRemoved",
                   targetPath: path,
@@ -1067,37 +1396,38 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
                   user,
                   timestamp: ts,
                   sourceStatus: "WIP",
-                });
-              }
-            });
+                })
+              );
 
-            // Update file content and refresh hash registry for this file
-            actions.clearFileFromHashRegistry(fileName);
-            store.dispatch(coreActions.updateFile(fileName, content));
-            actions.updatePrimHashRegistry(newHashes);
+              const newHashes = computePrimHashes(fileContent, fileName);
+              actions.clearFileFromHashRegistry(fileName);
+              store.dispatch(coreActions.updateFile(fileName, fileContent));
+              actions.updatePrimHashRegistry(newHashes);
 
-            // Regenerate URIs for changed/new prims (version bump)
-            const existingLayer = state.stage.layerStack.find(
-              (l) => l.filePath === fileName
-            );
-            const uriEntries = generateUrisForFile(
-              { [fileName]: content },
-              existingLayer || { status: "WIP", suitabilityCode: null },
-              reuploadUserObj,
-              store.getState()
-            );
-            store.dispatch(uriActions.registerUrisBatch(uriEntries));
+              const existingLayer = store
+                .getState()
+                .stage.layerStack.find((l) => l.filePath === fileName);
+              const uriEntries = generateUrisForFile(
+                { [fileName]: fileContent },
+                existingLayer || { status: "WIP", suitabilityCode: null },
+                reuploadUserObj,
+                store.getState()
+              );
+              store.dispatch(uriActions.registerUrisBatch(uriEntries));
 
-            const changed =
-              Object.keys(newHashes).length + Object.keys(oldHashes).length;
-            console.log(
-              `[Re-upload] ${fileName}: registry diffed (${changed} prims evaluated)`
-            );
-            return;
-          }
+              console.log(
+                `[Re-upload] ${fileName}: ${acceptedDiff.length} accepted changes applied`
+              );
 
-          // First upload: load normally and register hashes
-          store.dispatch(coreActions.loadFile(fileName, content));
+              renderLayerStack();
+              recomposeStage();
+              syncRecordedHierarchy();
+              document.dispatchEvent(new CustomEvent("updateView"));
+            }
+          );
+        } else {
+          // First upload: load as a single layer
+          store.dispatch(coreActions.loadFile(fileName, fileContent));
 
           const uploadState = store.getState();
           const currentUser = uploadState.currentUser;
@@ -1120,23 +1450,23 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
             suitabilityCode: null,
             immutable: false,
             branch: getDisciplineBranch(userObj || currentUser, "WIP"),
-            groupName: Object.keys(atomicFiles).length > 1 ? file.name : null,
+            groupName: null,
           };
           store.dispatch(coreActions.addLayer(newLayer));
 
           // Register prim hashes for future re-upload diffing
-          const newHashes = computePrimHashes(content, fileName);
+          const newHashes = computePrimHashes(fileContent, fileName);
           actions.updatePrimHashRegistry(newHashes);
 
           // Generate and register ISO 19650 URIs for all prims in this file
           const uriEntries = generateUrisForFile(
-            { [fileName]: content },
+            { [fileName]: fileContent },
             newLayer,
             userObj,
-            store.getState()
+            uploadState
           );
           store.dispatch(uriActions.registerUrisBatch(uriEntries));
-        });
+        }
 
         if (isLargeFile) {
           loadingIndicator.updateProgress(100, "Import complete!");
@@ -1144,9 +1474,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         }
 
         renderLayerStack();
-        console.log(
-          `✅ Successfully loaded ${Object.keys(atomicFiles).length} file(s) from ${file.name}`
-        );
+        console.log(`✅ Successfully loaded ${file.name}`);
       } finally {
         if (isLargeFile) {
           loadingIndicator.hide();
@@ -1269,10 +1597,15 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
       e.stopPropagation();
 
       // Permission Check: Only Owner or Project Manager can change status
-      const currentUser = store.getState().currentUser;
+      const _stState = store.getState();
+      const currentUser = _stState.currentUser;
+      const _stUserObj =
+        _stState.users instanceof Map
+          ? _stState.users.get(_stState.currentUserId)
+          : null;
       const unauthorizedLayers = layers.filter(
         (layer) =>
-          currentUser !== "Project Manager" &&
+          !isProjectManager(_stUserObj || currentUser) &&
           layer.owner &&
           layer.owner !== currentUser
       );
@@ -1536,7 +1869,9 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
     });
 
     // Check ownership before allowing deletion
-    if (state.currentUser !== "Project Manager") {
+    const _delUserObj =
+      state.users instanceof Map ? state.users.get(state.currentUserId) : null;
+    if (!isProjectManager(_delUserObj || state.currentUser)) {
       const unauthorizedLayers = state.stage.layerStack.filter(
         (layer) =>
           filePaths.includes(layer.filePath) &&
@@ -1588,7 +1923,7 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   deleteFileButton.addEventListener("click", handleDeleteFile);
 
   // Helper to extract selected items (objects or layer fallback)
-  const getSelectedItemsForStaging = (actionName) => {
+  const getSelectedItemsForStaging = () => {
     const items = [];
     let fileToOpen = store.getState().currentFile;
 
@@ -1680,9 +2015,13 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
         const layerId = li.dataset.layerId;
         const layer = state.stage.layerStack.find((l) => l.id === layerId);
 
+        const _stgUserObj =
+          state.users instanceof Map
+            ? state.users.get(state.currentUserId)
+            : null;
         if (
           layer &&
-          state.currentUser !== "Project Manager" &&
+          !isProjectManager(_stgUserObj || state.currentUser) &&
           layer.owner &&
           layer.owner !== state.currentUser
         ) {
@@ -1792,18 +2131,33 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
     if (items.length > 0) {
       document.dispatchEvent(
         new CustomEvent("openPromotionModal", {
-          detail: {
-            mode: "object",
-            prims: items,
-            direction: "promote",
-          },
+          detail: { mode: "object", prims: items, direction: "promote" },
         })
       );
-    } else {
-      alert(
-        "Please select one or more objects in the viewer or a layer in the stack to promote."
-      );
+      return;
     }
+
+    if (_selectedNavLayerId) {
+      const layer = store
+        .getState()
+        .stage.layerStack.find((l) => l.id === _selectedNavLayerId);
+      if (layer) {
+        document.dispatchEvent(
+          new CustomEvent("openPromotionModal", {
+            detail: {
+              mode: "layer",
+              initialSelection: [layer],
+              direction: "promote",
+            },
+          })
+        );
+        return;
+      }
+    }
+
+    alert(
+      "Please select one or more objects in the viewer or a layer in the stack to promote."
+    );
   });
 
   demoteLayerButton.addEventListener("click", () => {
@@ -1812,18 +2166,33 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
     if (items.length > 0) {
       document.dispatchEvent(
         new CustomEvent("openPromotionModal", {
-          detail: {
-            mode: "object",
-            prims: items,
-            direction: "demote",
-          },
+          detail: { mode: "object", prims: items, direction: "demote" },
         })
       );
-    } else {
-      alert(
-        "Please select one or more objects in the viewer or a layer in the stack to demote."
-      );
+      return;
     }
+
+    if (_selectedNavLayerId) {
+      const layer = store
+        .getState()
+        .stage.layerStack.find((l) => l.id === _selectedNavLayerId);
+      if (layer) {
+        document.dispatchEvent(
+          new CustomEvent("openPromotionModal", {
+            detail: {
+              mode: "layer",
+              initialSelection: [layer],
+              direction: "demote",
+            },
+          })
+        );
+        return;
+      }
+    }
+
+    alert(
+      "Please select one or more objects in the viewer or a layer in the stack to demote."
+    );
   });
 
   renderLayerStack();
@@ -1831,6 +2200,41 @@ export function initLayerStack(updateView, fileThreeScene, stageThreeScene) {
   // Re-render when design options or packages change
   store.subscribe("designOptions", renderLayerStack);
   store.subscribe("packages", renderLayerStack);
+
+  // ==================== Sync viewer selection → Scene Navigator ====================
+  document.addEventListener("primSelected", (e) => {
+    const navContent = document.getElementById("scene-navigator-content");
+    if (!navContent) return;
+
+    navContent
+      .querySelectorAll(".nav-prim-row.selected")
+      .forEach((r) => r.classList.remove("selected"));
+
+    const primPath = e.detail?.primPath;
+    if (!primPath) return;
+
+    const row = navContent.querySelector(
+      `.nav-prim-row[data-prim-path="${CSS.escape(primPath)}"]`
+    );
+    if (!row) return;
+
+    row.classList.add("selected");
+
+    // Expand any collapsed ancestor prim-children containers
+    let el = row.parentElement;
+    while (el && el !== navContent) {
+      if (el.classList.contains("nav-prim-children")) {
+        el.classList.add("open");
+        const parentRow = el.previousElementSibling;
+        if (parentRow?.classList.contains("nav-prim-row")) {
+          parentRow.querySelector("[data-expand]")?.classList.add("expanded");
+        }
+      }
+      el = el.parentElement;
+    }
+
+    row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  });
 
   console.log("✅ Layer Stack Controller initialized with error handling");
 }
@@ -2084,6 +2488,11 @@ export function syncPrimStatusFromLayer(layer) {
     list.forEach((p) => {
       if (p._sourceFile === layer.filePath) {
         p._sourceLayerStatus = layer.status;
+        // Also update properties.status so that resolvePrimStatus() (which checks
+        // properties.status first) reflects the new layer maturity. Without this,
+        // prims with an explicit properties.status would never see the layer change.
+        if (!p.properties) p.properties = {};
+        p.properties.status = layer.status;
       }
       if (p.children) updatePrimStatus(p.children);
     });

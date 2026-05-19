@@ -1,0 +1,30 @@
+/* Drag-to-select box overlay — sits above scene panels, below action buttons */
+.sel-box {
+  position: absolute;
+  pointer-events: none;
+  z-index: 75;
+  box-sizing: border-box;
+  display: none;
+}
+
+/* Window selection (left → right): solid blue */
+.sel-box--window {
+  border: 1.5px solid #007aff;
+  background: rgba(0, 122, 255, 0.08);
+}
+
+/* Crossing selection (right → left): dashed cyan-green */
+.sel-box--crossing {
+  border: 1.5px dashed #00c49a;
+  background: rgba(0, 196, 154, 0.08);
+}
+
+body.dark-theme .sel-box--window {
+  border-color: #2994ff;
+  background: rgba(41, 148, 255, 0.12);
+}
+
+body.dark-theme .sel-box--crossing {
+  border-color: #00e0b0;
+  background: rgba(0, 224, 176, 0.1);
+}

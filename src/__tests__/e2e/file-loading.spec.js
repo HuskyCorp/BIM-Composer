@@ -14,11 +14,13 @@ test.describe("File Loading Workflow", () => {
   test("should display layer stack panel", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     // Wait for initPanelDockers() to run and expand the layer panel
-    await page.waitForSelector("#layersPanel.expanded", { timeout: 10000 });
+    await page.waitForSelector("#sceneNavigatorPanel.expanded", {
+      timeout: 10000,
+    });
 
-    // Check for layer stack area
-    const layerStack = page.locator("#layerStackList");
-    await expect(layerStack).toBeVisible({ timeout: 10000 });
+    // Check for scene navigator area
+    const navContent = page.locator("#scene-navigator-content");
+    await expect(navContent).toBeVisible({ timeout: 10000 });
   });
 
   test("should load a USDA file via file input", async ({ page }) => {

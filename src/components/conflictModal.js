@@ -1,6 +1,13 @@
 // src/components/conflictModal.js
 import { store } from "../core/index.js";
 import { checkPermission } from "../utils/conflictDetector.js";
+import { isProjectManager } from "../utils/rolePermissions.js";
+
+function getCurrentUserObj(state) {
+  return state.users instanceof Map
+    ? state.users.get(state.currentUserId)
+    : null;
+}
 
 let resolveCallback = null;
 
@@ -102,32 +109,29 @@ export function showConflictModal(conflictData, onResolve) {
     currentSourceEl.textContent = "Current file";
   }
 
-  const currentUser = store.getState().currentUser;
-  newOwnerEl.textContent = currentUser;
+  const state = store.getState();
+  const currentUserObj = getCurrentUserObj(state);
+  const currentUser = currentUserObj || state.currentUser;
+  const currentUserName = state.currentUser;
+  newOwnerEl.textContent = currentUserName;
 
   // Check if user has permission to make changes
   const prim = conflictData.prim;
   const permission = checkPermission(prim);
+  const isPM = isProjectManager(currentUser);
 
   // Show warning if user is trying to override another user's property
-  if (conflict && conflict.owner !== currentUser) {
+  if (conflict && conflict.owner !== currentUserName) {
     if (!permission.allowed) {
-      // User does not have permission
       warningTextEl.textContent =
         "You do not have permission to modify this property. Only the owner or Project Manager can make changes.";
       warningEl.style.display = "block";
-      // Disable the "use new" option
       document.getElementById("conflict-use-new").disabled = true;
-    } else if (
-      currentUser === "Project Manager" ||
-      currentUser === "Field Engineer"
-    ) {
-      // User has elevated permissions, show warning
+    } else if (isPM) {
       warningTextEl.textContent =
         "You are about to override a property owned by another user. This action will be logged.";
       warningEl.style.display = "block";
     } else {
-      // User owns the layer, no warning needed
       warningEl.style.display = "none";
       document.getElementById("conflict-use-new").disabled = false;
     }
@@ -136,13 +140,12 @@ export function showConflictModal(conflictData, onResolve) {
     document.getElementById("conflict-use-new").disabled = false;
   }
 
-  // Reset radio selection
-  // For users with permission overriding another user's property, default to "use-new"
+  // For PM users overriding another user's property, default to "use-new"
   if (
     conflict &&
-    conflict.owner !== currentUser &&
+    conflict.owner !== currentUserName &&
     permission.allowed &&
-    (currentUser === "Project Manager" || currentUser === "Field Engineer")
+    isPM
   ) {
     document.getElementById("conflict-use-new").checked = true;
   } else {

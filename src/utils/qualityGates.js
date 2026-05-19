@@ -12,7 +12,7 @@ export const QUALITY_GATES = [
   {
     id: "completeness",
     label: "Completeness",
-    description: "Prim has required name, path, and source file",
+    description: "Prim has a required name",
     /**
      * @param {object} prim
      * @returns {{ passed: boolean, issues: string[] }}
@@ -20,8 +20,6 @@ export const QUALITY_GATES = [
     check(prim) {
       const issues = [];
       if (!prim.name) issues.push("Missing name");
-      if (!prim.path) issues.push("Missing path");
-      if (!prim._sourceFile) issues.push("Missing source file reference");
       return { passed: issues.length === 0, issues };
     },
   },

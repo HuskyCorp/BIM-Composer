@@ -1,6 +1,13 @@
 // REFACTORED: Enhanced with error handling and core architecture
 import { store, errorHandler, ValidationError } from "../core/index.js";
 import { actions } from "../state/actions.js"; // TODO: Migrate to dispatch pattern
+import { actions as coreActions } from "../core/state/actions/index.js";
+import {
+  generatePackageId,
+  generateIsoPackageNumber,
+  getNextColor,
+  persistPackages,
+} from "./packages/packageController.js";
 import {
   renderLayerStack,
   recomposeStage,
@@ -188,6 +195,75 @@ export function initPromotionController(updateView) {
     if (activeId) packageSelect.value = activeId;
   }
 
+  // ── Inline package quick-create (inside promotion modal) ─────────────────
+  const newPackageBtn = document.getElementById("promotion-new-package-btn");
+  const packageCreateRow = document.getElementById("promotion-package-create");
+  const packageNameInput = document.getElementById(
+    "promotion-package-name-input"
+  );
+  const packageCreateConfirm = document.getElementById(
+    "promotion-package-create-confirm"
+  );
+  const packageCreateCancel = document.getElementById(
+    "promotion-package-create-cancel"
+  );
+  const packageControls = document.querySelector(".promotion-package-controls");
+
+  function showPackageCreateForm() {
+    if (packageCreateRow) packageCreateRow.style.display = "flex";
+    if (packageControls) packageControls.style.display = "none";
+    if (packageNameInput) {
+      packageNameInput.value = "";
+      packageNameInput.focus();
+    }
+  }
+
+  function hidePackageCreateForm() {
+    if (packageCreateRow) packageCreateRow.style.display = "none";
+    if (packageControls) packageControls.style.display = "flex";
+  }
+
+  function commitNewPackage() {
+    const name = packageNameInput?.value.trim();
+    if (!name) {
+      hidePackageCreateForm();
+      return;
+    }
+
+    const state = store.getState();
+    const packages = state.packages || [];
+    const newPkg = {
+      id: generatePackageId(),
+      name,
+      color: getNextColor(packages),
+      createdAt: new Date().toISOString(),
+      createdBy: state.currentUser || "System",
+      isoNumber: generateIsoPackageNumber(state),
+      designOptionId: null,
+      stageBranch: "WIP",
+      approvalStatus: "pending",
+    };
+    store.dispatch(coreActions.addPackage(newPkg));
+    store.dispatch(coreActions.setActivePackage(newPkg.id));
+    persistPackages(store.getState().packages);
+    populatePackageSelect();
+    if (packageSelect) packageSelect.value = newPkg.id;
+    hidePackageCreateForm();
+  }
+
+  if (newPackageBtn)
+    newPackageBtn.addEventListener("click", showPackageCreateForm);
+  if (packageCreateConfirm)
+    packageCreateConfirm.addEventListener("click", commitNewPackage);
+  if (packageCreateCancel)
+    packageCreateCancel.addEventListener("click", hidePackageCreateForm);
+  if (packageNameInput) {
+    packageNameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") commitNewPackage();
+      if (e.key === "Escape") hidePackageCreateForm();
+    });
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   let currentTargetStatus = null;
   let currentSourceStatus = null;
@@ -232,7 +308,26 @@ export function initPromotionController(updateView) {
 
       if (mode === "object" && (prim || (prims && prims.length > 0))) {
         promotionMode = "object";
-        objectsToPromote = prims || [prim];
+
+        // Resolve stub items (shape: { primPath, originFile, name, type }) to full prim
+        // objects from composedHierarchy so that properties, children, and _sourceFile
+        // are all available during the promotion loop.
+        const rawItems = prims || [prim];
+        const findInHierarchy = (nodes, targetPath) => {
+          for (const n of nodes) {
+            if (n.path === targetPath) return n;
+            if (n.children) {
+              const found = findInHierarchy(n.children, targetPath);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const hier = store.getState().composedHierarchy || [];
+        objectsToPromote = rawItems.map((item) => {
+          const p = item.path || item.primPath;
+          return findInHierarchy(hier, p) || item;
+        });
 
         // Determine Status based on first prim
         const firstPrim = objectsToPromote[0];
@@ -240,25 +335,27 @@ export function initPromotionController(updateView) {
         // Lookup layer status for context of first prim
         const state = store.getState();
         let layerStatus = "Published";
-        if (firstPrim._sourceFile) {
+        const firstSourceFile = firstPrim.originFile || firstPrim._sourceFile;
+        if (firstSourceFile) {
           const layer = state.stage.layerStack.find(
-            (l) => l.filePath === firstPrim._sourceFile
+            (l) => l.filePath === firstSourceFile
           );
           if (layer) layerStatus = layer.status;
         }
 
-        currentSourceStatus = firstPrim.properties.status || layerStatus;
+        currentSourceStatus = firstPrim?.properties?.status || layerStatus;
 
         // Validate all have same status?
         const inconsistent = objectsToPromote.some((p) => {
           let pStatus = "Published"; // Default
-          if (p._sourceFile) {
+          const pSourceFile = p.originFile || p._sourceFile;
+          if (pSourceFile) {
             const l = state.stage.layerStack.find(
-              (la) => la.filePath === p._sourceFile
+              (la) => la.filePath === pSourceFile
             );
             if (l) pStatus = l.status;
           }
-          const actualStatus = p.properties.status || pStatus;
+          const actualStatus = p?.properties?.status || pStatus;
           return actualStatus !== currentSourceStatus;
         });
 
@@ -299,7 +396,11 @@ export function initPromotionController(updateView) {
         // ── ROLE CHECK (object mode) ────────────────────────────────────
         {
           const state = store.getState();
-          const user = state.currentUser;
+          const _userObj =
+            state.users instanceof Map
+              ? state.users.get(state.currentUserId)
+              : null;
+          const user = _userObj || state.currentUser;
           const permitted =
             promotionDirection === "demote"
               ? canUserDemote(user, currentSourceStatus)
@@ -412,7 +513,11 @@ export function initPromotionController(updateView) {
       // ── ROLE CHECK (layer mode) ─────────────────────────────────────────
       {
         const state = store.getState();
-        const user = state.currentUser;
+        const _userObj =
+          state.users instanceof Map
+            ? state.users.get(state.currentUserId)
+            : null;
+        const user = _userObj || state.currentUser;
         const permitted =
           promotionDirection === "demote"
             ? canUserDemote(user, currentSourceStatus)
@@ -612,7 +717,11 @@ export function initPromotionController(updateView) {
       // ── Role guard — refuse if button somehow clicked while denied ──────
       {
         const state = store.getState();
-        const user = state.currentUser;
+        const _userObj =
+          state.users instanceof Map
+            ? state.users.get(state.currentUserId)
+            : null;
+        const user = _userObj || state.currentUser;
         const permitted =
           promotionDirection === "demote"
             ? canUserDemote(user, currentSourceStatus)
@@ -646,16 +755,20 @@ export function initPromotionController(updateView) {
           }
           let successCount = 0;
           objectsToPromote.forEach((obj) => {
-            if (!obj.name || !obj._sourceFile || !obj.path) {
+            // Handle both full prim shape { path, _sourceFile } and stub shape
+            // { primPath, originFile } returned by getSelectedItemsForStaging.
+            const objPath = obj.path || obj.primPath;
+            const objSource = obj._sourceFile || obj.originFile;
+            if (!obj.name || !objSource || !objPath) {
               console.warn("Skipping invalid object:", obj);
               return;
             }
             try {
               logPromotionToStatement({
-                layerPath: obj._sourceFile,
+                layerPath: objSource,
                 sourceStatus: currentSourceStatus,
                 targetStatus: currentTargetStatus,
-                objectPath: obj.path,
+                objectPath: objPath,
                 packageId: packageSelect?.value || null,
                 type:
                   promotionDirection === "demote"
@@ -665,11 +778,37 @@ export function initPromotionController(updateView) {
             } catch (err) {
               console.warn("Log failed for", obj.name, err);
             }
+
+            // Update the prim's status in the canonical composedHierarchy via
+            // a proper state dispatch (direct mutation of obj is insufficient
+            // because recomposeStage rebuilds from state.stage.composedPrims).
+            const updatePrimInTree = (nodes, targetPath, status) => {
+              for (const n of nodes) {
+                if (n.path === targetPath) {
+                  if (!n.properties) n.properties = {};
+                  n.properties.status = status;
+                  return true;
+                }
+                if (
+                  n.children &&
+                  updatePrimInTree(n.children, targetPath, status)
+                )
+                  return true;
+              }
+              return false;
+            };
             if (!obj.properties) obj.properties = {};
             obj.properties.status = currentTargetStatus;
-            updateParentStatus(obj.path, currentTargetStatus);
 
-            // TASK 3.2: Warn if any children have a higher maturity status
+            const ch = JSON.parse(
+              JSON.stringify(store.getState().composedHierarchy || [])
+            );
+            updatePrimInTree(ch, objPath, currentTargetStatus);
+            store.dispatch(coreActions.setComposedHierarchy(ch));
+
+            updateParentStatus(objPath, currentTargetStatus);
+
+            // Warn if any children have a higher maturity status
             const higherChildren = collectHigherStatusChildren(
               obj,
               currentTargetStatus
@@ -686,10 +825,11 @@ export function initPromotionController(updateView) {
                 return;
               }
             }
-            updateChildrenStatus(obj.path, currentTargetStatus);
+            updateChildrenStatus(objPath, currentTargetStatus);
             successCount++;
           });
           recomposeStage();
+          renderLayerStack();
           updateView();
           alert(
             `${actionText}d ${successCount} object(s) to ${currentTargetStatus}.`
@@ -760,7 +900,20 @@ export function initPromotionController(updateView) {
             actions.updateLayer(layerId, {
               status: currentTargetStatus,
               packageId: selectedPackageId,
+              // ISO 19650: Archived is the terminal immutable state
+              ...(currentTargetStatus === "Archived"
+                ? { immutable: true }
+                : {}),
             });
+            // Sync the package's own stageBranch so the package card in the
+            // Shared/Published/Archived section reflects the new maturity level.
+            if (selectedPackageId) {
+              store.dispatch(
+                coreActions.updatePackage(selectedPackageId, {
+                  stageBranch: currentTargetStatus,
+                })
+              );
+            }
             const updatedLayer = { ...layer, status: currentTargetStatus };
             syncPrimStatusFromLayer(updatedLayer);
             logPromotionToStatement({

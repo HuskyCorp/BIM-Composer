@@ -12,6 +12,7 @@ vi.mock("../../../core/index.js", () => {
   return {
     store: {
       getState: mockGetState,
+      dispatch: vi.fn(),
     },
     errorHandler: {
       wrap: (fn) => fn,
@@ -45,6 +46,15 @@ import {
 vi.mock("../../../state/actions.js", () => ({
   actions: {
     updateLayer: vi.fn(),
+  },
+}));
+
+vi.mock("../../../core/state/actions/index.js", () => ({
+  actions: {
+    setComposedHierarchy: vi.fn((data) => ({
+      type: "SET_COMPOSED_HIERARCHY",
+      payload: data,
+    })),
   },
 }));
 

@@ -27,6 +27,11 @@
     <link rel="stylesheet" href="css/history-overlay.css" />
     <link rel="stylesheet" href="css/dark-theme.css" />
     <link rel="stylesheet" href="css/user-management.css" />
+    <link rel="stylesheet" href="css/viewport-tabs.css" />
+    <link rel="stylesheet" href="css/selection-box.css" />
+    <link rel="stylesheet" href="css/scene-properties-overlay.css" />
+    <link rel="stylesheet" href="css/conflict-resolver.css" />
+    <link rel="stylesheet" href="css/scene-navigator.css" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script type="importmap">
@@ -79,9 +84,9 @@
     </div>
     <div class="container">
       <div class="sidebar">
-        <div class="panel" id="layersPanel">
+        <div class="panel" id="sceneNavigatorPanel">
           <div class="panel-header">
-            <h3>Scene Stage</h3>
+            <h3>Scene Navigator</h3>
             <div class="file-controls">
               <button id="add-file-button" title="Add Layer">+</button>
               <button id="delete-file-button" title="Remove Layer">-</button>
@@ -97,10 +102,20 @@
               </button>
               <button id="promote-layer-button" title="Promote Layer">▲</button>
               <button id="demote-layer-button" title="Demote Layer">▼</button>
+              <button id="add-prim-button" title="Add Prim to Stage">+P</button>
+              <button id="remove-prim-button" title="Remove Prim from Stage">
+                -P
+              </button>
+              <button id="expand-all-button" title="Expand All">⊞</button>
+              <button id="collapse-all-button" title="Collapse All">⊟</button>
             </div>
           </div>
           <div class="panel-content">
-            <ul id="layerStackList"></ul>
+            <div id="scene-navigator-content" class="scene-navigator-content">
+              <!-- Status sections (WIP / Shared / Published / Archived) rendered here -->
+            </div>
+            <!-- Hidden outliner kept for stage renderer compatibility -->
+            <ul id="usdaOutliner" style="display: none"></ul>
             <input
               type="file"
               id="usdaFileInput"
@@ -109,25 +124,11 @@
             />
           </div>
         </div>
+        <!-- Legacy layerStackList kept hidden for backward compat -->
+        <ul id="layerStackList" style="display: none"></ul>
 
-        <div class="panel" id="hierarchyPanel">
-          <div class="panel-header">
-            <h3>Hierarchy</h3>
-            <div class="hierarchy-controls">
-              <button id="add-prim-button" title="Add Prim to Stage">+</button>
-              <button id="remove-prim-button" title="Remove Prim from Stage">
-                -
-              </button>
-              <button id="expand-all-button" title="Expand All">⊞</button>
-              <button id="collapse-all-button" title="Collapse All">⊟</button>
-            </div>
-          </div>
-          <div class="panel-content">
-            <ul id="usdaOutliner"></ul>
-          </div>
-        </div>
-
-        <div class="panel" id="propertiesPanel">
+        <!-- Properties panel kept hidden; properties now appear in in-scene overlay -->
+        <div class="panel" id="propertiesPanel" style="display: none">
           <div class="panel-header">
             <h3>Properties</h3>
           </div>
@@ -160,6 +161,22 @@
           </div>
         </div>
 
+        <!-- Design Packages Panel -->
+        <div class="panel" id="packagesPanel">
+          <div class="panel-header">
+            <h3>Design Packages</h3>
+            <div class="panel-header-controls">
+              <button id="add-package-button" title="New Package">+</button>
+              <button id="remove-package-button" title="Remove Active Package">
+                −
+              </button>
+            </div>
+          </div>
+          <div class="panel-content">
+            <ul id="packages-list" class="packages-list"></ul>
+          </div>
+        </div>
+
         <div class="sidebar-spacer"></div>
 
         <div class="sidebar-resizer"></div>
@@ -167,40 +184,64 @@
 
       <div class="main-view">
         <div class="viewport-container">
-          <button id="rename-object-button" style="display: none">✏️</button>
-          <button id="send-to-stage-button" style="display: none">S</button>
-          <button id="entity-scene-button" style="display: none">E</button>
-          <canvas id="webglCanvas"></canvas>
-          <canvas id="stageCanvas" style="display: none"></canvas>
-          <canvas id="historyCanvas" style="display: none"></canvas>
-          <textarea id="usdaEditor"></textarea>
-          <div id="history-overlay" class="history-overlay">
-            <div class="history-header">
-              <span>Project Statement</span>
-              <select
-                id="timeline-package-filter"
-                class="timeline-package-filter"
-              >
-                <option value="All">All Packages</option>
-              </select>
-              <button
-                id="close-history-overlay"
-                style="
-                  background: none;
-                  border: none;
-                  color: #aaa;
-                  cursor: pointer;
-                "
-              >
-                ✕
-              </button>
+          <!-- Viewport tab bar — one tab per loaded file + Stage tab -->
+          <div id="viewport-tabs" class="viewport-tabs"></div>
+
+          <!-- Canvas area: contains all canvases, overlays, editor -->
+          <div id="canvas-area" class="canvas-area">
+            <button id="rename-object-button" style="display: none">✏️</button>
+            <button id="send-to-stage-button" style="display: none">S</button>
+            <button id="entity-scene-button" style="display: none">E</button>
+            <canvas id="webglCanvas"></canvas>
+            <canvas id="stageCanvas" style="display: none"></canvas>
+            <canvas id="historyCanvas" style="display: none"></canvas>
+            <textarea id="usdaEditor"></textarea>
+
+            <!-- In-scene properties overlay (replaces sidebar propertiesPanel) -->
+            <div
+              id="scene-properties-overlay"
+              class="scene-properties-overlay hidden"
+            >
+              <div class="spo-header">
+                <span id="spo-prim-name" class="spo-prim-name"></span>
+                <button id="spo-close-btn" class="spo-close-btn" title="Close">
+                  ✕
+                </button>
+              </div>
+              <div
+                id="spo-properties-content"
+                class="spo-properties-content"
+              ></div>
             </div>
-            <ul id="history-list" class="history-list">
-              <!-- Items injected here -->
-            </ul>
-          </div>
-          <div id="history-info-box" class="history-info-box">
-            <!-- Details injected here -->
+
+            <div id="history-overlay" class="history-overlay">
+              <div class="history-header">
+                <span>Project Statement</span>
+                <select
+                  id="timeline-package-filter"
+                  class="timeline-package-filter"
+                >
+                  <option value="All">All Packages</option>
+                </select>
+                <button
+                  id="close-history-overlay"
+                  style="
+                    background: none;
+                    border: none;
+                    color: #aaa;
+                    cursor: pointer;
+                  "
+                >
+                  ✕
+                </button>
+              </div>
+              <ul id="history-list" class="history-list">
+                <!-- Items injected here -->
+              </ul>
+            </div>
+            <div id="history-info-box" class="history-info-box">
+              <!-- Details injected here -->
+            </div>
           </div>
         </div>
         <div class="button-group">
@@ -296,7 +337,32 @@
           <label class="promotion-package-label">
             Assign to Package <span class="required-star">*</span>
           </label>
-          <select id="promotion-package-select"></select>
+          <div class="promotion-package-controls">
+            <select id="promotion-package-select"></select>
+            <button
+              id="promotion-new-package-btn"
+              class="icon-btn"
+              title="Create a new package"
+            >
+              +
+            </button>
+          </div>
+          <div
+            id="promotion-package-create"
+            class="promotion-package-create"
+            style="display: none"
+          >
+            <input
+              id="promotion-package-name-input"
+              type="text"
+              placeholder="Package name"
+              maxlength="40"
+            />
+            <button id="promotion-package-create-confirm" class="primary">
+              Create
+            </button>
+            <button id="promotion-package-create-cancel">Cancel</button>
+          </div>
         </div>
         <div class="modal-body">
           <div class="prim-list-container">
@@ -630,15 +696,64 @@
       <div class="um-modal-content">
         <div class="um-modal-header">
           <h2>Manage Users</h2>
-          <button id="um-close-btn">&times;</button>
+          <button id="close-user-management-modal">&times;</button>
         </div>
         <div class="um-tabs">
           <button class="um-tab active" data-tab="users">Users</button>
           <button class="um-tab" data-tab="companies">Companies</button>
           <button class="um-tab" data-tab="teams">Task Teams</button>
         </div>
-        <div class="um-tab-content" id="um-tab-content">
+        <div id="um-tab-users" class="um-tab-content">
           <!-- Populated by userManagementController.js -->
+        </div>
+        <div id="um-tab-companies" class="um-tab-content" style="display: none">
+          <!-- Populated by userManagementController.js -->
+        </div>
+        <div id="um-tab-teams" class="um-tab-content" style="display: none">
+          <!-- Populated by userManagementController.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- File Update Conflict Resolver Modal (GitHub-style diff) -->
+    <div
+      id="conflict-resolver-modal"
+      class="modal-overlay"
+      style="display: none"
+    >
+      <div class="modal-content conflict-resolver-content">
+        <div class="modal-header conflict-resolver-header">
+          <div>
+            <h2 id="cr-modal-title">File Updated</h2>
+            <p id="cr-modal-summary" class="cr-summary"></p>
+          </div>
+          <div class="cr-header-actions">
+            <button id="cr-accept-all-btn" class="cr-btn cr-accept">
+              Accept All
+            </button>
+            <button id="cr-reject-all-btn" class="cr-btn cr-reject">
+              Reject All
+            </button>
+          </div>
+        </div>
+        <div class="modal-body cr-body">
+          <table class="conflict-diff-table">
+            <thead>
+              <tr>
+                <th class="cr-col-path">Prim / Property</th>
+                <th class="cr-col-current">Current</th>
+                <th class="cr-col-incoming">Incoming</th>
+                <th class="cr-col-accept">Accept</th>
+              </tr>
+            </thead>
+            <tbody id="cr-diff-body">
+              <!-- Rows injected by conflictResolver.js -->
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button id="cr-cancel-btn">Cancel</button>
+          <button id="cr-resolve-btn" class="primary">Resolve Changes</button>
         </div>
       </div>
     </div>

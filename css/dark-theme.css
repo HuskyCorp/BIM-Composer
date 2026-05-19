@@ -406,6 +406,22 @@ body.dark-theme #promotion-package-select {
   color: #e0e0e0;
 }
 
+body.dark-theme .promotion-package-create input {
+  background: #2e2e2e;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+body.dark-theme .icon-btn {
+  background: #2e2e2e;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+body.dark-theme .icon-btn:hover {
+  background: #3a3a3a;
+}
+
 /* ─── Stage Branch Panel dark overrides ──────────────────────────────── */
 
 body.dark-theme .stage-branch-section {

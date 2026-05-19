@@ -1,6 +1,11 @@
 // src/components/viewControls.js
 import { store } from "../core/index.js";
 import { actions } from "../state/actions.js";
+import {
+  getDisciplineForUser,
+  getDisciplineConfig,
+  getDisciplineBranch,
+} from "../utils/precedenceMatrix.js";
 import { generateStageUsda } from "../viewer/usda/usdaComposer.js";
 import { renderFileView } from "../viewer/rendering/fileViewRenderer.js";
 import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
@@ -487,5 +492,78 @@ export function initViewControls(
   }
 
   document.addEventListener("updateView", updateView);
+
+  // ── Viewport Tab Bar ──────────────────────────────────────────────────────
+  const tabContainer = document.getElementById("viewport-tabs");
+
+  function renderViewportTabs() {
+    if (!tabContainer) return;
+    const state = store.getState();
+    const layers = (state.stage?.layerStack || []).filter(
+      (l) => l.status !== "Archived" && l.filePath !== "statement.usda"
+    );
+
+    tabContainer.innerHTML = "";
+
+    // Stage tab
+    const stageTab = document.createElement("button");
+    stageTab.className =
+      "vp-tab" + (state.currentView === "stage" ? " active" : "");
+    stageTab.innerHTML = `<span class="vp-tab-dot vp-dot-stage"></span><span class="vp-tab-label">Stage</span>`;
+    stageTab.addEventListener("click", () => {
+      actions.setCurrentView("stage");
+      updateView();
+    });
+    tabContainer.appendChild(stageTab);
+
+    // One tab per layer
+    layers.forEach((layer) => {
+      const label = layer.filePath
+        .split("/")
+        .pop()
+        .replace(/\.(usda|usd)$/i, "");
+      const dotClass = `vp-dot-${layer.status.toLowerCase()}`;
+      const discipline = getDisciplineForUser(layer.owner || "");
+      const cfg = getDisciplineConfig(discipline);
+      const branch =
+        layer.branch || getDisciplineBranch(layer.owner || "", layer.status);
+
+      const isActive =
+        state.currentView === "file" && state.currentFile === layer.filePath;
+
+      const tab = document.createElement("button");
+      tab.className = "vp-tab" + (isActive ? " active" : "");
+      tab.title = `${layer.filePath}\nBranch: ${branch}`;
+      tab.innerHTML = `
+        <span class="vp-tab-dot ${dotClass}" style="border: 1.5px solid ${cfg.color}44; background:${cfg.color};"></span>
+        <span class="vp-tab-label">${label}</span>
+      `;
+      tab.addEventListener("click", () => {
+        actions.setCurrentFile(layer.filePath);
+        actions.setCurrentView("file");
+        updateView();
+      });
+      tabContainer.appendChild(tab);
+    });
+
+    // Add-layer proxy button
+    const addBtn = document.createElement("button");
+    addBtn.className = "vp-tab-add";
+    addBtn.title = "Add Layer";
+    addBtn.textContent = "+";
+    addBtn.addEventListener("click", () => {
+      document.getElementById("add-file-button")?.click();
+    });
+    tabContainer.appendChild(addBtn);
+  }
+
+  // Re-render tabs whenever layer stack or view changes
+  store.subscribe("stage", renderViewportTabs);
+  store.subscribe("currentView", renderViewportTabs);
+  store.subscribe("currentFile", renderViewportTabs);
+
+  // Initial render
+  renderViewportTabs();
+
   return { updateView };
 }

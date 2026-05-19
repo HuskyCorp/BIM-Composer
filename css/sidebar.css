@@ -102,6 +102,108 @@ body.dark-theme .discipline-toggle-btn:hover {
   color: #ccc;
 }
 
+/* ── Design Packages Panel ───────────────────────────────────────────── */
+
+.panel-header-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.packages-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+}
+
+.package-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.1s;
+}
+
+.package-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.package-item.active {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.package-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.package-name-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.package-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.package-iso-number {
+  font-size: 10px;
+  color: #888;
+}
+
+.package-active-dot {
+  color: #4a90d9;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.package-item-new {
+  padding: 4px 12px;
+}
+
+.package-item-new input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #999;
+  color: inherit;
+  font-size: 13px;
+  outline: none;
+  padding: 2px 0;
+}
+
+.package-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}
+
+/* Dark-theme overrides */
+body.dark-theme .package-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+body.dark-theme .package-item.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dark-theme .package-iso-number {
+  color: #666;
+}
+body.dark-theme .package-item-new input {
+  border-bottom-color: #555;
+}
+
 /* Phase C — layer branch badge */
 .layer-branch-badge {
   display: inline-block;

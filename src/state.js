@@ -15,7 +15,7 @@ function getInitialUserId() {
       if (stored.startsWith("user-")) return stored;
       return resolveUserIdFromName(stored);
     }
-  } catch (_) {
+  } catch {
     // localStorage not available (test env)
   }
   return "user-arch-01";
@@ -67,7 +67,8 @@ def "ChangeLog"
       name: "General",
       color: "#607d8b",
       createdAt: new Date().toISOString(),
-      createdBy: "System",
+      createdBy:
+        buildDefaultUsersMap().get(getInitialUserId())?.name || "System",
       isoNumber: null,
       designOptionId: null,
       stageBranch: "WIP",

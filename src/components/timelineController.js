@@ -2,7 +2,6 @@
 import { store, errorHandler, actions as coreActions } from "../core/index.js";
 import { USDA_PARSER } from "../viewer/usda/usdaParser.js";
 import { renderStageView } from "../viewer/rendering/stageViewRenderer.js";
-import { buildPathTranslationRegistry } from "../viewer/usda/pathTranslationRegistry.js";
 import {
   getDisciplineForUser,
   getDisciplineConfig,
@@ -63,9 +62,6 @@ export function initTimelineController(historyThreeScene) {
     })
   );
 
-  // Path translation registry for handling renamed prims in history
-  let pathTranslationRegistry = null;
-
   function setupTimeline() {
     console.log("[HISTORY] Setting up timeline...");
 
@@ -124,9 +120,6 @@ export function initTimelineController(historyThreeScene) {
         integrityResult.issues
       );
     }
-
-    // Build path translation registry (kept for external consumers / debug)
-    pathTranslationRegistry = buildPathTranslationRegistry(history.commits);
 
     // Populate package filter dropdown
     const pkgFilterEl = document.getElementById("timeline-package-filter");
@@ -386,7 +379,6 @@ export function initTimelineController(historyThreeScene) {
     return "WIP";
   }
 
-  const TIER_ORDER = ["WIP", "Shared", "Published", "Archived"];
   const TIER_COLORS = {
     WIP: "#ffa500",
     Shared: "#007aff",
@@ -397,96 +389,114 @@ export function initTimelineController(historyThreeScene) {
   function renderStatementList(commits) {
     historyList.innerHTML = "";
 
+    if (commits.length === 0) return;
+
     const state = store.getState();
     const designOptions = state.designOptions || [];
 
-    // Group into tiers for headers
-    let lastTier = null;
-
+    // Group commits by month/year (bank statement sections)
+    const groups = new Map();
     commits.forEach((commit) => {
-      const tier = getTierFromCommit(commit);
+      const d = new Date(commit.timestamp);
+      const key = isNaN(d)
+        ? "Unknown Date"
+        : `${d.toLocaleString("default", { month: "long" }).toUpperCase()} ${d.getFullYear()}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(commit);
+    });
 
-      // Insert tier header when tier changes
-      if (tier !== lastTier) {
-        const header = document.createElement("li");
-        header.className = "timeline-tier-header";
-        header.style.cssText = `
-          list-style: none;
-          padding: 4px 10px;
-          font-size: 9px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: ${TIER_COLORS[tier]};
-          border-top: 1px solid ${TIER_COLORS[tier]}44;
-          margin-top: 4px;
-          pointer-events: none;
+    groups.forEach((groupCommits, monthLabel) => {
+      // Month separator (bank statement section header)
+      const monthHeader = document.createElement("li");
+      monthHeader.className = "statement-month-header";
+      monthHeader.innerHTML = `<span>${monthLabel}</span><span class="statement-month-count">${groupCommits.length} entr${groupCommits.length === 1 ? "y" : "ies"}</span>`;
+      historyList.appendChild(monthHeader);
+
+      // Divider line
+      const divider = document.createElement("li");
+      divider.className = "statement-divider";
+      historyList.appendChild(divider);
+
+      groupCommits.forEach((commit) => {
+        const d = new Date(commit.timestamp);
+        const dayStr = isNaN(d)
+          ? "?"
+          : `${d.getDate()} ${d.toLocaleString("default", { month: "short" })}`;
+        const timeStr = isNaN(d)
+          ? ""
+          : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        const branchDiscipline = getDisciplineForUser(commit.user || "");
+        const branchCfg = getDisciplineConfig(branchDiscipline);
+        const commitBranch =
+          commit.branch ||
+          getDisciplineBranch(commit.user || "", commit.sourceStatus || "WIP");
+
+        const statusColor = TIER_COLORS[getTierFromCommit(commit)] || "#888";
+
+        // Delta badges: added / modified / removed
+        const added = (commit.addedPrims || []).length;
+        const modified = (commit.modifiedPrims || []).length;
+        const removed = (commit.removedPrims || []).length;
+        const total =
+          added + modified + removed || (commit.stagedPrims || []).length;
+
+        const deltaBadges = `
+          ${added > 0 ? `<span class="entry-delta-badge delta-added">+${added}</span>` : ""}
+          ${modified > 0 ? `<span class="entry-delta-badge delta-modified">~${modified}</span>` : ""}
+          ${removed > 0 ? `<span class="entry-delta-badge delta-removed">-${removed}</span>` : ""}
         `;
-        header.textContent = `── ${tier} ──`;
-        historyList.appendChild(header);
-        lastTier = tier;
-      }
 
-      const li = document.createElement("li");
-      li.className = "history-item";
-      li.dataset.id = commit.id;
+        const pkg = getPackageForCommit(commit);
+        const pkgChip = pkg
+          ? `<span class="statement-pkg-chip" style="border-color:${pkg.color};color:${pkg.color};">${pkg.isoNumber || pkg.name}</span>`
+          : "";
 
-      // Format date
-      const date = new Date(commit.timestamp);
-      const timeStr = date.toLocaleTimeString();
-      const dateStr = date.toLocaleDateString();
+        const designOpt = commit.designOptionId
+          ? designOptions.find((o) => o.id === commit.designOptionId)
+          : null;
+        const optLabel = designOpt
+          ? `<span class="statement-opt-label">${designOpt.name}${commit.suitabilityCode ? ` [${commit.suitabilityCode}]` : ""}</span>`
+          : "";
 
-      const commitBranch =
-        commit.branch ||
-        getDisciplineBranch(commit.user || "", commit.sourceStatus || "WIP");
-      const branchDiscipline = getDisciplineForUser(commit.user || "");
-      const branchCfg = getDisciplineConfig(branchDiscipline);
-      const branchBadgeStyle = `background:${branchCfg.color}22;border:1px solid ${branchCfg.color}88;color:${branchCfg.color};`;
-
-      const pkg = getPackageForCommit(commit);
-      const pkgBadge = pkg
-        ? `<span class="commit-package-badge history-pkg-badge" style="background:${pkg.color}22;border:1px solid ${pkg.color}88;color:${pkg.color};">${pkg.name}</span>`
-        : "";
-
-      // Design option sub-label for Shared commits
-      let designOptionLabel = "";
-      if (commit.designOptionId) {
-        const opt = designOptions.find((o) => o.id === commit.designOptionId);
-        if (opt) {
-          const suitBadge = commit.suitabilityCode
-            ? ` <span style="font-size:9px;opacity:0.8;">[${commit.suitabilityCode}]</span>`
-            : "";
-          designOptionLabel = `<div class="history-item-details" style="color:${TIER_COLORS.Shared};">Option: ${opt.name}${suitBadge}</div>`;
-        }
-      }
-
-      li.innerHTML = `
-            <div class="history-item-header">
-                <span>${dateStr} ${timeStr}</span>
-                <span>${commit.user || "Unknown"}</span>
+        const li = document.createElement("li");
+        li.className = "statement-entry";
+        li.dataset.id = commit.id;
+        li.innerHTML = `
+          <div class="statement-entry-left">
+            <span class="entry-status-dot" style="background:${statusColor};"></span>
+          </div>
+          <div class="statement-entry-body">
+            <div class="statement-entry-top">
+              <span class="statement-entry-type" style="color:${statusColor};">${commit.sourceStatus || getTierFromCommit(commit)}</span>
+              ${pkgChip}${optLabel}
+              <span class="statement-entry-prims">${total > 0 ? `${total} prim${total !== 1 ? "s" : ""}` : ""}</span>
             </div>
-            <div class="history-item-title">
-              ${commit.type}
-              <span class="commit-branch-badge" style="${branchBadgeStyle}">${commitBranch}</span>
-              ${pkgBadge}
+            <div class="statement-entry-title">${commit.type}${commit.commitMessage ? ` — ${commit.commitMessage}` : ""}</div>
+            <div class="statement-entry-author">by ${commit.user || "System"}</div>
+            <div class="statement-entry-meta">
+              <span class="statement-entry-date">${dayStr} · ${timeStr}</span>
+              <span class="statement-entry-branch" style="color:${branchCfg.color};">${commitBranch}</span>
+              <span class="statement-entry-deltas">${deltaBadges}</span>
             </div>
-            ${designOptionLabel}
-            ${commit.commitMessage ? `<div class="history-item-details" style="font-style:italic;color:#aaa;">${commit.commitMessage}</div>` : ""}
-            <div class="history-item-details">Ref: ${commit.id.substring(0, 8)}...</div>
-          `;
+          </div>
+        `;
 
-      li.addEventListener("click", () => {
-        // Highlight selection
-        document
-          .querySelectorAll(".history-item")
-          .forEach((item) => item.classList.remove("active"));
-        li.classList.add("active");
+        li.addEventListener("click", () => {
+          document
+            .querySelectorAll(".statement-entry")
+            .forEach((item) => item.classList.remove("active"));
+          li.classList.add("active");
+          updateSceneFromHistory(commit.id);
+        });
 
-        // Update scene and info box
-        updateSceneFromHistory(commit.id);
+        historyList.appendChild(li);
       });
 
-      historyList.appendChild(li);
+      // Section divider after group
+      const endDivider = document.createElement("li");
+      endDivider.className = "statement-section-end";
+      historyList.appendChild(endDivider);
     });
   }
 

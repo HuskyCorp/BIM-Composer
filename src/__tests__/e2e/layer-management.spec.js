@@ -5,7 +5,9 @@ test.describe("Layer Management", () => {
     await page.goto("/", { waitUntil: "load" });
     // Wait for the panel JS to run and expand the layer panel (adds .expanded class).
     // This guarantees initPanelDockers() has fired and #layerStackList has non-zero height.
-    await page.waitForSelector("#layersPanel.expanded", { timeout: 10000 });
+    await page.waitForSelector("#sceneNavigatorPanel.expanded", {
+      timeout: 10000,
+    });
   });
 
   test("should display layer stack list", async ({ page }) => {

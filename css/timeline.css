@@ -189,6 +189,224 @@
   margin-top: 4px;
 }
 
+/* ─── Bank Statement Record Log ──────────────────────────────────────── */
+
+/* Month section header */
+.statement-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  list-style: none;
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 2;
+}
+
+.statement-month-count {
+  font-weight: 500;
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+.statement-divider {
+  list-style: none;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 0 14px 2px;
+}
+
+.statement-section-end {
+  list-style: none;
+  height: 8px;
+}
+
+/* Statement entry row */
+.statement-entry {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 14px 8px;
+  list-style: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.statement-entry:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.statement-entry.active {
+  background: rgba(0, 122, 255, 0.07);
+  border-left: 3px solid #007aff;
+  padding-left: 11px;
+}
+
+/* Colored status dot column */
+.statement-entry-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 5px;
+  flex-shrink: 0;
+}
+
+.entry-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Entry body */
+.statement-entry-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.statement-entry-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.statement-entry-type {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statement-entry-prims {
+  font-size: 10px;
+  color: #aaa;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.statement-pkg-chip {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.statement-opt-label {
+  font-size: 9px;
+  color: #888;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Title line */
+.statement-entry-title {
+  font-size: 12px;
+  color: #222;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Author line */
+.statement-entry-author {
+  font-size: 10px;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* Meta row */
+.statement-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.statement-entry-date {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.statement-entry-user {
+  font-size: 10px;
+  color: #888;
+  font-weight: 600;
+}
+
+.statement-entry-branch {
+  font-size: 9px;
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.statement-entry-deltas {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+
+/* Delta badges */
+.entry-delta-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.delta-added {
+  background: rgba(40, 167, 69, 0.12);
+  color: #28a745;
+}
+.delta-modified {
+  background: rgba(230, 126, 34, 0.12);
+  color: #e67e22;
+}
+.delta-removed {
+  background: rgba(220, 53, 69, 0.12);
+  color: #dc3545;
+}
+
+/* Dark theme adaptations */
+.dark-theme .statement-month-header {
+  color: #666;
+}
+.dark-theme .statement-divider {
+  background: rgba(255, 255, 255, 0.06);
+}
+.dark-theme .statement-entry {
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+.dark-theme .statement-entry:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.dark-theme .statement-entry.active {
+  background: rgba(0, 122, 255, 0.1);
+}
+.dark-theme .statement-entry-title {
+  color: #ddd;
+}
+.dark-theme .statement-entry-author {
+  color: #999;
+}
+
 /* ─── Archive and Approval node shapes ───────────────────────────────── */
 
 .timeline-node.archived {

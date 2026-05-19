@@ -454,13 +454,41 @@ export function reducer(state, action) {
 
     case "REMOVE_USER": {
       if (!(state.users instanceof Map)) return {};
+      const deletedUser = state.users.get(payload.userId);
       const filteredUsers = new Map(state.users);
       filteredUsers.delete(payload.userId);
       const newCurrentId =
         state.currentUserId === payload.userId
           ? filteredUsers.keys().next().value || null
           : state.currentUserId;
-      return { users: filteredUsers, currentUserId: newCurrentId };
+      const newCurrentUser = filteredUsers.get(newCurrentId);
+
+      // Reassign orphaned layers to the new current user
+      let updatedLayerStack = state.stage?.layerStack;
+      if (updatedLayerStack && deletedUser) {
+        updatedLayerStack = updatedLayerStack.map((layer) => {
+          const isOrphaned =
+            layer.ownerId === payload.userId ||
+            layer.owner === deletedUser.name;
+          if (!isOrphaned) return layer;
+          return {
+            ...layer,
+            owner: newCurrentUser?.name || null,
+            ownerId: newCurrentId || null,
+          };
+        });
+      }
+
+      const stageUpdate =
+        updatedLayerStack !== state.stage?.layerStack
+          ? { stage: { ...state.stage, layerStack: updatedLayerStack } }
+          : {};
+
+      return {
+        users: filteredUsers,
+        currentUserId: newCurrentId,
+        ...stageUpdate,
+      };
     }
 
     case "ADD_COMPANY": {

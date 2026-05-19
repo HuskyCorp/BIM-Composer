@@ -3,13 +3,22 @@ import * as THREE from "three";
 import { store } from "../core/index.js";
 
 export class SelectionController {
-  constructor(camera, renderer, meshesGroup, scene, canvas, viewType) {
+  constructor(
+    camera,
+    renderer,
+    meshesGroup,
+    scene,
+    canvas,
+    viewType,
+    controls
+  ) {
     this.camera = camera;
     this.renderer = renderer;
     this.meshesGroup = meshesGroup;
     this.scene = scene;
     this.canvas = canvas;
     this.viewType = viewType;
+    this._controls = controls || null;
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
     this.selectedMeshes = new Set();
@@ -19,11 +28,40 @@ export class SelectionController {
     this.entitySceneButton = document.getElementById("entity-scene-button");
     this.activeMesh = null;
 
+    // Drag-box selection state
+    this._dragStart = null;
+    this._isDragging = false;
+    this._selBoxEl = null;
+    this._initSelectionBoxEl();
+
     this.renderer.domElement.addEventListener(
       "mousedown",
       this.onMouseDown.bind(this),
       false
     );
+    // Use document so drag continues and ends even when mouse leaves the canvas
+    document.addEventListener("mousemove", this.onMouseMove.bind(this), false);
+    document.addEventListener("mouseup", this.onMouseUp.bind(this), false);
+
+    // Capture-phase listener fires before OrbitControls' bubble-phase listener,
+    // so we can flip mouseButtons.MIDDLE before OrbitControls reads it.
+    // Shift + middle-drag = rotate; plain middle-drag = dolly (zoom).
+    this.renderer.domElement.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (!this._controls || e.button !== 1) return;
+        this._controls.mouseButtons.MIDDLE = e.shiftKey
+          ? THREE.MOUSE.ROTATE
+          : THREE.MOUSE.DOLLY;
+      },
+      true
+    );
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this._isDragging) {
+        this._cancelDrag();
+      }
+    });
 
     this.renameButton.addEventListener("click", () => {
       if (this.canvas.style.display === "none") return;
@@ -493,7 +531,60 @@ export class SelectionController {
 
   onMouseDown(event) {
     if (event.target !== this.renderer.domElement) return;
-    event.preventDefault();
+    if (event.button !== 0) return; // only left button triggers box selection
+    if (event.shiftKey) return; // Shift+left → orbit via OrbitControls, ignore here
+
+    // Disable orbit immediately so OrbitControls doesn't start rotating
+    if (this._controls) this._controls.enabled = false;
+    this._dragStart = {
+      x: event.clientX,
+      y: event.clientY,
+      ctrlKey: event.ctrlKey || event.metaKey,
+    };
+    this._isDragging = false;
+  }
+
+  onMouseMove(event) {
+    if (!this._dragStart) return;
+
+    const dx = event.clientX - this._dragStart.x;
+    const dy = event.clientY - this._dragStart.y;
+
+    if (!this._isDragging && Math.sqrt(dx * dx + dy * dy) < 5) return;
+
+    if (!this._isDragging) {
+      this._isDragging = true;
+      if (this._selBoxEl) this._selBoxEl.style.display = "block";
+    }
+
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this._updateSelectionBox(
+      this._dragStart.x,
+      this._dragStart.y,
+      event.clientX,
+      event.clientY,
+      rect
+    );
+  }
+
+  onMouseUp(event) {
+    if (!this._dragStart) return;
+
+    if (this._isDragging) {
+      this._performBoxSelect(
+        this._dragStart.x,
+        this._dragStart.y,
+        event.clientX,
+        event.clientY,
+        this._dragStart.ctrlKey
+      );
+      this._cancelDrag();
+      return;
+    }
+
+    // Regular click — run raycasting (original onMouseDown logic)
+    this._cancelDrag();
+    if (event.target !== this.renderer.domElement) return;
 
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -507,12 +598,8 @@ export class SelectionController {
 
     if (intersects.length > 0) {
       let intersectedObject = intersects[0].object;
-
-      // Traverse up to find the parent object with primPath
-      // Start from the intersected mesh and go up the hierarchy
       while (intersectedObject && !intersectedObject.userData.primPath) {
         intersectedObject = intersectedObject.parent;
-        // Stop if we've reached the scene or meshesGroup
         if (
           intersectedObject === this.scene ||
           intersectedObject === this.meshesGroup
@@ -521,9 +608,7 @@ export class SelectionController {
           break;
         }
       }
-
       if (intersectedObject && intersectedObject.userData.primPath) {
-        // Use the full mesh path for selection (matches outliner structure)
         this.togglePrimSelection(
           intersectedObject.userData.primPath,
           event.ctrlKey || event.metaKey
@@ -533,6 +618,164 @@ export class SelectionController {
       if (!event.ctrlKey && !event.metaKey) {
         this.clearSelection();
       }
+    }
+  }
+
+  _cancelDrag() {
+    this._dragStart = null;
+    this._isDragging = false;
+    if (this._controls) this._controls.enabled = true;
+    if (this._selBoxEl) {
+      this._selBoxEl.style.display = "none";
+      this._selBoxEl.className = "sel-box";
+    }
+  }
+
+  _initSelectionBoxEl() {
+    const container = this.renderer.domElement.parentElement;
+    if (!container) return;
+    const el = document.createElement("div");
+    el.className = "sel-box";
+    el.style.display = "none";
+    container.appendChild(el);
+    this._selBoxEl = el;
+  }
+
+  _updateSelectionBox(startX, startY, currentX, currentY, rect) {
+    if (!this._selBoxEl) return;
+
+    const left = Math.min(startX, currentX) - rect.left;
+    const top = Math.min(startY, currentY) - rect.top;
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+
+    this._selBoxEl.style.left = left + "px";
+    this._selBoxEl.style.top = top + "px";
+    this._selBoxEl.style.width = width + "px";
+    this._selBoxEl.style.height = height + "px";
+
+    const mode = currentX > startX ? "sel-box--window" : "sel-box--crossing";
+    this._selBoxEl.className = "sel-box " + mode;
+  }
+
+  _performBoxSelect(startX, startY, endX, endY, addToSelection) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const selLeft = Math.min(startX, endX) - rect.left;
+    const selRight = Math.max(startX, endX) - rect.left;
+    const selTop = Math.min(startY, endY) - rect.top;
+    const selBottom = Math.max(startY, endY) - rect.top;
+
+    const isWindow = endX > startX; // left→right = window (fully contained only)
+
+    const w = rect.width;
+    const h = rect.height;
+
+    const matchedPaths = [];
+
+    const getAllMeshes = (obj, out) => {
+      if (obj.isMesh && obj.userData.primPath) out.push(obj);
+      if (obj.children) obj.children.forEach((c) => getAllMeshes(c, out));
+    };
+    const allMeshes = [];
+    getAllMeshes(this.meshesGroup, allMeshes);
+
+    const _tmp = new THREE.Vector3();
+
+    for (const mesh of allMeshes) {
+      const box3 = new THREE.Box3().setFromObject(mesh);
+      if (box3.isEmpty()) continue;
+
+      const corners = [
+        new THREE.Vector3(box3.min.x, box3.min.y, box3.min.z),
+        new THREE.Vector3(box3.max.x, box3.min.y, box3.min.z),
+        new THREE.Vector3(box3.min.x, box3.max.y, box3.min.z),
+        new THREE.Vector3(box3.max.x, box3.max.y, box3.min.z),
+        new THREE.Vector3(box3.min.x, box3.min.y, box3.max.z),
+        new THREE.Vector3(box3.max.x, box3.min.y, box3.max.z),
+        new THREE.Vector3(box3.min.x, box3.max.y, box3.max.z),
+        new THREE.Vector3(box3.max.x, box3.max.y, box3.max.z),
+      ];
+
+      let screenMinX = Infinity,
+        screenMaxX = -Infinity;
+      let screenMinY = Infinity,
+        screenMaxY = -Infinity;
+      let visibleCorners = 0;
+      let allCornersInside = true;
+
+      for (const corner of corners) {
+        _tmp.copy(corner).project(this.camera);
+        if (_tmp.z > 1) {
+          allCornersInside = false;
+          continue;
+        } // behind camera
+        visibleCorners++;
+
+        const sx = (_tmp.x + 1) * 0.5 * w;
+        const sy = (-_tmp.y + 1) * 0.5 * h;
+
+        screenMinX = Math.min(screenMinX, sx);
+        screenMaxX = Math.max(screenMaxX, sx);
+        screenMinY = Math.min(screenMinY, sy);
+        screenMaxY = Math.max(screenMaxY, sy);
+
+        if (sx < selLeft || sx > selRight || sy < selTop || sy > selBottom) {
+          allCornersInside = false;
+        }
+      }
+
+      if (visibleCorners === 0) continue;
+
+      let selected = false;
+      if (isWindow) {
+        selected = allCornersInside;
+      } else {
+        // crossing: screen bbox overlaps selection rect
+        selected = !(
+          screenMaxX < selLeft ||
+          screenMinX > selRight ||
+          screenMaxY < selTop ||
+          screenMinY > selBottom
+        );
+      }
+
+      if (selected) matchedPaths.push(mesh.userData.primPath);
+    }
+
+    if (matchedPaths.length === 0) {
+      if (!addToSelection) this.clearSelection();
+      return;
+    }
+
+    if (!addToSelection) {
+      this.selectPrims(matchedPaths);
+    } else {
+      // Add to existing selection
+      matchedPaths.forEach((path) => {
+        const outlinerElement = document.querySelector(
+          `#usdaOutliner li[data-prim-path="${path}"]`
+        );
+        if (outlinerElement) this.highlightElement(outlinerElement, true);
+        const mesh = this.meshesGroup.children.find(
+          (m) => m.userData.primPath === path
+        );
+        if (mesh) {
+          this.selectedMeshes.add(mesh);
+          mesh.material = new THREE.MeshStandardMaterial({
+            color: 0x007aff,
+            side: THREE.DoubleSide,
+          });
+          this.activeMesh = mesh;
+        }
+      });
+      if (this.activeMesh) {
+        document.dispatchEvent(
+          new CustomEvent("primSelected", {
+            detail: { primPath: this.activeMesh.userData.primPath },
+          })
+        );
+      }
+      this.renderer.render(this.scene, this.camera);
     }
   }
 }

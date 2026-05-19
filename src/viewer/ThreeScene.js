@@ -28,7 +28,8 @@ export class ThreeScene {
       this.meshesGroup,
       this.scene,
       this.canvas,
-      viewType
+      viewType,
+      this.controls
     );
 
     this.init();

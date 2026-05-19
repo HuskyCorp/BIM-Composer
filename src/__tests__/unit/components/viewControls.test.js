@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { initViewControls } from "../../../components/viewControls.js";
 import { store } from "../../../core/index.js";
-import { actions } from "../../../state/actions.js";
 
 // Mock dependencies
 vi.mock("../../../core/index.js", () => ({
   store: {
     getState: vi.fn(),
+    subscribe: vi.fn(),
   },
 }));
 

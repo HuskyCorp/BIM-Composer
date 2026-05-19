@@ -19,11 +19,11 @@ const PACKAGE_COLORS = [
 // by the store changes it makes itself.
 let _bootstrapping = false;
 
-function getNextColor(packages) {
+export function getNextColor(packages) {
   return PACKAGE_COLORS[packages.length % PACKAGE_COLORS.length];
 }
 
-function generatePackageId() {
+export function generatePackageId() {
   return `pkg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 }
 
@@ -31,7 +31,7 @@ function generatePackageId() {
  * Generate an ISO 19650-compliant package number.
  * Format: {companyCode}-{teamCode}-{disciplineCode}-{001}
  */
-function generateIsoPackageNumber(state) {
+export function generateIsoPackageNumber(state) {
   const user =
     state.users instanceof Map ? state.users.get(state.currentUserId) : null;
   if (!user) return null;
@@ -47,7 +47,7 @@ function generateIsoPackageNumber(state) {
   return `${prefix}-${seq}`;
 }
 
-function persistPackages(packages) {
+export function persistPackages(packages) {
   const statementContent = store.getState().loadedFiles?.["statement.usda"];
   if (!statementContent) return;
   const newContent = writePackageRegistryToStatement(
